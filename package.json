@@ -1,0 +1,99 @@
+{
+  "name": "raster-viewer",
+  "displayName": "%displayName%",
+  "description": "%description%",
+  "version": "0.6.95",
+  "publisher": "local",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Visualization",
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:rasterViewer.openInNewView",
+    "onCommand:rasterViewer.addAsLayer",
+    "onCommand:rasterViewer.newView"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "rasterViewer.openInNewView",
+        "title": "%command.openInNewView.title%",
+        "icon": "$(window)"
+      },
+      {
+        "command": "rasterViewer.addAsLayer",
+        "title": "%command.addAsLayer.title%",
+        "icon": "$(symbol-color)"
+      },
+      {
+        "command": "rasterViewer.newView",
+        "title": "%command.newView.title%",
+        "icon": "$(split-horizontal)"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "rasterViewer.openInNewView",
+          "when": "resourceExtname == .png || resourceExtname == .jpg || resourceExtname == .jpeg || resourceExtname == .tif || resourceExtname == .tiff || resourceExtname == .bmp",
+          "group": "rasterViewer@1"
+        },
+        {
+          "command": "rasterViewer.addAsLayer",
+          "when": "resourceExtname == .png || resourceExtname == .jpg || resourceExtname == .jpeg || resourceExtname == .tif || resourceExtname == .tiff || resourceExtname == .bmp",
+          "group": "rasterViewer@2"
+        }
+      ],
+      "editor/title/context": [
+        {
+          "command": "rasterViewer.openInNewView",
+          "when": "resourceExtname == .png || resourceExtname == .jpg || resourceExtname == .jpeg || resourceExtname == .tif || resourceExtname == .tiff || resourceExtname == .bmp",
+          "group": "rasterViewer@1"
+        },
+        {
+          "command": "rasterViewer.addAsLayer",
+          "when": "resourceExtname == .png || resourceExtname == .jpg || resourceExtname == .jpeg || resourceExtname == .tif || resourceExtname == .tiff || resourceExtname == .bmp",
+          "group": "rasterViewer@2"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "rasterViewer.openInNewView"
+        },
+        {
+          "command": "rasterViewer.addAsLayer"
+        },
+        {
+          "command": "rasterViewer.newView"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build:webview && tsc -p ./",
+    "bump": "npm version patch --no-git-tag-version",
+    "build:webview": "esbuild media/src/main.js --bundle --outfile=media/main.js --format=iife",
+    "compile": "npm run bump && npm run build:webview && tsc -p ./",
+    "package": "npx --yes @vscode/vsce package --allow-missing-repository",
+    "smoke": "node scripts/smoke/run.mjs && node scripts/smoke/invert-unit.mjs",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.85.0",
+    "esbuild": "^0.28.1",
+    "puppeteer-core": "^24.43.1",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "geotiff": "^3.0.5",
+    "ol": "^10.9.0",
+    "proj4": "^2.20.9",
+    "utif2": "^4.1.0"
+  },
+  "icon": "media/icon.png"
+}

@@ -1,0 +1,7 @@
+{
+  "displayName": "栅格查看器",
+  "description": "图像查看器，也适用于 GIS 栅格预览。支持 PNG/JPEG/BMP/TIFF/GeoTIFF、样式拉伸、多图层与像元识别。右键「新视图打开 / 添加为图层」。",
+  "command.openInNewView.title": "栅格查看器: 在新视图中打开",
+  "command.addAsLayer.title": "栅格查看器: 添加为图层",
+  "command.newView.title": "栅格查看器: 新建空视图"
+}

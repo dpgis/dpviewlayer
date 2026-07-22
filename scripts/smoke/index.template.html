@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>Raster Viewer Smoke</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #1a1a1a; color: #eee; font: 13px/1.4 monospace; }
+    #map { width: 800px; height: 800px; background:
+      repeating-conic-gradient(#333 0% 25%, #222 0% 50%) 50% / 24px 24px; }
+    #out { padding: 12px; white-space: pre-wrap; max-height: 40vh; overflow: auto; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <pre id="out">running…</pre>
+  <script>
+    window.__MENU__ = __MENU_JSON__;
+  </script>
+  <script src="./bundle.js"></script>
+  <script>
+    runSmoke().catch((e) => {
+      const result = { ok: false, error: String(e && e.stack || e) };
+      window.__SMOKE_RESULT__ = result;
+      document.getElementById("out").textContent = JSON.stringify(result, null, 2);
+      document.body.dataset.smoke = "fail";
+      console.error(e);
+    });
+  </script>
+</body>
+</html>
