@@ -1,7 +1,7 @@
 {
-  "displayName": "Raster Viewer",
+  "displayName": "View Layer",
   "description": "An image viewer that also works for GIS raster preview. PNG/JPEG/BMP/TIFF/GeoTIFF, stretch & colormap, multi-layer, identify. Context menu: open in new view / add as layer.",
-  "command.openInNewView.title": "Raster Viewer: Open in New View",
-  "command.addAsLayer.title": "Raster Viewer: Add as Layer",
-  "command.newView.title": "Raster Viewer: New Empty View"
+  "command.openInNewView.title": "View Layer: Open in New View",
+  "command.addAsLayer.title": "View Layer: Add as Layer",
+  "command.newView.title": "View Layer: New Empty View"
 }

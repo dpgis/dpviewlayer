@@ -1,4 +1,4 @@
-# 栅格查看器（Raster Viewer）
+# 图层预览（View Layer）
 
 VS Code / Cursor 里的**图像查看器**，同时适用于 **GIS 栅格预览**。
 
@@ -14,10 +14,10 @@ VS Code / Cursor 里的**图像查看器**，同时适用于 **GIS 栅格预览*
 ## 安装
 
 ```bash
-cd raster-viewer && npm install && npm run package
+cd dpviewlayer && npm install && npm run package
 ```
 
-在 VS Code / Cursor 中「从 VSIX 安装」生成的 `raster-viewer-*.vsix`。
+在 VS Code / Cursor 中「从 VSIX 安装」生成的 `dpviewlayer-*.vsix`。
 
 ```bash
 npm run compile   # 递增版本 + 打包 webview + tsc
@@ -27,7 +27,7 @@ npm run smoke     # 本地叠层冒烟测试（可选）
 ## 打开方式
 
 - 资源管理器 / 编辑器标题右键 → **在新视图中打开** / **添加为图层**
-- 命令面板 → **栅格查看器: 在新视图中打开** / **添加为图层** / **新建空视图**
+- 命令面板 → **图层预览: 在新视图中打开** / **添加为图层** / **新建空视图**
 
 不再占用默认编辑器：点文件不会自动抢开，需通过上述命令打开。
 
@@ -48,9 +48,12 @@ npm run smoke     # 本地叠层冒烟测试（可选）
 
 ## 地图与地理参考
 
-- 地图显示 CRS（含自定义 EPSG）
+- 地图显示 CRS（含自定义 EPSG）；切换时有 CRS 图层重投影，无 CRS 图层直接改标显示
+- 打开有 CRS 的图层时地图保持当前 CRS，并自动定位到重投影后的范围
 - 仿射：GDAL GeoTransform，默认 `0,1,0,0,0,1`
-- 自动读取 world file / GeoTIFF 内嵌地理参考；无地理参考时使用 Local 像素坐标
+- 自动读取 world file / GeoTIFF 内嵌地理参考
+- **有 CRS**：图层保持文件 CRS，打开与切换地图 CRS 时都重投影到当前地图 CRS（不会把地图改成图层 CRS）
+- **无 CRS**：赋当前地图 CRS；切换地图 CRS 时不重投影，直接按新坐标系显示（仿射数值不变）
 
 ## 图层
 
@@ -69,24 +72,28 @@ npm run smoke     # 本地叠层冒烟测试（可选）
 
 ## 金字塔 / 大图
 
-插件**不创建** overview。打开前检查旁侧同名概览（如 `*.tif.ovr`、`*.ovr`）：
+插件**不创建** overview。大图（总像素 > 2500 万）需要金字塔才能打开：
 
-- **GeoTIFF**：使用内建金字塔；旁侧 `.ovr` 会作为外部 overview
-- **PNG / JPEG / BMP**：内存 GeoTIFF 全分辨率显示（外部 `.ovr` 不参与）
-- **无概览且总像素 > 2500 万**：拒绝打开，提示先创建 ovr
+- **GeoTIFF 内置金字塔**（`gdaladdo` 写入同一 `.tif`）即可，**不需要**旁侧 `.ovr`
+- 或旁侧外部概览：`*.tif.ovr` / `*.ovr`
+- **PNG / JPEG / BMP**：内存全分辨率显示（外部 `.ovr` 不参与大图放行）
+- 无内置金字塔且无外部 `.ovr`：拒绝打开并提示
+
+有地理参考的 GeoTIFF 会读取文件内 CRS（如 EPSG:32649）与仿射，不会当成空 CRS / 像素坐标。
 
 ## 工作区色表
 
-路径：`.vscode/raster-viewer.json`
+路径：`.vscode/dpviewlayer.json`
+
+行 ID 为数组下标，不写入每行。区间为半开 `[min, max)`（即 ≥ min 且 < max）。
 
 ```json
 {
-  "colors": {
-    "0": "#e6194b",
-    "1": [60, 180, 75],
-    "4": "#4363d8",
-    "6": [255, 225, 25]
-  }
+  "colorTable": [
+    { "min": 0, "max": 1, "color": "#e6194b" },
+    { "min": 1, "max": 2, "color": [60, 180, 75] },
+    { "min": 4, "max": 5, "color": "#4363d8" }
+  ]
 }
 ```
 
@@ -94,9 +101,9 @@ npm run smoke     # 本地叠层冒烟测试（可选）
 
 | 命令 | 说明 |
 |------|------|
-| `rasterViewer.openInNewView` | 在新视图中打开选中栅格 |
-| `rasterViewer.addAsLayer` | 添加到已有视图（无视图则新建；多视图时选择目标） |
-| `rasterViewer.newView` | 新建空视图 |
+| `viewLayer.openInNewView` | 在新视图中打开选中栅格 |
+| `viewLayer.addAsLayer` | 添加到已有视图（无视图则新建；多视图时选择目标） |
+| `viewLayer.newView` | 新建空视图 |
 
 ## TODO
 

@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <title>Raster Viewer Smoke</title>
+  <title>View Layer Smoke</title>
   <style>
     html, body { margin: 0; height: 100%; background: #1a1a1a; color: #eee; font: 13px/1.4 monospace; }
     #map { width: 800px; height: 800px; background:
@@ -14,7 +14,7 @@
   <div id="map"></div>
   <pre id="out">running…</pre>
   <script>
-    window.__MENU__ = [{"command":"rasterViewer.openInNewView","when":"resourceExtname == .png || resourceExtname == .jpg || resourceExtname == .jpeg || resourceExtname == .tif || resourceExtname == .tiff || resourceExtname == .bmp","group":"rasterViewer@1"},{"command":"rasterViewer.addAsLayer","when":"resourceExtname == .png || resourceExtname == .jpg || resourceExtname == .jpeg || resourceExtname == .tif || resourceExtname == .tiff || resourceExtname == .bmp","group":"rasterViewer@2"}];
+    window.__MENU__ = [{"command":"viewLayer.openInNewView","when":"resourceExtname == .png || resourceExtname == .jpg || resourceExtname == .jpeg || resourceExtname == .tif || resourceExtname == .tiff || resourceExtname == .bmp","group":"viewLayer@1"},{"command":"viewLayer.addAsLayer","when":"resourceExtname == .png || resourceExtname == .jpg || resourceExtname == .jpeg || resourceExtname == .tif || resourceExtname == .tiff || resourceExtname == .bmp","group":"viewLayer@2"}];
   </script>
   <script src="./bundle.js"></script>
   <script>

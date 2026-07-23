@@ -1,86 +1,65 @@
 import * as fs from "fs";
 import * as path from "path";
+import { loadGeotiff } from "./geotiffLoader";
 
-/** Total pixels beyond this → need pyramid/ovr (or reject for static images). */
-export const LARGE_MAX_PIXELS = 25_000_000;
+/** Soft limit: GeoTIFF above this needs pyramid overviews. Non-TIFF is not limited. */
+export const LARGE_MAX_PIXELS = 36_000_000;
 
 export function isRasterTooLarge(width: number, height: number): boolean {
-  const w = Math.max(0, width | 0);
-  const h = Math.max(0, height | 0);
-  if (!w || !h) return false;
-  return w * h > LARGE_MAX_PIXELS;
+  return width * height > LARGE_MAX_PIXELS;
 }
 
 /**
- * Find GDAL-style external overview files next to a raster.
- * Common patterns: `file.tif.ovr`, `file.png.ovr`, `file.ovr`.
+ * External GDAL overviews: `file.tif.ovr`, `file.png.ovr`, etc.
  */
-export function findOverviewPaths(imagePath: string): string[] {
+export function findOverviewPaths(filePath: string): string[] {
+  const abs = path.resolve(filePath);
   const out: string[] = [];
-  const seen = new Set<string>();
-  const add = (p: string) => {
-    const abs = path.resolve(p);
-    if (seen.has(abs)) return;
-    seen.add(abs);
+  for (const cand of [`${abs}.ovr`, `${abs}.OVR`]) {
     try {
-      if (fs.existsSync(abs) && fs.statSync(abs).isFile()) out.push(abs);
+      if (fs.existsSync(cand) && fs.statSync(cand).isFile()) out.push(cand);
     } catch {
       /* ignore */
     }
-  };
-  // GDAL default: append .ovr to full filename
-  add(`${imagePath}.ovr`);
-  const ext = path.extname(imagePath);
-  if (ext) {
-    // Also try replacing extension: name.ovr
-    add(imagePath.slice(0, -ext.length) + ".ovr");
   }
   return out;
 }
 
-/** True if GeoTIFF contains reduced-resolution IFDs (internal pyramid). */
+/**
+ * GeoTIFF with internal SubIFD / ReducedResolution overviews (from gdaladdo -r … without .ovr).
+ */
 export async function hasInternalOverviews(filePath: string): Promise<boolean> {
   try {
-    const { fromFile } = await import("geotiff");
+    const { fromFile } = await loadGeotiff();
     const tiff = await fromFile(filePath);
-    const count = await tiff.getImageCount();
-    if (count <= 1) return false;
-    const first = await tiff.getImage(0);
-    const fw = first.getWidth();
-    const fh = first.getHeight();
-    for (let i = 1; i < count; i++) {
-      const img = await tiff.getImage(i);
-      const fd = (img as { fileDirectory?: { NewSubfileType?: number } }).fileDirectory || {};
-      const sub = Number(fd.NewSubfileType || 0);
-      // bit 0 = ReducedImage
-      if ((sub & 1) === 1) return true;
-      if (img.getWidth() < fw || img.getHeight() < fh) return true;
-    }
-    return false;
+    const n = await tiff.getImageCount();
+    return n > 1;
   } catch {
     return false;
   }
 }
 
-export const LARGE_RASTER_MSG = "图片太大，加载不了，创建ovr后再试";
-
 /**
- * Allow open if small, or TIFF with external .ovr / internal overviews.
- * PNG/JPEG/BMP use ImageStatic (full decode) — external .ovr does not help.
- * Plugin never creates pyramids.
+ * Gate large rasters: only GeoTIFF must have overviews when over LARGE_MAX_PIXELS.
+ * PNG / JPEG / BMP are never blocked by size (OpenLayers decodes them as images).
  */
 export async function assertRasterOpenable(opts: {
   width: number;
   height: number;
   format: string;
   filePath: string;
-  overviewPaths: string[];
+  overviewPaths?: string[];
 }): Promise<{ ok: true } | { ok: false; reason: string }> {
+  if (opts.format !== "tiff") return { ok: true };
   if (!isRasterTooLarge(opts.width, opts.height)) return { ok: true };
-  const fmt = (opts.format || "").toLowerCase();
-  if (fmt === "tiff" || fmt === "tif") {
-    if (opts.overviewPaths.length > 0) return { ok: true };
-    if (await hasInternalOverviews(opts.filePath)) return { ok: true };
-  }
-  return { ok: false, reason: LARGE_RASTER_MSG };
+  const external = (opts.overviewPaths?.length ? opts.overviewPaths : findOverviewPaths(opts.filePath)).length > 0;
+  if (external) return { ok: true };
+  if (await hasInternalOverviews(opts.filePath)) return { ok: true };
+  return {
+    ok: false,
+    reason:
+      `GeoTIFF 过大（${opts.width}×${opts.height}，超过 ${LARGE_MAX_PIXELS.toLocaleString()} 像素）且未检测到金字塔概览。` +
+      `请先用 gdaladdo 生成内部或外部概览后再打开，例如：\n` +
+      `gdaladdo -r average "${opts.filePath}" 2 4 8 16`,
+  };
 }

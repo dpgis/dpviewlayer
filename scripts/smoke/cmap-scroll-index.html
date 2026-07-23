@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="/media/main.css" />
+  <title>cmap scroll smoke</title>
+</head>
+<body class="render-paletted">
+  <div class="main" id="main">
+    <div class="map-wrap" id="map"></div>
+    <div class="h-split" id="splitSide"></div>
+    <aside class="side" id="side">
+      <div class="side-top" id="sideTop">
+        <div class="layer-head-row"><span class="layer-head-title">图层</span></div>
+        <div class="file-panel"><ul class="file-list"><li class="file-item">mask.png</li></ul></div>
+        <div class="side-header"><div class="side-geo"><div class="geo-row"><span class="geo-k">信息</span><span class="geo-v">test</span></div></div></div>
+      </div>
+      <div class="v-split" id="splitInfo"></div>
+      <div class="side-tabs" id="sideTabs">
+        <div class="tab-bar"><button type="button" class="tab-btn is-active">样式</button></div>
+        <div class="tab-panel is-active" id="panelStyle">
+          <div class="symbology">
+            <div class="form-row form-row-full"><select class="field field-grow"><option>调色板/唯一值</option></select></div>
+            <div id="panelPaletted" class="render-panel panel-paletted">
+              <div class="form-row"><span class="form-label">波段</span><select class="field field-grow"><option>1</option></select></div>
+              <div class="form-row"><span class="form-label">颜色渐变</span><select class="field field-grow"><option>Random</option></select></div>
+              <div class="cmap-table-wrap" id="cmapWrap">
+                <table class="cmap-table" id="cmapTable">
+                  <thead><tr><th>值</th><th>颜色</th><th>标注</th></tr></thead>
+                  <tbody id="cmapBody"></tbody>
+                </table>
+              </div>
+              <div class="cmap-toolbar"><button type="button" class="btn">分类</button></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="map-section" id="mapSection">
+        <div class="map-foot"><div class="map-head-row"><span class="map-head-title">地图</span></div></div>
+        <div class="status-bar"><div class="status-hover">—</div></div>
+      </div>
+    </aside>
+  </div>
+  <script>
+    const body = document.getElementById("cmapBody");
+    let rows = "";
+    for (let i = 0; i < 120; i++) {
+      rows += '<tr><td>' + i + '</td><td style="background:#333;width:24px"></td><td>c' + i + '</td></tr>';
+    }
+    body.innerHTML = rows;
+    const side = document.getElementById("side");
+    const tabs = document.getElementById("sideTabs");
+    const wrap = document.getElementById("cmapWrap");
+    const measure = () => {
+      const s = side.getBoundingClientRect();
+      const t = tabs.getBoundingClientRect();
+      const w = wrap.getBoundingClientRect();
+      window.__SMOKE_RESULT__ = {
+        ok:
+          wrap.scrollHeight > wrap.clientHeight + 20 &&
+          wrap.clientHeight > 40 &&
+          Math.abs(side.scrollHeight - side.clientHeight) < 2 &&
+          t.height < s.height,
+        side: { h: s.height, scrollH: side.scrollHeight, clientH: side.clientHeight },
+        tabs: { h: t.height },
+        wrap: {
+          h: w.height,
+          clientH: wrap.clientHeight,
+          scrollH: wrap.scrollHeight,
+          overflowY: getComputedStyle(wrap).overflowY,
+        },
+      };
+    };
+    requestAnimationFrame(() => requestAnimationFrame(measure));
+  </script>
+</body>
+</html>

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="stylesheet" href="/media/main.css" />
+  <title>recent smoke UI</title>
+</head>
+<body class="render-paletted">
+  <div class="main">
+    <div class="map-wrap"></div>
+    <div class="h-split"></div>
+    <aside class="side" id="side">
+      <div class="side-top" id="sideTop" style="flex:0 0 200px;height:200px;min-height:120px">
+        <div class="layer-head-row"><span class="layer-head-title">图层</span></div>
+        <div class="file-panel"><ul class="file-list" id="fileList">
+          <li class="file-item is-active is-selected" data-id="chla" id="layerChla">chla.tif</li>
+          <li class="file-item" data-id="jpg" id="layerJpg">0001.jpg</li>
+        </ul></div>
+      </div>
+      <div class="v-split"></div>
+      <div class="side-tabs" id="sideTabs">
+        <div class="tab-bar">
+          <button type="button" class="tab-btn" id="tabStyle" data-tab="style">样式</button>
+          <button type="button" class="tab-btn is-active" id="tabIdentify" data-tab="identify">识别</button>
+        </div>
+        <div class="tab-panel" id="panelStyle" hidden>
+          <div class="symbology">
+            <div class="form-row"><select><option>颜色表渲染</option></select></div>
+            <div class="render-panel panel-paletted">
+              <div class="cmap-table-wrap" id="cmapWrap">
+                <table class="cmap-table">
+                  <thead><tr><th>ID</th><th>≥</th><th>&lt;</th><th>颜色</th></tr></thead>
+                  <tbody id="cmapBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="tab-panel is-active" id="panelIdentify">
+          <div class="identify-wrap">
+            <div class="identify-table-wrap" id="identifyTableWrap">
+              <table class="identify-table" id="identifyTable">
+                <thead><tr><th>要素</th><th>值</th></tr></thead>
+                <tbody>
+                  <tr class="identify-group-row"><td>chla.tif</td><td>100,200</td></tr>
+                  <tr class="identify-band-row"><td>波段1</td><td>1741.74</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="map-section"><div class="map-foot"><div class="map-head-row"><span class="map-head-title">地图</span></div></div></div>
+    </aside>
+  </div>
+  <script>
+    // Mimic setSideTab("style") on layer select
+    function setSideTab(name) {
+      const isStyle = name !== "identify";
+      document.getElementById("tabStyle").classList.toggle("is-active", isStyle);
+      document.getElementById("tabIdentify").classList.toggle("is-active", !isStyle);
+      document.getElementById("panelStyle").hidden = !isStyle;
+      document.getElementById("panelStyle").classList.toggle("is-active", isStyle);
+      document.getElementById("panelIdentify").hidden = isStyle;
+      document.getElementById("panelIdentify").classList.toggle("is-active", !isStyle);
+    }
+    document.getElementById("fileList").addEventListener("click", (e) => {
+      const li = e.target.closest(".file-item");
+      if (!li) return;
+      setSideTab("style");
+    });
+
+    const body = document.getElementById("cmapBody");
+    let rows = "";
+    for (let i = 0; i < 80; i++) {
+      rows += '<tr class="cmap-row" data-idx="'+i+'"><td class="cmap-idx">'+i+'</td><td>'+i+'</td><td>'+(i+1)+'</td><td></td></tr>';
+    }
+    body.innerHTML = rows;
+
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const ths = [...document.querySelectorAll("#identifyTable thead th")];
+      const w0 = ths[0].getBoundingClientRect().width;
+      const w1 = ths[1].getBoundingClientRect().width;
+      const ratio = w1 / w0;
+      const wrap = document.getElementById("cmapWrap");
+      const side = document.getElementById("side");
+
+      // trigger layer select → style tab
+      document.getElementById("layerChla").click();
+      const styleActive = document.getElementById("tabStyle").classList.contains("is-active");
+      const identifyHidden = document.getElementById("panelIdentify").hidden;
+
+      window.__SMOKE_RESULT__ = {
+        ok:
+          ratio > 1.2 && ratio < 1.9 &&
+          wrap.scrollHeight > wrap.clientHeight + 20 &&
+          Math.abs(side.scrollHeight - side.clientHeight) < 4 &&
+          styleActive && identifyHidden,
+        identifyWidthRatio: ratio,
+        cmapScroll: { clientH: wrap.clientHeight, scrollH: wrap.scrollHeight },
+        sideFixed: side.scrollHeight === side.clientHeight,
+        styleTabOnSelect: styleActive && identifyHidden,
+      };
+    }));
+  </script>
+</body>
+</html>

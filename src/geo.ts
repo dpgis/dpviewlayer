@@ -1,6 +1,8 @@
 import * as fs from "fs";
 import * as path from "path";
 
+import { loadGeotiff } from "./geotiffLoader";
+
 /** GDAL GeoTransform: X = gt0 + col*gt1 + row*gt2; Y = gt3 + col*gt4 + row*gt5 */
 export type GeoTransform = [number, number, number, number, number, number];
 
@@ -68,6 +70,7 @@ export function pixelGeoRef(width: number, height: number): GeoRef {
 /**
  * ESRI world file (6 lines): A D B E C F
  * → GDAL GT = [C - A/2, A, B, F - E/2, D, E] when C/F are pixel centers.
+ * CRS unknown from world file alone — leave as Local (do not invent EPSG:3857).
  */
 export function readWorldFile(imagePath: string): GeoRef | undefined {
   const ext = path.extname(imagePath).toLowerCase();
@@ -100,7 +103,7 @@ export function readWorldFile(imagePath: string): GeoRef | undefined {
       if (![A, D, B, E, C, F].every(Number.isFinite)) continue;
       // World file C,F = center of UL pixel → GDAL origin at UL corner
       const gt: GeoTransform = [C - A / 2, A, B, F - E / 2, D, E];
-      return fromGeoTransform(gt, "EPSG:3857", "worldfile");
+      return fromGeoTransform(gt, "Local", "worldfile");
     } catch {
       /* try next */
     }
@@ -108,58 +111,93 @@ export function readWorldFile(imagePath: string): GeoRef | undefined {
   return undefined;
 }
 
+function crsFromGeoKeys(geoKeys: Record<string, unknown> | null | undefined): string | undefined {
+  if (!geoKeys) return undefined;
+  const epsg =
+    geoKeys.ProjectedCSTypeGeoKey ||
+    geoKeys.GeographicTypeGeoKey ||
+    geoKeys.ProjectedCRSGeoKey ||
+    geoKeys.GeodeticCRSGeoKey;
+  if (typeof epsg === "number" && epsg > 0 && epsg !== 32767) {
+    return `EPSG:${epsg}`;
+  }
+  if (typeof geoKeys.GTCitationGeoKey === "string") {
+    const c = String(geoKeys.GTCitationGeoKey).trim();
+    const m = c.match(/EPSG\s*:?\s*(\d+)/i);
+    if (m) return `EPSG:${m[1]}`;
+  }
+  if (typeof geoKeys.GeogCitationGeoKey === "string") {
+    const c = String(geoKeys.GeogCitationGeoKey).trim();
+    const m = c.match(/EPSG\s*:?\s*(\d+)/i);
+    if (m) return `EPSG:${m[1]}`;
+  }
+  return undefined;
+}
+
+function geoTransformFromImage(img: {
+  fileDirectory?: Record<string, unknown>;
+  getOrigin?: () => number[];
+  getResolution?: () => number[];
+}): GeoTransform | undefined {
+  const fileDir = (img.fileDirectory || {}) as Record<string, unknown>;
+  const scale = fileDir.ModelPixelScale as number[] | undefined;
+  const tie = fileDir.ModelTiepoint as number[] | undefined;
+  const trans = fileDir.ModelTransformation as number[] | undefined;
+
+  if (trans && trans.length >= 16) {
+    const gt: GeoTransform = [trans[3], trans[0], trans[1], trans[7], trans[4], trans[5]];
+    if (gt.every(Number.isFinite)) return gt;
+  }
+  if (scale && scale.length >= 2 && tie && tie.length >= 6) {
+    const sx = scale[0];
+    const sy = -Math.abs(scale[1]); // GeoTIFF ModelPixelScale Y is usually positive; GT5 negative for north-up
+    const x0 = tie[3] - tie[0] * sx;
+    const y0 = tie[4] - tie[1] * sy;
+    const gt: GeoTransform = [x0, sx, 0, y0, 0, sy];
+    if (gt.every(Number.isFinite)) return gt;
+  }
+
+  // Many COGs / GDAL writes omit classic tags; geotiff.js still exposes origin/resolution.
+  try {
+    const origin = typeof img.getOrigin === "function" ? img.getOrigin() : null;
+    const resolution = typeof img.getResolution === "function" ? img.getResolution() : null;
+    if (
+      origin &&
+      resolution &&
+      origin.length >= 2 &&
+      resolution.length >= 2 &&
+      [origin[0], origin[1], resolution[0], resolution[1]].every(Number.isFinite)
+    ) {
+      const gt: GeoTransform = [origin[0], resolution[0], 0, origin[1], 0, resolution[1]];
+      if (gt.every(Number.isFinite) && (gt[1] !== 0 || gt[5] !== 0)) return gt;
+    }
+  } catch {
+    /* ignore */
+  }
+  return undefined;
+}
+
 /** Read embedded GeoTIFF geotransform + CRS via geotiff.js (optional). */
 export async function readGeoTiffGeo(filePath: string): Promise<GeoRef | undefined> {
   try {
-    const { fromArrayBuffer } = await import("geotiff");
+    const { fromArrayBuffer } = await loadGeotiff();
     const buf = fs.readFileSync(filePath);
     const ab = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
     const tiff = await fromArrayBuffer(ab);
     const image = await tiff.getImage();
-    // geotiff typings vary by version — access tags loosely
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const img = image as any;
-    const fileDir = (img.fileDirectory || {}) as Record<string, unknown>;
-    const scale = fileDir.ModelPixelScale as number[] | undefined;
-    const tie = fileDir.ModelTiepoint as number[] | undefined;
-    const trans = fileDir.ModelTransformation as number[] | undefined;
 
-    let gt: GeoTransform | undefined;
-    if (trans && trans.length >= 16) {
-      // 4x4 row-major → GT approx
-      gt = [trans[3], trans[0], trans[1], trans[7], trans[4], trans[5]];
-    } else if (scale && scale.length >= 2 && tie && tie.length >= 6) {
-      const sx = scale[0];
-      const sy = -Math.abs(scale[1]); // GeoTIFF ModelPixelScale Y is usually positive; GT5 negative for north-up
-      const x0 = tie[3] - tie[0] * sx;
-      const y0 = tie[4] - tie[1] * sy;
-      gt = [x0, sx, 0, y0, 0, sy];
-    }
+    const gt = geoTransformFromImage(img);
+    if (!gt) return undefined;
 
-    if (!gt || !gt.every(Number.isFinite)) return undefined;
-
-    let crs = "EPSG:3857";
+    let crs = "Local";
     try {
       const geoKeys = (typeof img.getGeoKeys === "function" ? img.getGeoKeys() : null) as Record<
         string,
         unknown
       > | null;
-      if (geoKeys) {
-        const epsg =
-          geoKeys.ProjectedCSTypeGeoKey ||
-          geoKeys.GeographicTypeGeoKey ||
-          geoKeys.ProjectedCRSGeoKey ||
-          geoKeys.GeodeticCRSGeoKey;
-        if (typeof epsg === "number" && epsg > 0 && epsg !== 32767) {
-          crs = `EPSG:${epsg}`;
-        } else if (typeof geoKeys.GTCitationGeoKey === "string") {
-          const c = String(geoKeys.GTCitationGeoKey).trim();
-          if (c) crs = c;
-        } else if (typeof geoKeys.GeogCitationGeoKey === "string") {
-          const c = String(geoKeys.GeogCitationGeoKey).trim();
-          if (c) crs = c;
-        }
-      }
+      crs = crsFromGeoKeys(geoKeys) || "Local";
     } catch {
       /* ignore CRS parse */
     }

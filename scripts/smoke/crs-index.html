@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>CRS Smoke</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #111; color: #eee; font: 12px monospace; }
+    #map { width: 800px; height: 800px; background: #222; }
+    #out { padding: 12px; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <pre id="out">running…</pre>
+  <script src="./crs-bundle.js"></script>
+  <script>
+    runCrsSmoke().catch((e) => {
+      const result = { ok: false, error: String(e && e.stack || e) };
+      window.__SMOKE_RESULT__ = result;
+      document.getElementById("out").textContent = JSON.stringify(result, null, 2);
+      console.error(e);
+    });
+  </script>
+</body>
+</html>

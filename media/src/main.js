@@ -3,21 +3,34 @@ import {
   createEmptyMap,
   createRasterLayer,
   applyStyle,
+  opacityFromStyleState,
   planesToGeoTiffBlob,
   normalizeEpsg,
   fitMap,
   zoomPercent,
   extentFromGeo,
-  freeViewOptions,
   revokeLayerUrls,
   resolveSourceBounds,
   LOCAL_PIXEL_PROJECTION,
   isLocalPixelProjection,
 } from "./olRaster.js";
 import { colorsForClasses, stretchRange } from "./colorRamps.js";
+import {
+  COLOR_TABLE_MAX,
+  isIntegerLikeBand,
+  resolveBandMinMax,
+  buildColorTableBreaks,
+  colorTableFromLegacyMap,
+  legacyMapFromColorTable,
+  serializeColorTable,
+  parseColorTable,
+  colorTableRangeConflicts,
+  suggestInsertRange,
+  formatBreak,
+} from "./colorTable.js";
 import { applyMapViewCrs, ensureProjection } from "./mapCrs.js";
 import { transform as transformCoord, transformExtent } from "ol/proj.js";
-import View from "ol/View.js";
+import { fromUrl as geoTiffFromUrl } from "geotiff";
 
 (() => {
   const payload = window.__RASTER_VIEWER__;
@@ -38,7 +51,7 @@ import View from "ol/View.js";
     zh: {
       renderGray: "单波段灰度",
       renderRgb: "多波段彩色",
-      renderPaletted: "调色板/唯一值",
+      renderPaletted: "颜色表渲染",
       grayBand: "灰度波段",
       colorRamp: "颜色梯度",
       rampBw: "黑到白",
@@ -64,26 +77,31 @@ import View from "ol/View.js";
       bandUnset: "未设置",
       bandN: "波段",
       colValue: "值",
+      colIndex: "ID",
+      colMin: "≥",
+      colMax: "<",
       colColor: "颜色",
       colLabel: "标注",
       classify: "分类",
+      colorTableMax: "颜色表最多 256 项",
+      colorTableOverlap: "区间不能与现有行相交",
+      tipCmapDrag: "拖动调整颜色顺序（ID 仍为行号 0…N）",
       deleteAll: "全部删除",
       reloadCmap: "重载色表",
       saveCmap: "保存色表",
       savePlte: "另存为 PLTE",
       missingData: "缺少像素数据",
-      tipReload: "重新读取 .vscode/raster-viewer.json",
-      tipSave: "写入 .vscode/raster-viewer.json",
-      tipPlte: "像素值不变，用当前色表生成索引色 PNG",
+      tipReload: "重新读取 .vscode/dpviewlayer.json",
+      tipSave: "写入 .vscode/dpviewlayer.json",
+      tipPlte: "类别 mask：像素值不变，PLTE 按下限值着色；连续区间则重映射为行号",
       tipReset: "定位全图（适应窗口）",
       tipZoomNative: "按原图分辨率 1:1 显示",
-      locateMap: "定位地图",
       mapHead: "地图",
       clearLayers: "移除",
       tipClearLayers: "移除所选图层；Shift+点击作用于全部",
       tipEditAffine: "编辑仿射",
-      tipAdd: "添加类别",
-      tipRemove: "删除选中",
+      tipAdd: "在选中行下方插入一行",
+      tipRemove: "删除选中行",
       tipMore: "更多",
       tipRemoveFile: "移除",
       fileListEmpty: "右键文件「添加为图层」加入当前视图",
@@ -111,7 +129,7 @@ import View from "ol/View.js";
     en: {
       renderGray: "Singleband gray",
       renderRgb: "Multiband color",
-      renderPaletted: "Paletted/Unique values",
+      renderPaletted: "Color table",
       grayBand: "Gray band",
       colorRamp: "Color ramp",
       rampBw: "Black to white",
@@ -137,26 +155,31 @@ import View from "ol/View.js";
       bandUnset: "Not set",
       bandN: "Band",
       colValue: "Value",
+      colIndex: "ID",
+      colMin: "≥",
+      colMax: "<",
       colColor: "Color",
       colLabel: "Label",
       classify: "Classify",
+      colorTableMax: "Color table is limited to 256 rows",
+      colorTableOverlap: "Range must not overlap existing rows",
+      tipCmapDrag: "Drag to reorder colors (ID stays row index 0…N)",
       deleteAll: "Delete all",
       reloadCmap: "Reload colormap",
       saveCmap: "Save colormap",
       savePlte: "Save as PLTE",
       missingData: "Missing pixel data",
-      tipReload: "Reload .vscode/raster-viewer.json",
-      tipSave: "Write .vscode/raster-viewer.json",
-      tipPlte: "Export indexed PNG with current colormap",
+      tipReload: "Reload .vscode/dpviewlayer.json",
+      tipSave: "Write .vscode/dpviewlayer.json",
+      tipPlte: "Class masks: pixels unchanged, PLTE keyed by class value; continuous ranges remapped to row index",
       tipReset: "Fit layer to view",
       tipZoomNative: "1:1 native resolution",
-      locateMap: "Fit map",
       mapHead: "Map",
       clearLayers: "Remove",
       tipClearLayers: "Remove selected layers; Shift+click applies to all",
       tipEditAffine: "Edit affine",
-      tipAdd: "Add class",
-      tipRemove: "Remove selected",
+      tipAdd: "Insert a row below the selection",
+      tipRemove: "Delete the selected row",
       tipMore: "More",
       tipRemoveFile: "Remove",
       fileListEmpty: "Right-click a file → Add as Layer",
@@ -185,6 +208,12 @@ import View from "ol/View.js";
 
   let lang = payload.uiLang === "en" ? "en" : "zh";
   let colormap = { ...(payload.colormap || {}) };
+  /** @type {Array<{min:number,max:number,color:string}>} */
+  let colorTable = (() => {
+    const fromPayload = parseColorTable(payload.colorTable);
+    if (fromPayload.length) return fromPayload;
+    return colorTableFromLegacyMap(colormap, {});
+  })();
   let labels = {};
   let selectedValue = null;
   /** Once user picks a render type in the UI, never auto-override it. */
@@ -280,7 +309,6 @@ import View from "ol/View.js";
   const btnReload = document.getElementById("btnReloadCmap");
   const btnSave = document.getElementById("btnSaveCmap");
   const btnSavePlte = document.getElementById("btnSavePlte");
-  const btnResetView = document.getElementById("btnResetView");
   const btnToggleVisibility = document.getElementById("btnToggleVisibility");
   const btnClearLayers = document.getElementById("btnClearLayers");
   const tabStyleEl = document.getElementById("tabStyle");
@@ -413,8 +441,6 @@ import View from "ol/View.js";
     document.querySelectorAll("[data-i18n]").forEach((el) => {
       el.textContent = t(el.getAttribute("data-i18n"));
     });
-    btnResetView.title = t("locateMap");
-    btnResetView.setAttribute("aria-label", t("locateMap"));
     if (btnToggleVisibility) {
       btnToggleVisibility.title = t("tipVisibility");
       btnToggleVisibility.setAttribute("aria-label", t("tipVisibility"));
@@ -507,8 +533,24 @@ import View from "ol/View.js";
 
   function currentCrs() {
     const c = geo?.crs;
-    if (c && c !== "Local" && c !== "Unknown") return c;
+    if (c) return c;
     return mapCrs || "EPSG:3857";
+  }
+
+  /**
+   * Layer CRS policy:
+   * - file has EPSG → keep it (OpenLayers reprojects into current map CRS)
+   * - no CRS / Local → assign current map CRS (do not switch the map)
+   */
+  function applyLayerCrsPolicy(g, w = width, h = height) {
+    const base = normalizeGeoRef(g, w, h);
+    if (normalizeEpsg(base.crs)) return base;
+    const crs = mapCrs || "EPSG:3857";
+    return { ...base, crs };
+  }
+
+  function fileHasOwnCrs(g) {
+    return g?.source === "geotiff" && !!normalizeEpsg(g?.crs);
   }
 
   function formatAffineNum(v) {
@@ -537,9 +579,10 @@ import View from "ol/View.js";
   /** Decimal places for live geo coords from current view resolution. */
   function geoCoordDecimals() {
     const res = map?.getView()?.getResolution?.();
-    if (!Number.isFinite(res) || res <= 0) return 3;
-    const d = Math.ceil(-Math.log10(res * 0.1));
-    return Math.max(0, Math.min(12, d));
+    if (!Number.isFinite(res) || res <= 0) return 6;
+    // Aim ~100× finer than current resolution; keep enough digits for Local / projected / geographic.
+    const d = Math.ceil(-Math.log10(res)) + 2;
+    return Math.max(4, Math.min(12, d));
   }
 
   function formatGeoCoord(v) {
@@ -599,6 +642,7 @@ import View from "ol/View.js";
       renderMode,
       userRenderMode,
       colormap: { ...colormap },
+      colorTable: serializeColorTable(colorTable),
       labels: { ...labels },
       selectedValue,
       grayBand: grayBandEl.value,
@@ -643,6 +687,10 @@ import View from "ol/View.js";
       userRenderMode = null;
       renderMode = defaults?.defaultRender || "gray";
       colormap = { ...(defaults?.colormap || {}) };
+      const fromDefaults = parseColorTable(defaults?.colorTable);
+      colorTable = fromDefaults.length
+        ? fromDefaults
+        : colorTableFromLegacyMap(colormap, {});
       labels = {};
       selectedValue = null;
       if (paletteRampEl) paletteRampEl.value = "random";
@@ -654,6 +702,9 @@ import View from "ol/View.js";
     renderMode = st.renderMode || renderMode;
     colormap = { ...st.colormap };
     labels = { ...st.labels };
+    colorTable = Array.isArray(st.colorTable) && st.colorTable.length
+      ? parseColorTable(st.colorTable)
+      : colorTableFromLegacyMap(colormap, labels);
     selectedValue = st.selectedValue;
     randomSeed = st.randomSeed || randomSeed;
     const assign = (el, v) => {
@@ -729,14 +780,13 @@ import View from "ol/View.js";
     return cached?.visible !== false;
   }
 
-  /** Prefer setVisible only — setOpacity(0) blanks sibling WebGLTile layers. */
-  function applyOlLayerVisibility(layer, visible) {
+  /** Visibility only — opacity is owned by styleState (transparency slider). */
+  function applyOlLayerVisibility(layer, visible, styleState) {
     if (!layer) return;
-    const v = !!visible;
-    if (typeof layer.setOpacity === "function" && layer.getOpacity() !== 1) {
-      layer.setOpacity(1);
+    layer.setVisible(!!visible);
+    if (typeof layer.setOpacity === "function") {
+      layer.setOpacity(opacityFromStyleState(styleState));
     }
-    layer.setVisible(v);
   }
 
   function setLayerVisibility(id, visible) {
@@ -745,7 +795,7 @@ import View from "ol/View.js";
     const cached = fileCache.get(id);
     if (cached) {
       cached.visible = v;
-      applyOlLayerVisibility(cached.layer, v);
+      applyOlLayerVisibility(cached.layer, v, cached.styleState);
     }
     // Re-assert siblings — WebGL style rebuilds can revive hidden layers.
     assertAllLayerVisibility();
@@ -756,8 +806,25 @@ import View from "ol/View.js";
       if (!cached?.layer) continue;
       const vis = isLayerVisible(fid);
       cached.visible = vis;
-      applyOlLayerVisibility(cached.layer, vis);
+      applyOlLayerVisibility(cached.layer, vis, cached.styleState);
     }
+  }
+
+  /**
+   * Attach GeoTIFF nodata alpha band indices so styles can punch transparent holes
+   * in reprojected AABB padding (otherwise opaque black).
+   */
+  function styleStateWithAlpha(state, layer, dataBands) {
+    const st = { ...(state || {}) };
+    const n = Math.max(1, Number(dataBands) || Number(st.bandCount) || 1);
+    st.bandCount = n;
+    const sb = Number(layer?.getSource?.()?.bandCount);
+    if (Number.isFinite(sb)) {
+      st.sourceBandCount = sb;
+      if (sb > n) st.alphaBand = sb;
+      else delete st.alphaBand;
+    }
+    return st;
   }
 
   /**
@@ -768,11 +835,17 @@ import View from "ol/View.js";
     for (const [fid, cached] of fileCache) {
       if (!cached?.layer || !cached.styleState) continue;
       try {
-        applyStyle(cached.layer, cached.styleState);
+        const st = styleStateWithAlpha(
+          cached.styleState,
+          cached.layer,
+          cached.bandCount || cached.styleState.bandCount || 1,
+        );
+        cached.styleState = st;
+        applyStyle(cached.layer, st);
       } catch (err) {
         console.error("refresh style", fid, err);
       }
-      applyOlLayerVisibility(cached.layer, isLayerVisible(fid));
+      applyOlLayerVisibility(cached.layer, isLayerVisible(fid), cached.styleState);
     }
     map?.render?.();
   }
@@ -857,7 +930,7 @@ import View from "ol/View.js";
       layerVisibility.set(id, next);
       const cached = fileCache.get(id);
       if (cached) cached.visible = next;
-      applyOlLayerVisibility(cached?.layer, next);
+      applyOlLayerVisibility(cached?.layer, next, cached?.styleState);
     }
     assertAllLayerVisibility();
     renderFileList();
@@ -933,6 +1006,7 @@ import View from "ol/View.js";
             keepSelection: multi || range,
           });
         } else {
+          setSideTab("style");
           renderFileList();
         }
       });
@@ -984,7 +1058,7 @@ import View from "ol/View.js";
 
   function removeFileLayer(id) {
     const cached = fileCache.get(id);
-    if (cached?.objectUrls) revokeLayerUrls(cached.objectUrls);
+    revokeCachedLayerUrls(cached);
     if (cached?.layer && map) {
       map.removeLayer(cached.layer);
     }
@@ -1017,11 +1091,20 @@ import View from "ol/View.js";
   }
 
   async function createLayerFromArgs(srcArgs, opts) {
-    const { style, bandCount: nBands, zIndex, mins, maxs, geo: layerGeo } = opts;
-    const fileEpsg = normalizeEpsg(layerGeo?.crs || srcArgs.crs);
-    // Identity / Local rasters must share one projection or they won't stack.
-    const projection = fileEpsg ? null : LOCAL_PIXEL_PROJECTION;
-    return createRasterLayer({
+    const { style, bandCount: nBands, zIndex, mins, maxs, geo: layerGeo, width: w, height: h } = opts;
+    // Blob GeoTIFFs carry CRS in GeoKeys. Native URLs with embedded CRS: leave null
+    // so OL reads the file CRS and reprojects to the map. Assigned (no-CRS) URL
+    // layers must force the current map CRS.
+    let projection = null;
+    if (!srcArgs.blob) {
+      if (!fileHasOwnCrs(layerGeo)) {
+        projection =
+          ensureProjection(layerGeo?.crs || mapCrs) ||
+          ensureProjection(mapCrs) ||
+          LOCAL_PIXEL_PROJECTION;
+      }
+    }
+    const created = await createRasterLayer({
       url: srcArgs.url,
       blob: srcArgs.blob,
       overviewBlobs: srcArgs.overviewBlobs,
@@ -1033,16 +1116,31 @@ import View from "ol/View.js";
       maxs,
       projection,
     });
+    if (created.viewConfig && w && h) {
+      const extent =
+        created.viewConfig.extent || extentFromGeo(w, h, layerGeo);
+      created.viewConfig = {
+        ...created.viewConfig,
+        ...(extent ? { extent } : {}),
+        width: w,
+        height: h,
+      };
+    }
+    return created;
   }
 
   function layerSourceBounds(nBands, planes, stats, mode) {
-    // Paletted class masks must keep 0..255 so class ids are not remapped.
+    // Color-table mode uses real data range (range matching in style), not 0..255 lock.
     if (mode === "paletted") {
-      return resolveSourceBounds(nBands, stats, planes, { lockByteRange: true });
+      return resolveSourceBounds(nBands, stats, planes);
     }
     // Blob-backed layers always need explicit bounds (especially float32).
     if (planes?.length) {
       return resolveSourceBounds(nBands, stats, planes);
+    }
+    // Native URL with host/PAM stats — still pass bounds so float stretch is correct.
+    if (stats?.length && stats.some((s) => Number.isFinite(s?.min) && Number.isFinite(s?.max))) {
+      return resolveSourceBounds(nBands, stats, null);
     }
     // Native URL: omit bounds so OL can use GDAL STATISTICS_* or dtype defaults.
     return null;
@@ -1072,6 +1170,8 @@ import View from "ol/View.js";
     payload.rasterUrl = rasterUrl;
     if (cached.colormap && !fileUiState.has(activeFileId)) {
       colormap = { ...cached.colormap };
+      const fromCache = parseColorTable(cached.colorTable);
+      if (fromCache.length) colorTable = fromCache;
     }
   }
 
@@ -1079,6 +1179,7 @@ import View from "ol/View.js";
     activeFileId = id;
     if (!keepSelection) selectOnly(id);
     else if (id) selectedFileIds.add(id);
+    setSideTab("style");
     const cached = fileCache.get(id);
     if (!cached || !cached.layer) {
       renderFileList();
@@ -1091,6 +1192,7 @@ import View from "ol/View.js";
     restoreUiState(id, {
       defaultRender: cached.defaultRender,
       colormap: cached.colormap,
+      colorTable: cached.colorTable,
     });
     // If UI state was never set (or lost), follow band count / host default.
     if (!userRenderMode) {
@@ -1103,17 +1205,13 @@ import View from "ol/View.js";
     ready = bandPlanes.length > 0 || !!cached.layer;
     applyRenderModeUi();
     fillBandSelects();
-    // Restore may have left empty min/max; fill from stats if needed
-    if (bandPlanes.length && (!grayMinEl.value || !grayMaxEl.value)) {
-      setMinMaxInputsFromStats();
-    }
+    // Fill min/max from host PAM / plane stats (native GeoTIFF has no planes).
+    setMinMaxInputsFromStats();
+    ensureGrayStretchInputs();
     syncStretchParamUi();
     if (renderMode === "paletted") {
-      if (!sortedColormapIds().length && bandPlanes.length) classifyFromData(true);
-      else {
-        ensureLabelsForIds(sortedColormapIds());
-        renderCmapTable();
-      }
+      if (!colorTable.length) classifyFromData(true);
+      else renderCmapTable();
     }
     updateMeta();
     renderFileList();
@@ -1141,6 +1239,7 @@ import View from "ol/View.js";
       restoreUiState(prevActive, {
         defaultRender: cached.defaultRender,
         colormap: cached.colormap,
+        colorTable: cached.colorTable,
       });
       ready = bandPlanes.length > 0 || !!cached.layer;
       applyRenderModeUi();
@@ -1158,7 +1257,7 @@ import View from "ol/View.js";
     if (!cached?.layer) return;
     const vis = isLayerVisible(id);
     cached.visible = vis;
-    applyOlLayerVisibility(cached.layer, vis);
+    applyOlLayerVisibility(cached.layer, vis, cached.styleState);
   }
 
   function clearDecodePayload() {
@@ -1187,7 +1286,7 @@ import View from "ol/View.js";
     if (msg.width) payload.width = msg.width;
     if (msg.height) payload.height = msg.height;
     if (msg.geo) {
-      geo = normalizeGeoRef(msg.geo, msg.width || width, msg.height || height);
+      geo = applyLayerCrsPolicy(msg.geo, msg.width || width, msg.height || height);
       payload.geo = geo;
     }
     if (msg.rasterUrl) {
@@ -1197,6 +1296,15 @@ import View from "ol/View.js";
     if (Array.isArray(msg.overviewUrls)) {
       payload.overviewUrls = msg.overviewUrls;
     }
+    if (Array.isArray(msg.bandStats) && msg.bandStats.length) {
+      payload.bandStats = msg.bandStats;
+      bandStats = msg.bandStats.map((s) => ({
+        min: Number(s.min),
+        max: Number(s.max),
+        mean: s.mean != null ? Number(s.mean) : undefined,
+        stddev: s.stddev != null ? Number(s.stddev) : undefined,
+      }));
+    }
     payload.awaitIndices = !!msg.awaitIndices;
     if (msg.indexBase64) {
       payload.indexBase64 = msg.indexBase64;
@@ -1204,7 +1312,9 @@ import View from "ol/View.js";
     }
     // Do not wipe other layers — only reset active decode buffers for reload
     bandPlanes = [];
-    bandStats = [];
+    if (!Array.isArray(msg.bandStats) || !msg.bandStats.length) {
+      bandStats = [];
+    }
     bandCount = Math.max(1, Number(payload.bands) || 1);
     // Unbind style target until this file's layer exists (avoids editing the previous JPG).
     tileLayer = null;
@@ -1214,13 +1324,17 @@ import View from "ol/View.js";
     restoreUiState(activeFileId, {
       defaultRender: msg.defaultRender || payload.defaultRender,
       colormap: msg.colormap || payload.colormap,
+      colorTable: msg.colorTable || payload.colorTable,
     });
     if (!fileUiState.has(activeFileId)) {
       userRenderMode = null;
       renderMode = msg.defaultRender || payload.defaultRender || "gray";
     }
-    if (!fileUiState.has(activeFileId) && msg.colormap) {
-      colormap = { ...msg.colormap };
+    if (!fileUiState.has(activeFileId) && (msg.colorTable || msg.colormap)) {
+      colormap = { ...(msg.colormap || {}) };
+      const fromMsg = parseColorTable(msg.colorTable);
+      colorTable = fromMsg.length ? fromMsg : colorTableFromLegacyMap(colormap, {});
+      syncColorTableLegacy();
     }
     updateMeta();
     renderFileList();
@@ -1238,17 +1352,7 @@ import View from "ol/View.js";
       geoInfoEl.textContent = info;
     }
     if (geoCrsLabelEl) {
-      const crs = currentCrs();
-      const src = geo?.source === "worldfile"
-        ? "world file"
-        : geo?.source === "geotiff"
-          ? "GeoTIFF"
-          : geo?.source === "identity"
-            ? "默认"
-            : geo?.source === "user"
-              ? "用户"
-              : "";
-      geoCrsLabelEl.textContent = src ? `${crs} · ${src}` : crs;
+      geoCrsLabelEl.textContent = currentCrs() || "—";
     }
   }
 
@@ -1275,20 +1379,34 @@ import View from "ol/View.js";
     const rawMax = grayMaxEl?.value;
     let min = Number(rawMin);
     let max = Number(rawMax);
-    const empty = rawMin === "" || rawMax === "" || rawMin == null || rawMax == null;
-    if (empty || !Number.isFinite(min) || !Number.isFinite(max) || max <= min) {
-      const bi = Number(grayBandEl?.value) || 0;
-      const s = bandStats[bi];
+    const minEmpty = rawMin === "" || rawMin == null;
+    const maxEmpty = rawMax === "" || rawMax == null;
+    const minBad = minEmpty || !Number.isFinite(min);
+    const maxBad = maxEmpty || !Number.isFinite(max);
+    const bi = Number(grayBandEl?.value) || 0;
+    const s = bandStats[bi];
+    // Stale 0..255 from old "none" stretch while data is float/uint16 — replace.
+    const staleByteDefault =
+      !minBad &&
+      !maxBad &&
+      min === 0 &&
+      max === 255 &&
+      s &&
+      Number.isFinite(s.min) &&
+      Number.isFinite(s.max) &&
+      (s.min < 0 || s.max > 255 || !Number.isInteger(s.min) || !Number.isInteger(s.max));
+    const orderBad = Number.isFinite(min) && Number.isFinite(max) && max <= min;
+    if (minBad || maxBad || orderBad || staleByteDefault) {
+      let dMin = 0;
+      let dMax = 255;
       if (s && Number.isFinite(s.min) && Number.isFinite(s.max)) {
-        min = s.min;
-        max = s.max <= s.min ? s.min + 1 : s.max;
-        if (grayMinEl) grayMinEl.value = String(min);
-        if (grayMaxEl) grayMaxEl.value = String(max);
-      } else {
-        min = 0;
-        max = 255;
+        dMin = s.min;
+        dMax = s.max <= s.min ? s.min + 1 : s.max;
       }
+      if (minBad || orderBad || staleByteDefault) min = dMin;
+      if (maxBad || orderBad || staleByteDefault) max = dMax;
     }
+    // Read-only: never rewrite inputs here (typing must allow clear → retype; blur restores).
     return { min, max };
   }
 
@@ -1297,20 +1415,24 @@ import View from "ol/View.js";
     const rawMax = maxEl?.value;
     let min = Number(rawMin);
     let max = Number(rawMax);
-    const empty = rawMin === "" || rawMax === "" || rawMin == null || rawMax == null;
-    if (empty || !Number.isFinite(min) || !Number.isFinite(max) || max <= min) {
+    const minEmpty = rawMin === "" || rawMin == null;
+    const maxEmpty = rawMax === "" || rawMax == null;
+    const minBad = minEmpty || !Number.isFinite(min);
+    const maxBad = maxEmpty || !Number.isFinite(max);
+    const orderBad = Number.isFinite(min) && Number.isFinite(max) && max <= min;
+    if (minBad || maxBad || orderBad) {
       const bi = bandSel === "unset" || bandSel === "" ? -1 : Number(bandSel);
       const s = bi >= 0 ? bandStats[bi] : null;
+      let dMin = 0;
+      let dMax = 255;
       if (s && Number.isFinite(s.min) && Number.isFinite(s.max)) {
-        min = s.min;
-        max = s.max <= s.min ? s.min + 1 : s.max;
-      } else {
-        min = 0;
-        max = 255;
+        dMin = s.min;
+        dMax = s.max <= s.min ? s.min + 1 : s.max;
       }
-      if (minEl) minEl.value = String(min);
-      if (maxEl) maxEl.value = String(max);
+      if (minBad || orderBad) min = dMin;
+      if (maxBad || orderBad) max = dMax;
     }
+    // Read-only: never rewrite inputs here.
     return { min, max };
   }
 
@@ -1331,6 +1453,8 @@ import View from "ol/View.js";
       (bandPlanes.length
         ? resolveSourceBounds(nBands, bandStats, bandPlanes)
         : null);
+    const src = tileLayer?.getSource?.();
+    const sourceBandCount = Number(src?.bandCount);
     return {
       mode: renderMode,
       grayBand: grayBandEl.value,
@@ -1351,8 +1475,12 @@ import View from "ol/View.js";
       paletteBand: paletteBandEl.value,
       paletteOpacity: Number(paletteOpacityEl?.value) || 0,
       colormap,
+      colorTable: serializeColorTable(colorTable),
       sourceMins: bounds?.mins,
       sourceMaxs: bounds?.maxs,
+      bandCount: nBands,
+      sourceBandCount: Number.isFinite(sourceBandCount) ? sourceBandCount : undefined,
+      alphaBand: Number.isFinite(sourceBandCount) && sourceBandCount > nBands ? sourceBandCount : undefined,
     };
   }
 
@@ -1521,31 +1649,103 @@ import View from "ol/View.js";
     return { x, y, w, h };
   }
 
-  function sampleLayerAt(coord, fileMeta, cached) {
+  /** Cache geotiff.js readers by URL (native GeoTIFF / blob object URL). */
+  const geoTiffReaderCache = new Map();
+
+  async function openGeoTiffReader(url) {
+    if (!url) throw new Error("missing geotiff url");
+    let p = geoTiffReaderCache.get(url);
+    if (!p) {
+      p = geoTiffFromUrl(url).catch((err) => {
+        geoTiffReaderCache.delete(url);
+        throw err;
+      });
+      geoTiffReaderCache.set(url, p);
+    }
+    return p;
+  }
+
+  async function sampleGeoTiffPixel(url, x, y, nBands) {
+    const tiff = await openGeoTiffReader(url);
+    const image = await tiff.getImage();
+    const iw = image.getWidth();
+    const ih = image.getHeight();
+    if (x < 0 || y < 0 || x >= iw || y >= ih) return null;
+    const n = Math.max(1, Math.min(32, Number(nBands) || image.getSamplesPerPixel?.() || 1));
+    const samples = Array.from({ length: n }, (_, i) => i);
+    const data = await image.readRasters({
+      window: [x, y, x + 1, y + 1],
+      width: 1,
+      height: 1,
+      samples,
+      interleave: false,
+    });
+    const bands = [];
+    for (let b = 0; b < n; b++) {
+      let v = NaN;
+      if (Array.isArray(data)) {
+        const plane = data[b];
+        v = plane != null ? Number(plane[0]) : NaN;
+      } else if (data && typeof data.length === "number") {
+        v = Number(data[b] ?? data[0]);
+      }
+      bands.push({ index: b + 1, value: Number.isFinite(v) ? v : NaN });
+    }
+    return bands;
+  }
+
+  function layerSampleUrl(cached) {
+    if (!cached) return "";
+    if (cached.rasterUrl) return cached.rasterUrl;
+    if (cached.objectUrls?.length) return cached.objectUrls[0];
+    return "";
+  }
+
+  async function sampleLayerAt(coord, fileMeta, cached) {
     const id = fileMeta?.id || cached?.filePath || "";
     const name = fileMeta?.name || cached?.filePath || id || "—";
-    if (!cached?.bandPlanes?.length) {
-      return { id, name, hit: false, reason: "notLoaded", bands: [] };
-    }
     const pix = mapCoordToLayerPixel(coord, cached);
     if (!pix) return { id, name, hit: false, reason: "noData", bands: [] };
     if (pix.x < 0 || pix.y < 0 || pix.x >= pix.w || pix.y >= pix.h) {
       return { id, name, hit: false, reason: "out", bands: [] };
     }
-    const i = pix.y * pix.w + pix.x;
-    const bands = [];
-    for (let b = 0; b < cached.bandPlanes.length; b++) {
-      const plane = cached.bandPlanes[b];
-      const v = plane && i >= 0 && i < plane.length ? plane[i] : NaN;
-      bands.push({ index: b + 1, value: v });
+
+    if (cached?.bandPlanes?.length) {
+      const i = pix.y * pix.w + pix.x;
+      const bands = [];
+      for (let b = 0; b < cached.bandPlanes.length; b++) {
+        const plane = cached.bandPlanes[b];
+        const v = plane && i >= 0 && i < plane.length ? plane[i] : NaN;
+        bands.push({ index: b + 1, value: v });
+      }
+      return { id, name, hit: true, bands, pixel: pix };
     }
-    return { id, name, hit: true, bands, pixel: pix };
+
+    // Native GeoTIFF (e.g. chla.tif): no in-memory planes — read one pixel via geotiff.js.
+    const url = layerSampleUrl(cached);
+    if (!url) return { id, name, hit: false, reason: "notLoaded", bands: [], pixel: pix };
+    try {
+      const nBands = cached.bandCount || cached.bandStats?.length || 1;
+      const bands = await sampleGeoTiffPixel(url, pix.x, pix.y, nBands);
+      if (!bands?.length) return { id, name, hit: false, reason: "noData", bands: [], pixel: pix };
+      return { id, name, hit: true, bands, pixel: pix };
+    } catch (err) {
+      console.warn("identify sample", name, err);
+      return { id, name, hit: false, reason: "notLoaded", bands: [], pixel: pix };
+    }
+  }
+
+  function identifyReasonText(reason) {
+    if (reason === "out") return t("identifyOut");
+    if (reason === "notLoaded") return t("identifyNotLoaded");
+    return t("identifyNoData");
   }
 
   function renderIdentifyResults(results) {
     if (!identifyBodyEl || !identifyEmptyEl || !identifyTableWrap) return;
-    const hits = (results || []).filter((r) => r.hit && r.bands?.length);
-    if (!hits.length) {
+    // Hide layers whose click is outside extent (previous behavior).
+    const list = (results || []).filter((r) => r.reason !== "out");
+    if (!list.length) {
       identifyEmptyEl.hidden = false;
       identifyTableWrap.hidden = true;
       identifyBodyEl.innerHTML = "";
@@ -1554,20 +1754,22 @@ import View from "ol/View.js";
     identifyEmptyEl.hidden = true;
     identifyTableWrap.hidden = false;
     const parts = [];
-    for (const r of hits) {
+    for (const r of list) {
       const collapsed = identifyCollapsed.has(r.id);
-      const caret = collapsed ? "▶" : "▼";
+      const caret = r.hit && r.bands?.length ? (collapsed ? "▶" : "▼") : "";
       const pixText =
         r.pixel && Number.isFinite(r.pixel.x) && Number.isFinite(r.pixel.y)
           ? `${r.pixel.x}, ${r.pixel.y}`
-          : "—";
+          : r.hit
+            ? "—"
+            : identifyReasonText(r.reason);
       parts.push(
-        `<tr class="identify-group-row${collapsed ? " is-collapsed" : ""}" data-layer-id="${escapeAttr(r.id)}" data-act="toggle">` +
-          `<td><span class="identify-caret">${caret}</span> ${escapeHtml(r.name)}</td>` +
+        `<tr class="identify-group-row${collapsed ? " is-collapsed" : ""}${r.hit ? "" : " is-miss"}" data-layer-id="${escapeAttr(r.id)}" data-act="toggle">` +
+          `<td>${caret ? `<span class="identify-caret">${caret}</span> ` : ""}${escapeHtml(r.name)}</td>` +
           `<td class="identify-pix">${escapeHtml(pixText)}</td>` +
         `</tr>`,
       );
-      if (!collapsed) {
+      if (r.hit && r.bands?.length && !collapsed) {
         for (const b of r.bands) {
           const feat = `${t("bandN")}${b.index}`;
           parts.push(
@@ -1584,6 +1786,8 @@ import View from "ol/View.js";
       tr.addEventListener("click", () => {
         const id = tr.getAttribute("data-layer-id");
         if (!id) return;
+        const row = (lastIdentifyResults || []).find((r) => r.id === id);
+        if (!row?.hit || !row.bands?.length) return;
         if (identifyCollapsed.has(id)) identifyCollapsed.delete(id);
         else identifyCollapsed.add(id);
         renderIdentifyResults(lastIdentifyResults);
@@ -1591,12 +1795,10 @@ import View from "ol/View.js";
     });
   }
 
-  function identifyAtCoordinate(coord) {
-    const results = [];
-    for (const f of fileList) {
-      const cached = fileCache.get(f.id);
-      results.push(sampleLayerAt(coord, f, cached));
-    }
+  async function identifyAtCoordinate(coord) {
+    const results = await Promise.all(
+      fileList.map((f) => sampleLayerAt(coord, f, fileCache.get(f.id))),
+    );
     lastIdentifyResults = results;
     renderIdentifyResults(results);
     setSideTab("identify");
@@ -1617,10 +1819,7 @@ import View from "ol/View.js";
     map.__rasterEventsWired = true;
     map.on("pointermove", (evt) => {
       if (hoverLocked) return;
-      if (!ready || evt.dragging) {
-        hideHover();
-        return;
-      }
+      if (!ready || evt.dragging) return;
       const pix = mapToPixel(evt.coordinate);
       if (!pix || pix.x < 0 || pix.y < 0 || pix.x >= width || pix.y >= height) {
         showHoverOutside(pix);
@@ -1628,13 +1827,11 @@ import View from "ol/View.js";
       }
       showHover(evt, pix.x, pix.y, pix);
     });
-    map.getViewport().addEventListener("mouseout", () => {
-      if (!hoverLocked) hideHover();
-    });
+    // Keep last coordinates when the pointer leaves the map viewport.
     map.on("moveend", updateZoomBadge);
     map.on("singleclick", (evt) => {
       if (!ready) return;
-      identifyAtCoordinate(evt.coordinate);
+      void identifyAtCoordinate(evt.coordinate);
     });
     map.getViewport().addEventListener("dblclick", (e) => {
     e.preventDefault();
@@ -1642,6 +1839,17 @@ import View from "ol/View.js";
     });
   }
 
+
+  function dropGeoTiffReader(url) {
+    if (url) geoTiffReaderCache.delete(url);
+  }
+
+  function revokeCachedLayerUrls(cached) {
+    if (!cached) return;
+    for (const u of cached.objectUrls || []) dropGeoTiffReader(u);
+    if (cached.rasterUrl) dropGeoTiffReader(cached.rasterUrl);
+    if (cached.objectUrls?.length) revokeLayerUrls(cached.objectUrls);
+  }
 
   function normalizeMapCrsCode(raw) {
     const s = String(raw || "").trim();
@@ -1693,14 +1901,17 @@ import View from "ol/View.js";
   }
 
     /**
-   * GeoTIFF GeoKeys for a layer:
-   * - file has EPSG → write file CRS (OL reprojects to map view)
-   * - Local/unknown → keep Local (never tag pixel coords as lon/lat / 4326)
+   * GeoTIFF GeoKeys for in-memory blobs:
+   * - geotiff with its own EPSG → keep file CRS (map reprojects)
+   * - otherwise → current map CRS (assigned / no CRS)
    */
   function blobCrsForGeo(fileGeo) {
-    const fileEpsg = normalizeEpsg(fileGeo?.crs);
-    if (fileEpsg) return `EPSG:${fileEpsg}`;
-    return null;
+    if (fileGeo?.source === "geotiff") {
+      const fileEpsg = normalizeEpsg(fileGeo.crs);
+      if (fileEpsg) return `EPSG:${fileEpsg}`;
+    }
+    const mapEpsg = normalizeEpsg(mapCrs);
+    return mapEpsg ? `EPSG:${mapEpsg}` : mapCrs || "EPSG:3857";
   }
 
   function syncMapCrsUi() {
@@ -1742,7 +1953,7 @@ import View from "ol/View.js";
     if (!srcArgs.blob && !srcArgs.url) return;
 
     const zIndex = cached.layer?.getZIndex?.() ?? 0;
-    if (cached.objectUrls) revokeLayerUrls(cached.objectUrls);
+    revokeCachedLayerUrls(cached);
     if (cached.layer && map) map.removeLayer(cached.layer);
     const bounds = layerSourceBounds(
       nBands,
@@ -1769,10 +1980,12 @@ import View from "ol/View.js";
     cached.viewConfig = created.viewConfig;
     cached.rasterExtent = created.viewConfig?.extent || extentFromGeo(cached.width, cached.height, cached.geo);
     cached.nativeViewConfig = created.viewConfig;
+    cached.styleState = styleStateWithAlpha(style, created.layer, nBands);
+    applyStyle(created.layer, cached.styleState);
     if (cached.visible === false || layerVisibility.get(id) === false) {
-      applyOlLayerVisibility(created.layer, false);
+      applyOlLayerVisibility(created.layer, false, cached.styleState);
     } else {
-      applyOlLayerVisibility(created.layer, true);
+      applyOlLayerVisibility(created.layer, true, cached.styleState);
     }
     if (id === activeFileId) {
       tileLayer = cached.layer;
@@ -1796,9 +2009,15 @@ import View from "ol/View.js";
       return;
     }
     syncMapCrsUi();
-    // Rebuild blob-backed layers so GeoKeys match display CRS
+    // Map CRS switch:
+    // - with file CRS → keep layer; OpenLayers reprojects into the new map CRS
+    // - no CRS → retag as the new map CRS (same affine numbers, no reprojection) and rebuild
     for (const id of [...fileCache.keys()]) {
       try {
+        const cached = fileCache.get(id);
+        if (!cached || fileHasOwnCrs(cached.geo)) continue;
+        cached.geo = { ...cached.geo, crs: mapCrs };
+        if (id === activeFileId) geo = cached.geo;
         await rebuildLayerForFile(id);
       } catch (err) {
         console.error("rebuild layer", id, err);
@@ -1898,6 +2117,7 @@ import View from "ol/View.js";
     const snapProbe = payload.probeLabel;
     const snapPath = payload.filePath;
     const snapColormap = { ...colormap };
+    const snapColorTable = serializeColorTable(colorTable);
     const snapMode = renderMode;
     const styleState = collectStyleState();
     const style = buildWebGlStyle(styleState);
@@ -1961,7 +2181,7 @@ import View from "ol/View.js";
 
     const prevVisible = isLayerVisible(fileId);
     const prevZ = existing?.layer?.getZIndex?.() ?? zIndex;
-    if (existing?.objectUrls) revokeLayerUrls(existing.objectUrls);
+    revokeCachedLayerUrls(existing);
     if (existing?.layer && map) map.removeLayer(existing.layer);
 
     const created = await createLayerFromArgs(srcArgs, {
@@ -1974,23 +2194,33 @@ import View from "ol/View.js";
       mins: srcBounds?.mins,
       maxs: srcBounds?.maxs,
     });
-    applyOlLayerVisibility(created.layer, prevVisible);
+    applyOlLayerVisibility(created.layer, prevVisible, styleState);
+
+    // Re-apply style with nodata alpha once source.bandCount is known.
+    const styled = styleStateWithAlpha(styleState, created.layer, nBands);
+    applyStyle(created.layer, styled);
 
     if (!map) {
       map = createEmptyMap(mapEl, created.viewConfig);
       wireMapEvents();
       try {
-        // Local pixel layers: keep RV:Local view. EPSG map CRS only for georeferenced files.
-        if (isLocalPixelProjection(created.viewConfig?.projection)) {
-          map.setView(new View(freeViewOptions(created.viewConfig)));
-        } else {
-          applyMapViewCrs(map, mapCrs, created.viewConfig);
+        // Always keep / use the current map CRS. Layers with their own CRS reproject
+        // into it; layers without CRS were already assigned mapCrs.
+        if (!ensureProjection(mapCrs)) {
+          mapCrs = "EPSG:3857";
+          ensureProjection(mapCrs);
+          syncMapCrsUi();
         }
+        applyMapViewCrs(map, mapCrs, created.viewConfig);
       } catch (err) {
         console.error(err);
       }
     } else if (created.viewConfig && fileCache.size === 0) {
-      map.setView(new View(freeViewOptions(created.viewConfig)));
+      try {
+        applyMapViewCrs(map, mapCrs, created.viewConfig);
+      } catch (err) {
+        console.error(err);
+      }
     }
 
     map.addLayer(created.layer);
@@ -2021,7 +2251,8 @@ import View from "ol/View.js";
       filePath: snapPath,
       format: snapFormat,
       colormap: snapColormap,
-      styleState,
+      colorTable: snapColorTable,
+      styleState: styled,
       visible: prevVisible,
     });
     layerVisibility.set(fileId, prevVisible);
@@ -2047,23 +2278,24 @@ import View from "ol/View.js";
 
   function showHover(_e, x, y, pix) {
     const i = y * width + x;
-    const gt = currentAffine();
-    const g = pixelToGeo(x, y, gt, true);
     lastHoverBandValues = [];
     if (bandPlanes.length) {
       for (let b = 0; b < bandPlanes.length; b++) {
         lastHoverBandValues.push(bandValue(b, i));
       }
     }
-    // Multi-layer: pixel coords belong in Identify; status bar shows geographic only.
-    hoverEl.textContent = `${t("statusGeo")} ${formatGeoCoord(g.x)}, ${formatGeoCoord(g.y)}`;
+    // Always show map-CRS coordinates (same as outside the raster).
+    // pixelToGeo() is file CRS and disagrees with the map when reprojecting.
+    const mx = pix?.mapX;
+    const my = pix?.mapY;
+    hoverEl.textContent = `${t("statusGeo")} ${formatGeoCoord(mx)}, ${formatGeoCoord(my)}`;
     hoverEl.classList.add("is-active");
   }
 
   /** Outside raster extent: geographic coords only. */
   function showHoverOutside(pix) {
     if (!pix || !Number.isFinite(pix.mapX) || !Number.isFinite(pix.mapY)) {
-      hideHover();
+      // Keep last displayed coords (do not clear on invalid sample).
       return;
     }
     lastHoverBandValues = null;
@@ -2071,6 +2303,7 @@ import View from "ol/View.js";
     hoverEl.classList.add("is-active");
   }
 
+  /** Reset coords (clear layers / empty view). Not used on mouse leave. */
   function hideHover() {
     if (hoverLocked) return;
     hoverEl.textContent = "—";
@@ -2134,7 +2367,6 @@ import View from "ol/View.js";
   }
 
   hideHover();
-  btnResetView.addEventListener("click", () => fitToView());
   btnToggleVisibility?.addEventListener("click", (e) => {
     toggleSelectedVisibility({ all: !!(e.shiftKey || e.altKey) });
   });
@@ -2198,7 +2430,18 @@ import View from "ol/View.js";
     ];
   }
 
+  function syncColorTableLegacy() {
+    // PLTE export only: array index → hex (rows do not store id).
+    colormap = legacyMapFromColorTable(colorTable);
+    labels = {};
+  }
+
   function colorForClass(id) {
+    const row = colorTable[Number(id)];
+    if (row?.color) {
+      const rgb = hexToRgb(row.color);
+      if (rgb) return rgb;
+    }
     const hex = colormap[id] ?? colormap[String(id)];
     if (hex) {
       const rgb = hexToRgb(hex);
@@ -2209,29 +2452,54 @@ import View from "ol/View.js";
 
   function colorForNewClass(id) {
     const ramp = paletteRampEl.value || "random";
-    const ids = sortedColormapIds();
-    const all = ids.includes(Number(id)) ? ids : [...ids, Number(id)].sort((a, b) => a - b);
-    const map = colorsForClasses(all, ramp, { invert: false, seed: randomSeed });
+    const n = Math.max(1, colorTable.length || 1);
+    const idxs = Array.from({ length: n }, (_, i) => i);
+    if (!idxs.includes(Number(id))) idxs.push(Number(id));
+    idxs.sort((a, b) => a - b);
+    const map = colorsForClasses(idxs, ramp, { invert: false, seed: randomSeed });
     return map[Number(id)] || map[id] || "#808080";
   }
 
   /** One-shot: reverse current class colors (no persistent invert state). */
   function invertColormapColors() {
-    const ids = sortedColormapIds();
-    if (ids.length < 2) return;
-    const colors = ids.map((id) => colormap[id] ?? colormap[String(id)] ?? "#808080");
+    if (colorTable.length < 2) return;
+    const colors = colorTable.map((e) => e.color || "#808080");
     colors.reverse();
-    // Object keys are always strings — never delete String(id) after writing id.
-    const next = {};
-    const nextLabels = { ...labels };
-    for (let i = 0; i < ids.length; i++) {
-      const id = ids[i];
-      next[id] = colors[i];
-      if (nextLabels[String(id)] == null) nextLabels[String(id)] = String(id);
-    }
-    colormap = next;
-    labels = nextLabels;
+    colorTable = colorTable.map((e, i) => ({ ...e, color: colors[i] }));
+    syncColorTableLegacy();
     renderCmapTable();
+    render();
+  }
+
+  function moveColorTableRow(fromIdx, toIdx) {
+    const from = Number(fromIdx);
+    const to = Number(toIdx);
+    if (!Number.isFinite(from) || !Number.isFinite(to)) return;
+    if (from < 0 || from >= colorTable.length || to < 0 || to >= colorTable.length) return;
+    if (from === to) return;
+    const [row] = colorTable.splice(from, 1);
+    colorTable.splice(to, 0, row);
+    if (selectedValue === from) selectedValue = to;
+    else if (selectedValue != null) {
+      const s = Number(selectedValue);
+      if (from < s && to >= s) selectedValue = s - 1;
+      else if (from > s && to <= s) selectedValue = s + 1;
+    }
+    // Move DOM row in place; ID column is rewritten to positional 0…N (values themselves unchanged).
+    if (cmapBody) {
+      const rows = [...cmapBody.querySelectorAll(".cmap-row")];
+      const tr = rows[from];
+      const ref = rows[to];
+      if (tr && ref) {
+        if (from < to) ref.after(tr);
+        else ref.before(tr);
+        syncCmapRowIndices();
+        syncCmapSelection();
+      } else {
+        renderCmapTable();
+      }
+    }
+    syncColorTableLegacy();
     render();
   }
 
@@ -2239,6 +2507,7 @@ import View from "ol/View.js";
     if (!paletteOpacityValEl) return;
     const v = Math.max(0, Math.min(100, Number(paletteOpacityEl?.value) || 0));
     paletteOpacityValEl.textContent = `${v}%`;
+    if (paletteOpacityEl) paletteOpacityEl.style.setProperty("--range-pct", `${v}%`);
   }
 
   function loadImage(src) {
@@ -2338,59 +2607,50 @@ import View from "ol/View.js";
     return [...counts.keys()].sort((a, b) => a - b);
   }
 
-  function ensureLabelsForIds(ids) {
-    for (const id of ids) {
-      const k = String(id);
-      if (labels[k] == null) labels[k] = k;
-      if (colormap[id] == null && colormap[k] == null) {
-        colormap[id] = colorForNewClass(id);
-      }
-    }
+  function ensureLabelsForIds(_ids) {
+    /* ranges carry their own labels */
   }
 
-  /** Drop host-seeded placeholders; only for paletted masks (never continuous RGB). */
+  /** Auto-build color table when switching to color-table mode. */
   function syncColormapToRaster() {
-    if (renderMode !== "paletted" || !bandPlanes.length) return;
-    const ids = collectUniqueValues();
-    if (!ids.length) return;
-    // Continuous imagery can yield hundreds of "classes" — never auto-expand the table.
-    if (ids.length > 64) return;
-    const existing = sortedColormapIds();
-    const idSet = new Set(ids);
-    const hasExtra = existing.some((id) => !idSet.has(id));
-    const missing = ids.some((id) => colormap[id] == null && colormap[String(id)] == null);
-    if (
-      !existing.length ||
-      missing ||
-      (payload.colormapSource === "default" && (hasExtra || existing.length > ids.length))
-    ) {
-      classifyFromData();
-    } else {
-      ensureLabelsForIds(ids);
-    }
+    if (renderMode !== "paletted") return;
+    if (colorTable.length) return;
+    classifyFromData(true);
   }
 
   function classifyFromData(forceRecolor = true) {
-    const ids = collectUniqueValues();
-    if (ids.length > 256) {
+    const bi = Number(paletteBandEl?.value) || 0;
+    const plane = bandPlanes[bi];
+    const stats = bandStats[bi];
+    const { min, max } = resolveBandMinMax(stats, plane);
+    const integerLike = isIntegerLikeBand(payload.dtype, stats, plane);
+    const breaks = buildColorTableBreaks(min, max, integerLike);
+    if (!breaks.length) {
       metaEl.textContent =
-        lang === "zh"
-          ? "唯一值过多，无法作为调色板分类（请改用灰度/彩色）"
-          : "Too many unique values for paletted mode";
+        lang === "zh" ? "无法根据波段最值生成颜色表" : "Cannot build color table from band range";
+      return;
+    }
+    if (breaks.length > COLOR_TABLE_MAX) {
+      metaEl.textContent = t("colorTableMax");
       return;
     }
     const ramp = paletteRampEl.value || "random";
-    const assigned = colorsForClasses(ids, ramp, { invert: false, seed: randomSeed });
-    const nextMap = {};
-    const nextLabels = {};
-    for (const id of ids) {
-      const prev = colormap[id] ?? colormap[String(id)];
-      nextMap[id] = forceRecolor || !prev ? assigned[id] : prev;
-      nextLabels[String(id)] = labels[String(id)] ?? String(id);
-    }
-    colormap = nextMap;
-    labels = nextLabels;
+    const idxs = breaks.map((_, i) => i);
+    const assigned = colorsForClasses(idxs, ramp, { invert: false, seed: randomSeed });
+    const prev = colorTable;
+    colorTable = breaks.map((b, i) => {
+      const old = prev[i];
+      const color =
+        !forceRecolor && old?.color
+          ? old.color
+          : assigned[i] || colorForNewClass(i);
+      return { min: b.min, max: b.max, color };
+    });
+    syncColorTableLegacy();
     selectedValue = null;
+    if (metaEl && /唯一值过多|Too many unique|无法根据|Cannot build|最多 256|limited to 256/i.test(metaEl.textContent || "")) {
+      metaEl.textContent = "";
+    }
     renderCmapTable();
     render();
   }
@@ -2453,11 +2713,14 @@ import View from "ol/View.js";
   }
 
   function applyStretchToInputs(mode, plane, stats, minEl, maxEl, paramEl) {
-    if (!plane || !minEl || !maxEl) return;
+    if (!minEl || !maxEl) return;
+    // Native GeoTIFF often has host bandStats but no in-memory plane.
+    if (!plane && !(stats && Number.isFinite(stats.min) && Number.isFinite(stats.max))) return;
+    const m = mode || "none";
     const param = Number(paramEl?.value);
-    const range = stretchRange(plane, stats, mode, {
-      percent: mode === "percent" ? param : 2,
-      stddev: mode === "stddev" ? param : 2,
+    const range = stretchRange(plane, stats, m, {
+      percent: m === "percent" ? param : 2,
+      stddev: m === "stddev" ? param : 2,
     });
     minEl.value = String(range.min);
     maxEl.value = String(range.max);
@@ -2466,7 +2729,14 @@ import View from "ol/View.js";
   function setMinMaxInputsFromStats() {
     const gMode = grayContrastEl.value || "none";
     const bi = Number(grayBandEl.value) || 0;
-    applyStretchToInputs(gMode, bandPlanes[bi], bandStats[bi], grayMinEl, grayMaxEl, grayStretchParam);
+    applyStretchToInputs(
+      gMode,
+      bandPlanes[bi],
+      bandStats[bi],
+      grayMinEl,
+      grayMaxEl,
+      grayStretchParam,
+    );
 
     const rMode = rgbContrastEl.value || "none";
     applyStretchToInputs(
@@ -2518,10 +2788,7 @@ import View from "ol/View.js";
   }
 
   function sortedColormapIds() {
-    return Object.keys(colormap)
-      .map(Number)
-      .filter((n) => Number.isFinite(n))
-      .sort((a, b) => a - b);
+    return colorTable.map((_, i) => i);
   }
 
   function escapeAttr(s) {
@@ -2531,67 +2798,311 @@ import View from "ol/View.js";
       .replace(/</g, "&lt;");
   }
 
+  /** ID is always positional 0…N-1; only rewrite data-idx / ID text after row moves. */
+  function syncCmapRowIndices() {
+    if (!cmapBody) return;
+    cmapBody.querySelectorAll(".cmap-row").forEach((tr, i) => {
+      tr.setAttribute("data-idx", String(i));
+      tr.querySelectorAll("[data-idx]").forEach((el) => el.setAttribute("data-idx", String(i)));
+      const idxTd = tr.querySelector(".cmap-idx");
+      if (idxTd) idxTd.textContent = String(i);
+    });
+  }
+
+  function syncCmapSelection() {
+    if (!cmapBody) return;
+    cmapBody.querySelectorAll(".cmap-row").forEach((tr, i) => {
+      tr.classList.toggle("is-selected", selectedValue === i);
+    });
+  }
+
+  function cmapRowHtml(e, i) {
+    const hex = e.color || "#808080";
+    const sel = selectedValue === i ? " is-selected" : "";
+    return `<tr class="cmap-row${sel}" data-idx="${i}" draggable="true" title="${escapeAttr(t("tipCmapDrag"))}">
+      <td class="cmap-idx" data-idx="${i}">${i}</td>
+      <td><input type="number" class="cmap-min" data-idx="${i}" value="${escapeAttr(formatBreak(e.min))}" step="any" /></td>
+      <td><input type="number" class="cmap-max" data-idx="${i}" value="${escapeAttr(formatBreak(e.max))}" step="any" /></td>
+      <td class="cmap-color-cell"><button type="button" class="cmap-swatch" data-idx="${i}" style="background:${escapeAttr(hex)}" title="${escapeAttr(hex)}" aria-label="${escapeAttr(hex)}"></button></td>
+    </tr>`;
+  }
+
+  let cmapDragFrom = null;
+  let cmapUiBound = false;
+  let cmapColorEditIdx = null;
+
+  function closeCmapColorPop() {
+    const pop = document.getElementById("cmapColorPop");
+    if (!pop) return;
+    pop.classList.add("hidden");
+    pop.hidden = true;
+    cmapColorEditIdx = null;
+  }
+
+  function openCmapColorPop(idx, anchorEl) {
+    const pop = document.getElementById("cmapColorPop");
+    const input = document.getElementById("cmapColorPopInput");
+    const side = document.getElementById("side");
+    if (!pop || !input || !colorTable[idx]) return;
+    cmapColorEditIdx = idx;
+    input.value = colorTable[idx].color || "#808080";
+    pop.classList.remove("hidden");
+    pop.hidden = false;
+
+    // Anchor invisible host on the clicked swatch (no visible duplicate on the left).
+    // Nudge left within the side panel so the native picker (opens rightward) stays visible.
+    const sideRect = (side || document.body).getBoundingClientRect();
+    const a = anchorEl.getBoundingClientRect();
+    const pickerW = 240;
+    const pad = 8;
+    let left = a.left;
+    let top = a.top + a.height / 2;
+    if (sideRect.right - left < pickerW + pad) {
+      left = Math.max(sideRect.left + pad, sideRect.right - pickerW - pad);
+    }
+    pop.style.left = `${Math.round(left)}px`;
+    pop.style.top = `${Math.round(top)}px`;
+
+    try {
+      if (typeof input.showPicker === "function") input.showPicker();
+      else input.focus();
+    } catch {
+      input.focus();
+    }
+  }
+
+  function applyCmapColorFromPop() {
+    const input = document.getElementById("cmapColorPopInput");
+    if (!input || cmapColorEditIdx == null || !colorTable[cmapColorEditIdx]) return;
+    const i = cmapColorEditIdx;
+    const hex = input.value;
+    colorTable[i] = { ...colorTable[i], color: hex };
+    const sw = cmapBody?.querySelector(`.cmap-swatch[data-idx="${i}"]`);
+    if (sw) {
+      sw.style.background = hex;
+      sw.title = hex;
+      sw.setAttribute("aria-label", hex);
+    }
+    syncColorTableLegacy();
+    render();
+  }
+
+  function ensureCmapUiBound() {
+    if (!cmapBody || cmapUiBound) return;
+    cmapUiBound = true;
+
+    const popInput = document.getElementById("cmapColorPopInput");
+    popInput?.addEventListener("input", () => applyCmapColorFromPop());
+    popInput?.addEventListener("change", () => {
+      applyCmapColorFromPop();
+      closeCmapColorPop();
+    });
+    popInput?.addEventListener("blur", () => {
+      // Native picker can blur briefly; delay close.
+      setTimeout(() => {
+        const pop = document.getElementById("cmapColorPop");
+        if (pop && !pop.hidden && document.activeElement !== popInput) closeCmapColorPop();
+      }, 150);
+    });
+    document.addEventListener(
+      "pointerdown",
+      (ev) => {
+        const pop = document.getElementById("cmapColorPop");
+        if (!pop || pop.hidden) return;
+        if (pop.contains(ev.target) || ev.target.closest?.(".cmap-swatch")) return;
+        closeCmapColorPop();
+      },
+      true,
+    );
+
+    cmapBody.addEventListener("click", (ev) => {
+      const sw = ev.target.closest?.(".cmap-swatch");
+      if (sw && cmapBody.contains(sw)) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        const i = Number(sw.getAttribute("data-idx"));
+        if (Number.isFinite(i)) openCmapColorPop(i, sw);
+        return;
+      }
+      const tr = ev.target.closest?.(".cmap-row");
+      if (!tr || !cmapBody.contains(tr)) return;
+      if (ev.target.closest("input,button")) return;
+      selectedValue = Number(tr.getAttribute("data-idx"));
+      syncCmapSelection();
+    });
+
+    cmapBody.addEventListener("dragstart", (ev) => {
+      const tr = ev.target.closest?.(".cmap-row");
+      if (!tr || !cmapBody.contains(tr)) return;
+      if (ev.target.closest("input,button")) {
+        ev.preventDefault();
+        return;
+      }
+      cmapDragFrom = Number(tr.getAttribute("data-idx"));
+      tr.classList.add("is-dragging");
+      try {
+        ev.dataTransfer.effectAllowed = "move";
+        ev.dataTransfer.setData("text/plain", String(cmapDragFrom));
+      } catch {
+        /* ignore */
+      }
+    });
+
+    cmapBody.addEventListener("dragend", (ev) => {
+      const tr = ev.target.closest?.(".cmap-row");
+      tr?.classList.remove("is-dragging");
+      cmapBody.querySelectorAll(".cmap-row.drag-over").forEach((r) => r.classList.remove("drag-over"));
+      cmapDragFrom = null;
+    });
+
+    cmapBody.addEventListener("dragover", (ev) => {
+      const tr = ev.target.closest?.(".cmap-row");
+      if (!tr || !cmapBody.contains(tr)) return;
+      ev.preventDefault();
+      try {
+        ev.dataTransfer.dropEffect = "move";
+      } catch {
+        /* ignore */
+      }
+      tr.classList.add("drag-over");
+    });
+
+    cmapBody.addEventListener("dragleave", (ev) => {
+      const tr = ev.target.closest?.(".cmap-row");
+      if (!tr || !cmapBody.contains(tr)) return;
+      if (tr.contains(ev.relatedTarget)) return;
+      tr.classList.remove("drag-over");
+    });
+
+    cmapBody.addEventListener("drop", (ev) => {
+      const tr = ev.target.closest?.(".cmap-row");
+      if (!tr || !cmapBody.contains(tr)) return;
+      ev.preventDefault();
+      tr.classList.remove("drag-over");
+      let from = cmapDragFrom;
+      try {
+        const raw = ev.dataTransfer.getData("text/plain");
+        if (raw !== "" && Number.isFinite(Number(raw))) from = Number(raw);
+      } catch {
+        /* keep */
+      }
+      const to = Number(tr.getAttribute("data-idx"));
+      moveColorTableRow(from, to);
+    });
+
+    const onBreakChange = (ev, key) => {
+      const el = ev.target;
+      if (!(el instanceof HTMLInputElement)) return;
+      const i = Number(el.getAttribute("data-idx"));
+      const row = colorTable[i];
+      if (!row) return;
+      const v = Number(el.value);
+      if (!Number.isFinite(v)) {
+        el.value = formatBreak(row[key]);
+        return;
+      }
+      const next = { ...row, [key]: v };
+      if (!(next.max > next.min)) {
+        el.value = formatBreak(row[key]);
+        return;
+      }
+      if (colorTableRangeConflicts(colorTable, next.min, next.max, i)) {
+        el.value = formatBreak(row[key]);
+        metaEl.textContent = t("colorTableOverlap");
+        return;
+      }
+      colorTable[i] = next;
+      if (metaEl && metaEl.textContent === t("colorTableOverlap")) metaEl.textContent = "";
+      syncColorTableLegacy();
+      render();
+    };
+    cmapBody.addEventListener("change", (ev) => {
+      const el = ev.target;
+      if (!(el instanceof HTMLInputElement)) return;
+      if (el.classList.contains("cmap-min")) onBreakChange(ev, "min");
+      else if (el.classList.contains("cmap-max")) onBreakChange(ev, "max");
+    });
+  }
+
+  /** Full rebuild — classify / clear / invert / load. +/- and drag use incremental updates. */
   function renderCmapTable() {
     if (!cmapBody) return;
-    const ids = sortedColormapIds();
-    if (!ids.length) {
+    ensureCmapUiBound();
+    if (!colorTable.length) {
       cmapBody.innerHTML = "";
       return;
     }
-    cmapBody.innerHTML = ids
-      .map((id) => {
-        const hex = colormap[id] ?? colormap[String(id)] ?? colorForNewClass(id);
-        const lab = labels[String(id)] ?? String(id);
-        const sel = selectedValue === id ? " is-selected" : "";
-        return `<tr class="cmap-row${sel}" data-id="${id}">
-          <td><input type="number" class="cmap-val" data-id="${id}" value="${id}" step="1" /></td>
-          <td><input type="color" class="cmap-color" data-id="${id}" value="${hex}" /></td>
-          <td><input type="text" class="cmap-label" data-id="${id}" value="${escapeAttr(lab)}" /></td>
-        </tr>`;
-      })
-      .join("");
+    cmapBody.innerHTML = colorTable.map((e, i) => cmapRowHtml(e, i)).join("");
+  }
 
-    cmapBody.querySelectorAll(".cmap-row").forEach((tr) => {
-      tr.addEventListener("click", (e) => {
-        if (e.target.tagName === "INPUT") return;
-        selectedValue = Number(tr.getAttribute("data-id"));
-        renderCmapTable();
-      });
-    });
-    cmapBody.querySelectorAll(".cmap-color").forEach((el) => {
-      el.addEventListener("input", (e) => {
-        const id = e.target.getAttribute("data-id");
-        colormap[id] = e.target.value;
-        colormap[Number(id)] = e.target.value;
-        render();
-      });
-    });
-    cmapBody.querySelectorAll(".cmap-label").forEach((el) => {
-      el.addEventListener("change", (e) => {
-        const id = e.target.getAttribute("data-id");
-        labels[id] = e.target.value;
-      });
-    });
-    cmapBody.querySelectorAll(".cmap-val").forEach((el) => {
-      el.addEventListener("change", (e) => {
-        const oldId = e.target.getAttribute("data-id");
-        const newId = Number(e.target.value);
-        if (!Number.isFinite(newId)) {
-          e.target.value = oldId;
-          return;
-        }
-        const hex = colormap[oldId] ?? colormap[Number(oldId)];
-        const lab = labels[oldId] ?? String(oldId);
-        delete colormap[oldId];
-        delete colormap[Number(oldId)];
-        delete labels[oldId];
-        colormap[newId] = hex;
-        labels[String(newId)] = lab;
-        if (selectedValue === Number(oldId)) selectedValue = newId;
-        renderCmapTable();
-        render();
-      });
-    });
+  /** Like Excel: insert a row below the selection (append if none). */
+  function insertColorTableRow() {
+    if (colorTable.length >= COLOR_TABLE_MAX) {
+      metaEl.textContent = t("colorTableMax");
+      return;
+    }
+    ensureCmapUiBound();
+    const sel =
+      selectedValue != null &&
+      Number.isFinite(Number(selectedValue)) &&
+      selectedValue >= 0 &&
+      selectedValue < colorTable.length
+        ? Number(selectedValue)
+        : colorTable.length - 1;
+    const insertAt = sel < 0 ? 0 : sel + 1;
+    const gap = suggestInsertRange(colorTable, insertAt);
+    if (!gap || colorTableRangeConflicts(colorTable, gap.min, gap.max)) {
+      metaEl.textContent = t("colorTableOverlap");
+      return;
+    }
+    const entry = { min: gap.min, max: gap.max, color: colorForNewClass(insertAt) };
+    colorTable.splice(insertAt, 0, entry);
+    selectedValue = insertAt;
+    if (metaEl && /相交|overlap/i.test(metaEl.textContent || "")) metaEl.textContent = "";
+
+    const rows = cmapBody ? [...cmapBody.querySelectorAll(".cmap-row")] : [];
+    if (cmapBody && rows.length === colorTable.length - 1) {
+      const html = cmapRowHtml(entry, insertAt);
+      if (insertAt <= 0 || !rows[insertAt - 1]) {
+        cmapBody.insertAdjacentHTML("afterbegin", html);
+      } else {
+        rows[insertAt - 1].insertAdjacentHTML("afterend", html);
+      }
+      syncCmapRowIndices();
+      syncCmapSelection();
+    } else {
+      renderCmapTable();
+    }
+    syncColorTableLegacy();
+    render();
+  }
+
+  /** Like Excel: delete the selected row. */
+  function removeSelectedColorTableRow() {
+    if (!colorTable.length) return;
+    if (
+      selectedValue == null ||
+      !Number.isFinite(Number(selectedValue)) ||
+      selectedValue < 0 ||
+      selectedValue >= colorTable.length
+    ) {
+      return;
+    }
+    const i = Number(selectedValue);
+    colorTable.splice(i, 1);
+    const rows = cmapBody ? [...cmapBody.querySelectorAll(".cmap-row")] : [];
+    if (rows[i]) {
+      rows[i].remove();
+      syncCmapRowIndices();
+    } else {
+      renderCmapTable();
+    }
+    if (!colorTable.length) selectedValue = null;
+    else if (i >= colorTable.length) selectedValue = colorTable.length - 1;
+    else selectedValue = i; // stay on same position (now the next row)
+    syncCmapSelection();
+    syncColorTableLegacy();
+    render();
   }
 
   async function rasterFromDataUrl(src) {
@@ -2609,7 +3120,7 @@ import View from "ol/View.js";
     try {
       width = payload.width || width;
       height = payload.height || height;
-      geo = normalizeGeoRef(payload.geo || geo, width, height);
+      geo = applyLayerCrsPolicy(payload.geo || geo, width, height);
       payload.geo = geo;
       rasterUrl = payload.rasterUrl || rasterUrl;
 
@@ -2694,7 +3205,7 @@ import View from "ol/View.js";
 
       fillBandSelects();
       setMinMaxInputsFromStats();
-      if (bandPlanes.length) syncColormapToRaster();
+      if (renderMode === "paletted") syncColormapToRaster();
 
       ready = true;
       applyRenderModeUi();
@@ -2773,11 +3284,8 @@ import View from "ol/View.js";
     applyRenderModeUi();
     syncStretchParamUi();
     if (renderMode === "paletted") {
-      if (!sortedColormapIds().length && bandPlanes.length) classifyFromData(true);
-      else {
-        ensureLabelsForIds(sortedColormapIds());
-        renderCmapTable();
-      }
+      if (!colorTable.length) classifyFromData(true);
+      else renderCmapTable();
       updateMeta();
     }
     if (renderMode === "gray" || renderMode === "rgb") setMinMaxInputsFromStats();
@@ -2806,12 +3314,63 @@ import View from "ol/View.js";
       onRenderControlsChange();
     });
   });
-  [grayMinEl, grayMaxEl, redMinEl, redMaxEl, greenMinEl, greenMaxEl, blueMinEl, blueMaxEl].forEach(
-    (el) => {
-      el?.addEventListener("change", onRenderControlsChange);
-      el?.addEventListener("input", onRenderControlsChange);
-    },
-  );
+
+  /** Live-update only when both ends are valid; empty restore on blur. */
+  function bindStretchPair(minEl, maxEl, defaultsFn) {
+    const pairValid = () => {
+      // Number("") === 0 — empty must not count as a typed value.
+      const rawA = minEl?.value;
+      const rawB = maxEl?.value;
+      if (rawA === "" || rawB === "" || rawA == null || rawB == null) return false;
+      const a = Number(rawA);
+      const b = Number(rawB);
+      return Number.isFinite(a) && Number.isFinite(b) && b > a;
+    };
+    const restoreIfNeeded = () => {
+      const d = defaultsFn();
+      const rawMin = minEl?.value;
+      const rawMax = maxEl?.value;
+      const min = Number(rawMin);
+      const max = Number(rawMax);
+      const minBad = rawMin === "" || rawMin == null || !Number.isFinite(min);
+      const maxBad = rawMax === "" || rawMax == null || !Number.isFinite(max);
+      if (minBad && minEl) minEl.value = String(d.min);
+      if (maxBad && maxEl) maxEl.value = String(d.max);
+      const a = Number(minEl?.value);
+      const b = Number(maxEl?.value);
+      if (!(Number.isFinite(a) && Number.isFinite(b) && b > a)) {
+        if (minEl) minEl.value = String(d.min);
+        if (maxEl) maxEl.value = String(d.max);
+      }
+    };
+    const onInput = () => {
+      if (!pairValid()) return;
+      onRenderControlsChange();
+    };
+    const onBlur = () => {
+      restoreIfNeeded();
+      onRenderControlsChange();
+    };
+    minEl?.addEventListener("input", onInput);
+    maxEl?.addEventListener("input", onInput);
+    minEl?.addEventListener("blur", onBlur);
+    maxEl?.addEventListener("blur", onBlur);
+  }
+
+  function stretchDefaultsForBand(bandSel) {
+    const bi = bandSel === "unset" || bandSel === "" ? -1 : Number(bandSel);
+    const s = bi >= 0 ? bandStats[bi] : null;
+    if (s && Number.isFinite(s.min) && Number.isFinite(s.max)) {
+      return { min: s.min, max: s.max <= s.min ? s.min + 1 : s.max };
+    }
+    return { min: 0, max: 255 };
+  }
+
+  bindStretchPair(grayMinEl, grayMaxEl, () => stretchDefaultsForBand(grayBandEl?.value));
+  bindStretchPair(redMinEl, redMaxEl, () => stretchDefaultsForBand(redBandEl?.value));
+  bindStretchPair(greenMinEl, greenMaxEl, () => stretchDefaultsForBand(greenBandEl?.value));
+  bindStretchPair(blueMinEl, blueMaxEl, () => stretchDefaultsForBand(blueBandEl?.value));
+
   rgbContrastEl.addEventListener("change", () => {
     setMinMaxInputsFromStats();
     onRenderControlsChange();
@@ -2842,7 +3401,7 @@ import View from "ol/View.js";
     paletteRampSnapshot = null;
     syncStretchParamUi();
     if ((paletteRampEl.value || "random") === "random") bumpRandomSeed();
-    if (renderMode === "paletted" && bandPlanes.length) classifyFromData(true);
+    if (renderMode === "paletted") classifyFromData(true);
   });
   btnRampInvertEl?.addEventListener("click", () => invertColormapColors());
   paletteOpacityEl?.addEventListener("input", () => {
@@ -2855,25 +3414,10 @@ import View from "ol/View.js";
   });
 
   btnClassify.addEventListener("click", () => classifyFromData(true));
-  btnAddRow.addEventListener("click", () => {
-    const ids = sortedColormapIds();
-    const next = ids.length ? Math.max(...ids) + 1 : 0;
-    colormap[next] = colorForNewClass(next);
-    labels[String(next)] = String(next);
-    selectedValue = next;
-    renderCmapTable();
-    render();
-  });
-  btnRemoveRow.addEventListener("click", () => {
-    if (selectedValue == null) return;
-    delete colormap[selectedValue];
-    delete colormap[String(selectedValue)];
-    delete labels[String(selectedValue)];
-    selectedValue = null;
-    renderCmapTable();
-    render();
-  });
+  btnAddRow.addEventListener("click", () => insertColorTableRow());
+  btnRemoveRow.addEventListener("click", () => removeSelectedColorTableRow());
   btnClearRows.addEventListener("click", () => {
+    colorTable = [];
     colormap = {};
     labels = {};
     selectedValue = null;
@@ -2889,7 +3433,11 @@ import View from "ol/View.js";
 
   btnSave.addEventListener("click", () => {
     moreMenu.classList.add("hidden");
-    vscodeApi?.postMessage({ type: "saveColormap", colormap });
+    syncColorTableLegacy();
+    vscodeApi?.postMessage({
+      type: "saveColormap",
+      colorTable: serializeColorTable(colorTable),
+    });
   });
   btnReload.addEventListener("click", () => {
     moreMenu.classList.add("hidden");
@@ -2897,10 +3445,13 @@ import View from "ol/View.js";
   });
   btnSavePlte.addEventListener("click", () => {
     moreMenu.classList.add("hidden");
+    syncColorTableLegacy(); // PLTE slot = array index
     vscodeApi?.postMessage({
       type: "saveAsPlte",
+      colorTable: serializeColorTable(colorTable),
       colormap,
       indexBase64: payload.indexBase64,
+      indexFormat: payload.indexFormat || "i32",
     });
   });
 
@@ -2908,22 +3459,30 @@ import View from "ol/View.js";
   syncPaletteOpacityLabel();
   renderFileList();
 
-  const minSideTopH = 280; /* match --side-top-min: map + layers + info */
-  const minSideTabsH = 280; /* match --side-tabs-min */
+  const minSideTopH = 240; /* match --side-top-min: layers + info */
+  const minSideTabsH = 240; /* match --side-tabs-min */
+  const minMapSectionH = 64; /* 地图 + 坐标 */
 
   function sideTopUsableBounds(minH = minSideTopH, maxFrac = 0.85) {
     const viewH = sideEl?.clientHeight || sideEl?.getBoundingClientRect().height || 0;
-    const statusH = statusBarEl?.getBoundingClientRect().height || 0;
+    const mapSectionH =
+      document.getElementById("mapSection")?.getBoundingClientRect().height || minMapSectionH;
     const splitH = splitInfoEl?.getBoundingClientRect().height || 5;
-    const usableInView = Math.max(0, viewH - statusH - splitH);
-    // Never shrink below content floors — short windows scroll .side instead.
+    // Upper split is 图层 vs 样式; 地图+坐标 stays fixed at the bottom.
+    const usableInView = Math.max(0, viewH - mapSectionH - splitH);
     const minClamp = minH;
     const roomForTabs = Math.max(0, usableInView - minSideTabsH);
     const maxH =
       usableInView >= minH + minSideTabsH
         ? Math.max(minClamp, Math.min(Math.floor(usableInView * maxFrac), roomForTabs))
         : minClamp;
-    return { sideH: viewH, usable: Math.max(usableInView, minH + minSideTabsH), usableInView, minClamp, maxH };
+    return {
+      sideH: viewH,
+      usable: Math.max(usableInView, minH + minSideTabsH),
+      usableInView,
+      minClamp,
+      maxH,
+    };
   }
 
   function sideTopRatio() {
@@ -2933,8 +3492,8 @@ import View from "ol/View.js";
   }
 
   /**
-   * Keep top/bottom split proportional when there is room.
-   * When the viewport is shorter than content floors, lock mins and let .side scroll.
+   * Keep 图层 / 样式 split proportional when there is room.
+   * 地图+坐标 stays below both. Short windows scroll .side.
    */
   function syncSideTopSplit() {
     if (!sideEl) return;
@@ -2943,7 +3502,6 @@ import View from "ol/View.js";
     if (usableInView >= minSideTopH + minSideTabsH) {
       next = Math.min(maxH, Math.max(minClamp, Math.round(usableInView * sideTopRatio())));
     } else {
-      // Window too short to show both blocks — keep usable heights, scroll the panel.
       next = minSideTopH;
       sideEl.dataset.splitRatio = sideEl.dataset.splitRatio || "0.5";
     }
@@ -2964,7 +3522,6 @@ import View from "ol/View.js";
         minH;
       const onMove = (ev) => {
         const { usableInView, maxH, minClamp } = sideTopUsableBounds(minH, maxFrac);
-        // Drag only reshapes when both blocks fit; otherwise keep floors.
         if (usableInView < minSideTopH + minSideTabsH) return;
         const next = Math.min(maxH, Math.max(minClamp, startH + (ev.clientY - startY)));
         sideEl.style.setProperty(cssVar, `${Math.round(next)}px`);
@@ -3039,6 +3596,52 @@ import View from "ol/View.js";
     });
   }
   wireHorizontalSplit(splitSideEl, "--side-width", 220, 0.65);
+
+  /** Drag divider between 要素 / 值 columns (delegation survives applyI18n). */
+  function wireIdentifyColResize() {
+    const table = document.getElementById("identifyTable");
+    if (!table || table.dataset.colResizeWired === "1") return;
+    table.dataset.colResizeWired = "1";
+    table.addEventListener("pointerdown", (ev) => {
+      const handle = ev.target?.closest?.(".identify-col-resizer");
+      if (!handle || ev.button !== 0) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      const rect = table.getBoundingClientRect();
+      const total = Math.max(1, rect.width);
+      const minPct = 18;
+      const maxPct = 78;
+      handle.classList.add("is-dragging");
+      document.body.classList.add("is-resizing-identify-col");
+      handle.setPointerCapture?.(ev.pointerId);
+      const onMove = (e) => {
+        const x = e.clientX - rect.left;
+        let pct = (x / total) * 100;
+        pct = Math.max(minPct, Math.min(maxPct, pct));
+        const pctStr = `${pct.toFixed(1)}%`;
+        table.style.setProperty("--identify-feat-pct", pctStr);
+        const featCol = table.querySelector(".identify-col-feat");
+        const valCol = table.querySelector(".identify-col-val");
+        if (featCol) featCol.style.width = pctStr;
+        if (valCol) valCol.style.width = `calc(100% - ${pctStr})`;
+      };
+      const onUp = (e) => {
+        handle.classList.remove("is-dragging");
+        document.body.classList.remove("is-resizing-identify-col");
+        try {
+          handle.releasePointerCapture?.(e.pointerId);
+        } catch {
+          /* ignore */
+        }
+        window.removeEventListener("pointermove", onMove);
+        window.removeEventListener("pointerup", onUp);
+      };
+      window.addEventListener("pointermove", onMove);
+      window.addEventListener("pointerup", onUp);
+    });
+  }
+  wireIdentifyColResize();
+
   syncHoverLockUi();
   setSideTab("style");
   tabStyleEl?.addEventListener("click", () => setSideTab("style"));
@@ -3197,10 +3800,11 @@ import View from "ol/View.js";
       void init();
       return;
     }
-    if (msg.type === "colormapLoaded" && msg.colormap) {
-      colormap = { ...msg.colormap };
-      labels = {};
-      ensureLabelsForIds(sortedColormapIds());
+    if (msg.type === "colormapLoaded" && (msg.colorTable || msg.colormap)) {
+      colormap = { ...(msg.colormap || {}) };
+      const fromMsg = parseColorTable(msg.colorTable);
+      colorTable = fromMsg.length ? fromMsg : colorTableFromLegacyMap(colormap, {});
+      syncColorTableLegacy();
       payload.colormapSource = "workspace";
       payload.colormapPath = msg.path || payload.colormapPath;
       renderCmapTable();

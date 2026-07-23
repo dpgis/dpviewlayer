@@ -37,13 +37,28 @@ export function ensureProjection(crsCode) {
   const code = crsCode.startsWith("EPSG:") ? crsCode : `EPSG:${crsCode}`;
   let proj = getProjection(code);
   if (proj) return proj;
-  const num = code.replace("EPSG:", "");
+  const num = code.replace(/^EPSG:/i, "");
   if (EXTRA_DEFS[num]) {
     proj4.defs(code, EXTRA_DEFS[num]);
     register(proj4);
     proj = getProjection(code);
+    return proj || null;
   }
-  return proj || null;
+  // UTM WGS84 north 32601–32660 / south 32701–32760
+  const n = Number(num);
+  if (Number.isInteger(n) && n >= 32601 && n <= 32660) {
+    const zone = n - 32600;
+    proj4.defs(code, `+proj=utm +zone=${zone} +datum=WGS84 +units=m +no_defs`);
+    register(proj4);
+    return getProjection(code);
+  }
+  if (Number.isInteger(n) && n >= 32701 && n <= 32760) {
+    const zone = n - 32700;
+    proj4.defs(code, `+proj=utm +zone=${zone} +south +datum=WGS84 +units=m +no_defs`);
+    register(proj4);
+    return getProjection(code);
+  }
+  return null;
 }
 
 function projectionCode(proj) {
@@ -65,8 +80,37 @@ function isLocalProjection(proj) {
   return false;
 }
 
+function extentArea(e) {
+  if (!e || e.length < 4) return 0;
+  const w = Math.abs(e[2] - e[0]);
+  const h = Math.abs(e[3] - e[1]);
+  if (!Number.isFinite(w) || !Number.isFinite(h)) return 0;
+  return w * h;
+}
+
+function extentsOverlap(a, b) {
+  if (!a || !b) return false;
+  const xOverlap = Math.min(a[2], b[2]) > Math.max(a[0], b[0]);
+  const yOverlap = Math.min(a[3], b[3]) > Math.max(a[1], b[1]);
+  return xOverlap && yOverlap;
+}
+
+function safeTransformExtent(extent, fromProj, toProj) {
+  if (!extent || !fromProj || !toProj) return null;
+  try {
+    const te = transformExtent(extent, fromProj, toProj);
+    if (!te || te.some((v) => !Number.isFinite(v))) return null;
+    return te;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Switch map view projection.
+ * Prefer preserving the current viewport when it still overlaps the layer after
+ * reprojection; otherwise fit the layer's reprojected extent (never stay at a
+ * bogus null-island view while the layer is elsewhere).
  * @param {string} mapCrs EPSG:xxxx
  */
 export function applyMapViewCrs(map, mapCrs, layerNativeViewConfig) {
@@ -81,15 +125,13 @@ export function applyMapViewCrs(map, mapCrs, layerNativeViewConfig) {
   const layerProj = layerNativeViewConfig?.projection || null;
   const layerExtent = layerNativeViewConfig?.extent;
 
-  // Non-georeferenced rasters: keep the layer's native (Local) view — tagging
-  // pixel coords as EPSG:4326 caused black L-gutters after CRS switch.
+  // Layers still on Local (legacy / fallback): keep the *map* CRS and fit using
+  // the same numeric extent (assigned-CRS policy — do not switch the map to Local).
   if (layerExtent && isLocalProjection(layerProj)) {
-    const viewProj = layerProj || oldProj || proj;
     map.setView(
       new View(
         freeViewOptions({
-          projection: viewProj,
-          extent: layerExtent,
+          projection: proj,
         }),
       ),
     );
@@ -102,50 +144,48 @@ export function applyMapViewCrs(map, mapCrs, layerNativeViewConfig) {
     return;
   }
 
-  let center = oldView.getCenter();
-  let resolution = oldView.getResolution();
-  if (oldProj && center) {
+  const layerTe =
+    layerExtent && layerProj && !isLocalProjection(layerProj)
+      ? safeTransformExtent(layerExtent, layerProj, proj)
+      : null;
+
+  let viewTe = null;
+  if (oldProj) {
     try {
-      const extent = oldView.calculateExtent?.(map.getSize?.());
-      if (extent) {
-        const te = transformExtent(extent, oldProj, proj);
-        const layerTe =
-          layerExtent && layerProj
-            ? transformExtent(layerExtent, layerProj, proj)
-            : layerExtent
-              ? transformExtent(layerExtent, oldProj, proj)
-              : te;
-        map.setView(
-          new View(
-            freeViewOptions({
-              projection: proj,
-              extent: layerTe,
-            }),
-          ),
-        );
-        map.getView().fit(te, { padding: [24, 24, 24, 24], nearest: true });
-        map.updateSize();
-        return;
-      }
+      const size = map.getSize?.();
+      const extent =
+        size && size[0] > 0 && size[1] > 0
+          ? oldView.calculateExtent(size)
+          : oldView.calculateExtent?.([800, 800]);
+      viewTe = safeTransformExtent(extent, oldProj, proj);
     } catch {
-      /* fall through */
+      viewTe = null;
     }
   }
+
+  // Preserve viewport on CRS switch when it still covers the layer; otherwise
+  // fit the layer (fixes first-open / wrong-center staying at [0,0]).
+  let fitTarget = null;
+  if (layerTe && viewTe && extentsOverlap(viewTe, layerTe) && extentArea(viewTe) > 0) {
+    fitTarget = viewTe;
+  } else if (layerTe) {
+    fitTarget = layerTe;
+  } else if (viewTe && extentArea(viewTe) > 0) {
+    fitTarget = viewTe;
+  }
+
+  // Do not set View.extent to the layer AABB — that clamps pan/zoom math across
+  // stacked layers with wildly different footprints (geo GeoTIFF + pixel JPG).
   map.setView(
     new View(
       freeViewOptions({
         projection: proj,
-        center: center || [0, 0],
-        resolution: resolution || 1,
-        extent: layerExtent,
       }),
     ),
   );
-  if (layerExtent) {
+  if (fitTarget) {
     try {
-      const from = layerProj || oldProj;
-      const te = from ? transformExtent(layerExtent, from, proj) : layerExtent;
-      map.getView().fit(te, { padding: [24, 24, 24, 24], nearest: true });
+      map.getView().fit(fitTarget, { padding: [24, 24, 24, 24], nearest: true });
     } catch {
       /* ignore */
     }

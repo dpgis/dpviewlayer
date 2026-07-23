@@ -14,17 +14,23 @@ import { encodeIndexedPng, rgbToHex, type Rgb } from "./pngCodec";
 import { buildWebviewHtml, type WebviewPayload } from "./webviewHtml";
 import {
   loadWorkspaceColormap,
-  resolveRasterViewerConfigPath,
+  resolveViewLayerConfigPath,
   saveWorkspaceColormap,
 } from "./workspaceConfig";
-import { uiLang } from "./l10n";
+import { t, uiLang } from "./l10n";
 import {
   identityGeoRef,
   readGeoTiffGeo,
   readWorldFile,
   type GeoRef,
 } from "./geo";
-import { assertRasterOpenable, findOverviewPaths } from "./overviews";
+import {
+  assertRasterOpenable,
+  findOverviewPaths,
+  isRasterTooLarge,
+} from "./overviews";
+import { resolveRasterBandStats, type BandStat } from "./bandStats";
+import { loadGeotiff } from "./geotiffLoader";
 
 export type OpenMaskOptions = {
   context: vscode.ExtensionContext;
@@ -65,10 +71,14 @@ type FileEntry = {
   indexFormat?: "i32" | "f64";
   values?: Float64Array;
   colormap: Record<number, Rgb>;
+  /** Ordered color-table rows; ID = index (not stored on rows). */
+  colorTable: Array<{ min: number; max: number; color: string }>;
   colormapSource: WebviewPayload["colormapSource"];
   colormapPath: string;
   /** Absolute paths to external overview files (*.ovr) */
   overviewPaths: string[];
+  /** Per-band min/max for stretch (PAM / overview / decode). */
+  bandStats?: BandStat[];
 };
 
 type Session = {
@@ -105,8 +115,169 @@ function parseMsgColormap(raw: Record<string, unknown> | undefined): Record<numb
   return map;
 }
 
+function parseMsgColorTable(
+  raw: unknown,
+): Array<{ min: number; max: number; color: string }> {
+  if (!Array.isArray(raw)) return [];
+  const out: Array<{ min: number; max: number; color: string }> = [];
+  for (const e of raw.slice(0, 256)) {
+    if (!e || typeof e !== "object") continue;
+    const row = e as Record<string, unknown>;
+    const min = Number(row.min);
+    const max = Number(row.max);
+    const hex = String(row.color || "");
+    const m = hex.match(/^#?([0-9a-fA-F]{6})$/);
+    if (!Number.isFinite(min) || !Number.isFinite(max) || !(max > min) || !m) continue;
+    out.push({ min, max, color: `#${m[1].toLowerCase()}` });
+  }
+  return out;
+}
+
+function colormapFromColorTable(
+  table: Array<{ min: number; max: number; color: string }>,
+): Record<number, Rgb> {
+  const map: Record<number, Rgb> = {};
+  for (let i = 0; i < table.length; i++) {
+    const m = table[i].color.match(/^#?([0-9a-fA-F]{6})$/);
+    if (!m) continue;
+    const n = parseInt(m[1], 16);
+    map[i] = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  }
+  return map;
+}
+
+function hexToRgbTuple(hex: string): Rgb | undefined {
+  const m = String(hex || "").match(/^#?([0-9a-fA-F]{6})$/);
+  if (!m) return undefined;
+  const n = parseInt(m[1], 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+/**
+ * Build indexed PNG payload from color-table rows.
+ * - Unit integer classes [v,v+1): keep pixel values; PLTE[v]=color (unchanged indices).
+ * - Otherwise: remap each pixel into matching row index 0…N-1.
+ */
+function buildPlteExport(
+  table: Array<{ min: number; max: number; color: string }>,
+  pixels: Float64Array,
+  width: number,
+  height: number,
+): { map: Record<number, Rgb>; indices: Uint8Array } | { error: string } {
+  if (!table.length) return { error: "颜色表为空，无法导出 PLTE" };
+  const need = width * height;
+  if (!Number.isFinite(need) || need <= 0) return { error: "无效的图像尺寸" };
+  if (pixels.length < need) {
+    return {
+      error: `像素数据长度与宽高不匹配（${pixels.length} < ${width}×${height}）`,
+    };
+  }
+  const unitIds = table.every(
+    (e) =>
+      Number.isInteger(e.min) &&
+      e.max === e.min + 1 &&
+      e.min >= 0 &&
+      e.min <= 255,
+  );
+  if (unitIds) {
+    const map: Record<number, Rgb> = {};
+    for (const e of table) {
+      const rgb = hexToRgbTuple(e.color);
+      if (rgb) map[e.min] = rgb;
+    }
+    const u8 = new Uint8Array(need);
+    for (let i = 0; i < need; i++) {
+      const v = pixels[i];
+      if (!Number.isInteger(v) || v < 0 || v > 255) {
+        return {
+          error: "另存为 PLTE 仅支持类别值在 0–255 的 mask（当前存在超范围值）",
+        };
+      }
+      u8[i] = v;
+    }
+    return { map, indices: u8 };
+  }
+
+  // Continuous / irregular ranges: remapped index = matching row (0…N-1).
+  if (table.length > 256) return { error: "颜色表超过 256 行，无法导出 PLTE" };
+  const map: Record<number, Rgb> = {};
+  for (let i = 0; i < table.length; i++) {
+    const rgb = hexToRgbTuple(table[i].color);
+    if (rgb) map[i] = rgb;
+  }
+  const u8 = new Uint8Array(need);
+  for (let i = 0; i < need; i++) {
+    const v = pixels[i];
+    let idx = 0;
+    let hit = false;
+    for (let r = 0; r < table.length; r++) {
+      const e = table[r];
+      if (v >= e.min && v < e.max) {
+        idx = r;
+        hit = true;
+        break;
+      }
+    }
+    if (!hit) {
+      if (v < table[0].min) idx = 0;
+      else idx = table.length - 1;
+    }
+    u8[i] = idx;
+  }
+  return { map, indices: u8 };
+}
+
+function decodeIndexBase64(
+  b64: string,
+  format: string | undefined,
+  expectedLen: number,
+): Float64Array {
+  const u8 = Buffer.from(String(b64), "base64");
+  const copy = Buffer.alloc(u8.length);
+  u8.copy(copy);
+  if (format === "f64") {
+    const f64 = new Float64Array(
+      copy.buffer,
+      copy.byteOffset,
+      Math.floor(copy.byteLength / 8),
+    );
+    return f64.length >= expectedLen ? f64 : Float64Array.from(f64);
+  }
+  if (format === "u8") {
+    return Float64Array.from(copy.subarray(0, Math.min(copy.length, expectedLen)));
+  }
+  const i32 = new Int32Array(
+    copy.buffer,
+    copy.byteOffset,
+    Math.floor(copy.byteLength / 4),
+  );
+  return Float64Array.from(i32);
+}
+
+/** Read first band of a GeoTIFF when in-memory indices were skipped (float / large). */
+async function loadGeoTiffBandPixels(filePath: string): Promise<{
+  width: number;
+  height: number;
+  values: Float64Array;
+}> {
+  const geotiff = await loadGeotiff();
+  const tiff = await geotiff.fromFile(filePath);
+  const image = await tiff.getImage();
+  const width = image.getWidth();
+  const height = image.getHeight();
+  const data = await image.readRasters({
+    samples: [0],
+    interleave: false,
+  });
+  const plane = (Array.isArray(data) ? data[0] : data) as ArrayLike<number>;
+  const values = new Float64Array(width * height);
+  const n = Math.min(values.length, plane.length);
+  for (let i = 0; i < n; i++) values[i] = Number(plane[i]);
+  return { width, height, values };
+}
+
 function relativeConfigLabel(configPath: string | undefined): string {
-  if (!configPath) return ".vscode/raster-viewer.json";
+  if (!configPath) return ".vscode/dpviewlayer.json";
   return vscode.workspace.asRelativePath(vscode.Uri.file(configPath));
 }
 
@@ -120,19 +291,28 @@ function decodeMask(uri: vscode.Uri, probe: ImageProbeOk): MaskDecodeResult {
 function pickDefaultRender(
   bands: number,
   values?: Float64Array,
+  bandStats?: BandStat[],
 ): "gray" | "rgb" | "paletted" {
   if (bands >= 3) return "rgb";
-  if (!values || values.length === 0) return "gray";
-  let min = Infinity;
-  let max = -Infinity;
-  for (let i = 0; i < values.length; i++) {
-    const v = values[i];
-    if (!Number.isFinite(v) || !Number.isInteger(v)) return "gray";
-    if (v < min) min = v;
-    if (v > max) max = v;
+  if (values && values.length) {
+    let min = Infinity;
+    let max = -Infinity;
+    for (let i = 0; i < values.length; i++) {
+      const v = values[i];
+      if (!Number.isFinite(v) || !Number.isInteger(v)) return "gray";
+      if (v < min) min = v;
+      if (v > max) max = v;
+    }
+    if (!Number.isFinite(min) || max - min >= 128) return "gray";
+    return "paletted";
   }
-  if (!Number.isFinite(min) || max - min >= 128) return "gray";
-  return "paletted";
+  const s = bandStats?.[0];
+  if (s && Number.isFinite(s.min) && Number.isFinite(s.max)) {
+    // Continuous float / wide range → gray stretch, not unique-value palette.
+    if (s.max - s.min >= 128) return "gray";
+    if (!Number.isInteger(s.min) || !Number.isInteger(s.max)) return "gray";
+  }
+  return "gray";
 }
 
 async function resolveGeo(uri: vscode.Uri, probe: ImageProbeOk): Promise<GeoRef> {
@@ -175,8 +355,18 @@ async function buildFileEntry(uri: vscode.Uri, probe: ImageProbeOk): Promise<Fil
   let indexBase64: string | undefined;
   let indexFormat: "i32" | "f64" | undefined;
   let dtype = probe.dtype;
+  let bandStats: BandStat[] | undefined;
+  const overviewPaths = findOverviewPaths(uri.fsPath);
 
-  if (!isImage && probe.format !== "jpeg") {
+  // Large continuous / float GeoTIFFs: open via URL + stats, skip full CPU decode
+  // (25M+ float64 + base64 would stall the webview).
+  const large = isRasterTooLarge(probe.width, probe.height);
+  const largeTiff = probe.format === "tiff" && large;
+  const floatDtype = dtype === "float32" || dtype === "float64";
+  const skipFullDecode =
+    largeTiff || (probe.format === "tiff" && floatDtype && !isImage);
+
+  if (!isImage && probe.format !== "jpeg" && !skipFullDecode) {
     try {
       const decoded = decodeMask(uri, probe);
       width = decoded.width;
@@ -186,34 +376,44 @@ async function buildFileEntry(uri: vscode.Uri, probe: ImageProbeOk): Promise<Fil
       const packed = packMaskIndices(decoded.values, dtype);
       indexBase64 = packed.indexBase64;
       indexFormat = packed.indexFormat;
+      bandStats = [statsFromValues(decoded.values)];
     } catch {
       /* still open via URL */
     }
   }
 
+  if (!bandStats?.length) {
+    bandStats = await resolveRasterBandStats(uri.fsPath, {
+      bands: Math.max(1, probe.bands === 4 ? 3 : probe.bands),
+      format: probe.format,
+    });
+  }
+
   let colormap: Record<number, Rgb> = {};
+  let colorTable: Array<{ min: number; max: number; color: string }> = [];
   let colormapSource: WebviewPayload["colormapSource"] = "default";
-  let colormapPath = resolveRasterViewerConfigPath(uri);
+  let colormapPath = resolveViewLayerConfigPath(uri);
   try {
     const loaded = loadWorkspaceColormap(uri);
     colormap = loaded.colormap;
+    colorTable = loaded.colorTable;
     colormapSource = loaded.source;
     if (loaded.path) colormapPath = loaded.path;
   } catch (e) {
     void vscode.window.showWarningMessage(`色表读取失败: ${String(e)}`);
   }
-  if (!Object.keys(colormap).length) colormapSource = "default";
+  if (!Object.keys(colormap).length && !colorTable.length) colormapSource = "default";
 
   const bands = Math.max(1, probe.bands === 4 ? 3 : probe.bands);
-  const defaultRender = pickDefaultRender(bands, values);
+  const defaultRender = pickDefaultRender(bands, values, bandStats);
   const geo = await resolveGeo(uri, probe);
+  // CRS is shown in the map CRS control; keep probe label to georef source only.
   const geoLabel =
     geo.source === "worldfile"
       ? " · world file"
       : geo.source === "geotiff"
         ? " · GeoTIFF"
         : "";
-
   return {
     id: fileIdFor(uri),
     uri,
@@ -231,10 +431,25 @@ async function buildFileEntry(uri: vscode.Uri, probe: ImageProbeOk): Promise<Fil
     indexFormat,
     values,
     colormap,
+    colorTable,
     colormapSource,
     colormapPath: relativeConfigLabel(colormapPath),
-    overviewPaths: findOverviewPaths(uri.fsPath),
+    overviewPaths,
+    bandStats,
   };
+}
+
+function statsFromValues(values: Float64Array): BandStat {
+  let min = Infinity;
+  let max = -Infinity;
+  for (let i = 0; i < values.length; i++) {
+    const v = values[i];
+    if (!Number.isFinite(v)) continue;
+    if (v < min) min = v;
+    if (v > max) max = v;
+  }
+  if (!Number.isFinite(min) || !Number.isFinite(max)) return { min: 0, max: 255 };
+  return { min, max: max <= min ? min + 1 : max };
 }
 
 function entryToPayload(panel: vscode.WebviewPanel, entry: FileEntry): WebviewPayload {
@@ -266,9 +481,11 @@ function entryToPayload(panel: vscode.WebviewPanel, entry: FileEntry): WebviewPa
     indexFormat: entry.indexFormat || "i32",
     awaitIndices: !!entry.indexBase64,
     colormap: mapToHexRecord(entry.colormap),
+    colorTable: entry.colorTable || [],
     colormapSource: entry.colormapSource,
     colormapPath: entry.colormapPath,
     filePath: entry.uri.fsPath,
+    bandStats: entry.bandStats,
   };
 }
 
@@ -337,7 +554,7 @@ function pushFile(
     overviewUrls: payload.overviewUrls || [],
     width: entry.width,
     height: entry.height,
-    format: entry.format,
+    format: payload.format,
     bands: entry.bands,
     geo: payload.geo,
     probeLabel: entry.probeLabel,
@@ -345,12 +562,14 @@ function pushFile(
     dtype: entry.dtype,
     defaultRender: entry.defaultRender,
     colormap: payload.colormap,
+    colorTable: payload.colorTable || [],
     colormapSource: entry.colormapSource,
     colormapPath: entry.colormapPath,
     filePath: entry.uri.fsPath,
     indexBase64: entry.indexBase64,
     indexFormat: entry.indexFormat || "i32",
     awaitIndices: false,
+    bandStats: entry.bandStats,
     activate,
   });
 }
@@ -384,7 +603,8 @@ function updatePanelTitle(s: Session) {
     return;
   }
   const n = [...sessions.values()].indexOf(s) + 1;
-  s.panel.title = n > 1 ? `Raster Viewer ${n}` : "Raster Viewer";
+  const name = t().appName;
+  s.panel.title = n > 1 ? `${name} ${n}` : name;
 }
 
 function getActiveSession(): Session | null {
@@ -422,7 +642,7 @@ export function listSessions(): SessionInfo[] {
     const active = s.files.find((f) => f.id === s.activeId);
     return {
       id: s.id,
-      title: s.panel.title || "Raster Viewer",
+      title: s.panel.title || t().appName,
       fileCount: s.files.length,
       activeName: active ? path.basename(active.uri.fsPath) : null,
     };
@@ -435,7 +655,7 @@ function getSessionById(id: string | undefined): Session | null {
 }
 
 function refreshHasOpenViewContext() {
-  void vscode.commands.executeCommand("setContext", "rasterViewer.hasOpenView", sessions.size > 0);
+  void vscode.commands.executeCommand("setContext", "viewLayer.hasOpenView", sessions.size > 0);
 }
 
 function wireMessages(s: Session) {
@@ -507,9 +727,10 @@ function wireMessages(s: Session) {
       } else if (msg.type === "saveColormap") {
         const entry = activeEntry(s);
         if (!entry) return;
-        const map = parseMsgColormap(msg.colormap);
-        const target = saveWorkspaceColormap(entry.uri, map);
-        entry.colormap = map;
+        const table = parseMsgColorTable(msg.colorTable);
+        const target = saveWorkspaceColormap(entry.uri, table);
+        entry.colorTable = table;
+        entry.colormap = colormapFromColorTable(table);
         entry.colormapPath = relativeConfigLabel(target);
         entry.colormapSource = "workspace";
         void vscode.window.showInformationMessage(`已保存色表: ${entry.colormapPath}`);
@@ -524,16 +745,18 @@ function wireMessages(s: Session) {
         const loaded = loadWorkspaceColormap(entry.uri);
         if (loaded.source === "default") {
           void vscode.window.showWarningMessage(
-            "未找到 .vscode/raster-viewer.json，仍使用默认哈希色",
+            "未找到 .vscode/dpviewlayer.json，仍使用默认哈希色",
           );
           return;
         }
         entry.colormap = loaded.colormap;
+        entry.colorTable = loaded.colorTable;
         entry.colormapPath = relativeConfigLabel(loaded.path);
         entry.colormapSource = "workspace";
         s.panel.webview.postMessage({
           type: "colormapLoaded",
           colormap: mapToHexRecord(loaded.colormap),
+          colorTable: loaded.colorTable,
           path: entry.colormapPath,
           fileId: entry.id,
         });
@@ -544,30 +767,58 @@ function wireMessages(s: Session) {
           void vscode.window.showWarningMessage("多波段彩色图不支持另存为 PLTE（请用单波段 mask）");
           return;
         }
-        const map = parseMsgColormap(msg.colormap);
-        let pix = entry.values;
-        if (!pix && msg.indexBase64 && entry.width && entry.height) {
-          const u8 = Buffer.from(String(msg.indexBase64), "base64");
-          const copy = Buffer.alloc(u8.length);
-          u8.copy(copy);
-          const i32 = new Int32Array(copy.buffer, copy.byteOffset, Math.floor(copy.byteLength / 4));
-          pix = Float64Array.from(i32);
-        }
-        if (!pix || !entry.width || !entry.height) {
-          void vscode.window.showWarningMessage("当前图像无法导出为索引色 PNG（缺少像素索引）");
+        const table = parseMsgColorTable(msg.colorTable);
+        if (!table.length) {
+          void vscode.window.showWarningMessage("颜色表为空，无法导出 PLTE");
           return;
         }
-        const u8 = new Uint8Array(entry.width * entry.height);
-        for (let i = 0; i < pix.length; i++) {
-          const v = pix[i];
-          if (!Number.isInteger(v) || v < 0 || v > 255) {
+        let width = entry.width;
+        let height = entry.height;
+        let pix = entry.values;
+        const fmt = String(msg.indexFormat || entry.indexFormat || "i32");
+        if (!pix && msg.indexBase64 && width && height) {
+          try {
+            pix = decodeIndexBase64(String(msg.indexBase64), fmt, width * height);
+          } catch (e) {
+            void vscode.window.showWarningMessage(`解析像素索引失败: ${String(e)}`);
+            return;
+          }
+        }
+        if (!pix && entry.format === "tiff") {
+          try {
+            void vscode.window.setStatusBarMessage("正在读取 GeoTIFF 像素以导出 PLTE…", 5000);
+            const loaded = await loadGeoTiffBandPixels(entry.uri.fsPath);
+            pix = loaded.values;
+            width = loaded.width;
+            height = loaded.height;
+          } catch (e) {
             void vscode.window.showWarningMessage(
-              "另存为 PLTE 仅支持类别值在 0–255 的 mask（当前存在超范围值）",
+              `无法读取 GeoTIFF 像素: ${String(e)}`,
             );
             return;
           }
-          u8[i] = v;
         }
+        if (!pix && entry.format === "png") {
+          try {
+            const decoded = decodePngMask(entry.uri.fsPath);
+            pix = decoded.values;
+            width = decoded.width;
+            height = decoded.height;
+          } catch (e) {
+            void vscode.window.showWarningMessage(`无法读取 PNG 像素: ${String(e)}`);
+            return;
+          }
+        }
+        if (!pix || !width || !height) {
+          void vscode.window.showWarningMessage("当前图像无法导出为索引色 PNG（缺少像素数据）");
+          return;
+        }
+        const built = buildPlteExport(table, pix, width, height);
+        if ("error" in built) {
+          void vscode.window.showWarningMessage(built.error);
+          return;
+        }
+        const { map, indices: u8 } = built;
         const base = path.basename(entry.uri.fsPath).replace(/\.[^.]+$/, "");
         const defaultUri = vscode.Uri.file(
           path.join(path.dirname(entry.uri.fsPath), `${base}.plte.png`),
@@ -578,14 +829,14 @@ function wireMessages(s: Session) {
           saveLabel: "另存为 PLTE PNG",
         });
         if (!dest) return;
-        const buf = encodeIndexedPng(entry.width, entry.height, u8, map);
+        const buf = encodeIndexedPng(width, height, u8, map);
         fs.writeFileSync(dest.fsPath, buf);
         void vscode.window.showInformationMessage(
           `已另存为索引色 PNG（PLTE）: ${vscode.workspace.asRelativePath(dest)}`,
         );
       }
     } catch (e) {
-      void vscode.window.showErrorMessage(`Raster Viewer: ${String(e)}`);
+      void vscode.window.showErrorMessage(`${t().appName}: ${String(e)}`);
     }
   });
 }
@@ -621,7 +872,7 @@ async function addFileToSession(
 
 function createPanel(context: vscode.ExtensionContext, title: string): vscode.WebviewPanel {
   return vscode.window.createWebviewPanel(
-    "rasterViewer.panel",
+    "viewLayer.panel",
     title,
     vscode.ViewColumn.Active,
     {
@@ -636,6 +887,7 @@ function emptyPayload(): WebviewPayload {
   return {
     bands: 1,
     colormap: {},
+    colorTable: [],
     colormapSource: "default",
     filePath: "",
     uiLang: uiLang(),
@@ -644,11 +896,12 @@ function emptyPayload(): WebviewPayload {
   };
 }
 
-/** Create an empty Raster Viewer tab (independent file list / map CRS). */
+/** Create an empty View Layer tab (independent file list / map CRS). */
 export function createNewView(context: vscode.ExtensionContext): Session {
   viewSeq += 1;
   const id = `view-${viewSeq}`;
-  const title = sessions.size === 0 ? "Raster Viewer" : `Raster Viewer ${viewSeq}`;
+  const name = t().appName;
+  const title = sessions.size === 0 ? name : `${name} ${viewSeq}`;
   const panel = createPanel(context, title);
   const s: Session = {
     id,

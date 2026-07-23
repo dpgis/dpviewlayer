@@ -38617,21 +38617,72 @@ ${ifBlocks}
     }
     return { mean, std: Math.sqrt(acc / n) || 1 };
   }
+  function isByteLikeStats(stats) {
+    if (!stats) return false;
+    const lo = Number(stats.min);
+    const hi = Number(stats.max);
+    if (!Number.isFinite(lo) || !Number.isFinite(hi)) return false;
+    if (lo < 0 || hi > 255) return false;
+    if (!Number.isInteger(lo) || !Number.isInteger(hi)) return false;
+    return true;
+  }
+  function resolveStats(plane, stats) {
+    if (stats && Number.isFinite(stats.min) && Number.isFinite(stats.max)) {
+      return {
+        min: stats.min,
+        max: stats.max === stats.min ? stats.min + 1 : stats.max,
+        mean: stats.mean,
+        stddev: stats.stddev
+      };
+    }
+    if (plane?.length) {
+      let min = Infinity;
+      let max = -Infinity;
+      for (let i = 0; i < plane.length; i++) {
+        const v = plane[i];
+        if (!Number.isFinite(v)) continue;
+        if (v < min) min = v;
+        if (v > max) max = v;
+      }
+      if (Number.isFinite(min) && Number.isFinite(max)) {
+        return { min, max: max <= min ? min + 1 : max };
+      }
+    }
+    return { min: 0, max: 255 };
+  }
   function stretchRange(plane, stats, mode2, { percent = 2, stddev = 2 } = {}) {
-    const s = stats || { min: 0, max: 255 };
-    if (mode2 === "none") return { min: 0, max: 255 };
+    const s = resolveStats(plane, stats);
+    if (mode2 === "none") {
+      if (isByteLikeStats(s)) return { min: 0, max: 255 };
+      return { min: s.min, max: s.max };
+    }
     if (mode2 === "percent") {
       const p = Math.max(0, Math.min(49.9, Number(percent) || 2));
-      const lo = percentile(plane, p);
-      const hi = percentile(plane, 100 - p);
-      if (!Number.isFinite(lo) || !Number.isFinite(hi) || hi === lo) {
-        return { min: s.min, max: s.max === s.min ? s.min + 1 : s.max };
+      if (plane?.length) {
+        const lo = percentile(plane, p);
+        const hi = percentile(plane, 100 - p);
+        if (!Number.isFinite(lo) || !Number.isFinite(hi) || hi === lo) {
+          return { min: s.min, max: s.max === s.min ? s.min + 1 : s.max };
+        }
+        return { min: lo, max: hi };
       }
-      return { min: lo, max: hi };
+      const span = s.max - s.min;
+      if (!(span > 0)) return { min: s.min, max: s.max === s.min ? s.min + 1 : s.max };
+      return { min: s.min + span * (p / 100), max: s.max - span * (p / 100) };
     }
     if (mode2 === "stddev") {
       const n = Math.max(0.1, Number(stddev) || 2);
-      const { mean, std } = meanStd(plane);
+      let mean;
+      let std;
+      if (plane?.length) {
+        ({ mean, std } = meanStd(plane));
+      } else if (Number.isFinite(s.mean) && Number.isFinite(s.stddev) && s.stddev > 0) {
+        mean = s.mean;
+        std = s.stddev;
+      } else {
+        mean = (s.min + s.max) / 2;
+        std = Math.max((s.max - s.min) / 4, 1e-9);
+      }
       return { min: mean - n * std, max: mean + n * std };
     }
     return { min: s.min, max: s.max === s.min ? s.min + 1 : s.max };
@@ -38703,43 +38754,61 @@ ${ifBlocks}
     ];
     return invert2 ? ["-", 1, t] : t;
   }
+  function sourceAlphaExpr(state) {
+    const dataBands = Math.max(1, Number(state.bandCount) || 1);
+    const total = Number(state.sourceBandCount);
+    if (Number.isFinite(total) && total > dataBands) {
+      return ["band", total];
+    }
+    const ab = Number(state.alphaBand);
+    if (Number.isFinite(ab) && ab > dataBands) {
+      return ["band", ab];
+    }
+    return 1;
+  }
   function buildWebGlStyle(state) {
     const mode2 = state.mode || "gray";
+    const alpha = sourceAlphaExpr(state);
     if (mode2 === "gray") {
       const bi0 = Number(state.grayBand) || 0;
       const bi2 = bi0 + 1;
-      const sb = sourceBound(state, bi0, 0, 255);
-      const raw = rawBand(bi2, sb.min, sb.max);
+      const sb2 = sourceBound(state, bi0, 0, 255);
+      const raw2 = rawBand(bi2, sb2.min, sb2.max);
       const ramp = state.grayRamp || "blackwhite";
       const invertBw = ramp === "whiteblack";
       let min = Number(state.grayMin);
       let max = Number(state.grayMax);
-      if (!Number.isFinite(min)) min = sb.min;
-      if (!Number.isFinite(max)) max = sb.max;
+      if (!Number.isFinite(min)) min = sb2.min;
+      if (!Number.isFinite(max)) max = sb2.max;
       if (max <= min) max = min + 1;
-      let v = stretchExpr(raw, min, max, false);
+      let v = stretchExpr(raw2, min, max, false);
       if (invertBw) v = ["-", 1, v];
       if (CONTINUOUS_RAMPS[ramp]) {
         const stops = interpolateStops(ramp, 0, 1, false);
         return {
-          color: ["interpolate", ["linear"], v, ...stops]
+          color: [
+            "case",
+            ["<=", alpha, 0],
+            [0, 0, 0, 0],
+            ["interpolate", ["linear"], v, ...stops]
+          ]
         };
       }
-      return { color: ["array", v, v, v, 1] };
+      return { color: ["array", v, v, v, alpha] };
     }
     if (mode2 === "rgb") {
       const channel = (sel, min, max) => {
         if (sel === "unset" || sel === "" || sel == null) return 0;
         const bi0 = Number(sel);
         const bi2 = bi0 + 1;
-        const sb = sourceBound(state, bi0, 0, 255);
-        const raw = rawBand(bi2, sb.min, sb.max);
+        const sb2 = sourceBound(state, bi0, 0, 255);
+        const raw2 = rawBand(bi2, sb2.min, sb2.max);
         let lo = Number(min);
         let hi = Number(max);
-        if (!Number.isFinite(lo)) lo = sb.min;
-        if (!Number.isFinite(hi)) hi = sb.max;
+        if (!Number.isFinite(lo)) lo = sb2.min;
+        if (!Number.isFinite(hi)) hi = sb2.max;
         if (hi <= lo) hi = lo + 1;
-        return stretchExpr(raw, lo, hi, false);
+        return stretchExpr(raw2, lo, hi, false);
       };
       return {
         color: [
@@ -38747,39 +38816,99 @@ ${ifBlocks}
           channel(state.redBand, state.redMin, state.redMax),
           channel(state.greenBand, state.greenMin, state.greenMax),
           channel(state.blueBand, state.blueMin, state.blueMax),
-          1
+          alpha
         ]
       };
     }
     const bi = (Number(state.paletteBand) || 0) + 1;
+    const sb = sourceBound(state, Number(state.paletteBand) || 0, 0, 255);
+    const raw = rawBand(bi, sb.min, sb.max);
+    const table = Array.isArray(state.colorTable) ? state.colorTable : null;
+    if (table && table.length) {
+      const entries = table.map((e) => ({
+        min: Number(e?.min),
+        max: Number(e?.max),
+        color: e?.color
+      })).filter(
+        (e) => Number.isFinite(e.min) && Number.isFinite(e.max) && e.max > e.min && e.color
+      ).slice(0, 256);
+      if (!entries.length) {
+      } else {
+        const colors2 = entries.map((e) => e.color);
+        const lo0 = entries[0].min;
+        const hiN = entries[entries.length - 1].max;
+        const n = entries.length;
+        const w0 = entries[0].max - entries[0].min;
+        const equalBins = n >= 1 && Number.isFinite(lo0) && Number.isFinite(hiN) && hiN > lo0 && entries.every((e, i) => {
+          if (i === 0) return true;
+          const wi = e.max - e.min;
+          const gapOk = Math.abs(e.min - entries[i - 1].max) <= Math.abs(w0) * 1e-6 + 1e-12;
+          const widthOk = Math.abs(wi - w0) <= Math.abs(w0) * 1e-4 + 1e-9;
+          return gapOk && widthOk;
+        });
+        if (equalBins) {
+          const span = hiN - lo0;
+          const t = ["/", ["-", raw, lo0], span];
+          const idx = ["clamp", ["floor", ["*", t, n]], 0, n - 1];
+          const pal = ["palette", idx, colors2];
+          if (alpha !== 1) {
+            return { color: ["case", ["<=", alpha, 0], [0, 0, 0, 0], pal] };
+          }
+          return { color: pal };
+        }
+        const unitIds = entries.every(
+          (e) => Number.isInteger(e.min) && e.max === e.min + 1 && e.min >= 0 && e.min <= 255
+        );
+        if (unitIds) {
+          const pal256 = new Array(256).fill("rgba(0,0,0,0)");
+          for (const e of entries) pal256[e.min] = e.color;
+          const pal = ["palette", ["round", ["clamp", raw, 0, 255]], pal256];
+          if (alpha !== 1) {
+            return { color: ["case", ["<=", alpha, 0], [0, 0, 0, 0], pal] };
+          }
+          return { color: pal };
+        }
+        if (entries.length <= 48) {
+          const caseExpr = ["case"];
+          for (const e of entries) {
+            caseExpr.push(["all", [">=", raw, e.min], ["<", raw, e.max]]);
+            caseExpr.push(e.color);
+          }
+          caseExpr.push([0, 0, 0, 0]);
+          if (alpha !== 1) {
+            return { color: ["case", ["<=", alpha, 0], [0, 0, 0, 0], caseExpr] };
+          }
+          return { color: caseExpr };
+        }
+        const stops = [];
+        for (const e of entries) stops.push((e.min + e.max) / 2, e.color);
+        const interp = ["interpolate", ["linear"], raw, ...stops];
+        if (alpha !== 1) {
+          return { color: ["case", ["<=", alpha, 0], [0, 0, 0, 0], interp] };
+        }
+        return { color: interp };
+      }
+    }
     const colors = new Array(256).fill("rgba(0,0,0,0)");
-    const opacityPct = Number(state.paletteOpacity);
-    const alpha = Number.isFinite(opacityPct) ? Math.max(0, Math.min(1, 1 - opacityPct / 100)) : 1;
     const ids = Object.keys(state.colormap || {}).map(Number).filter((n) => Number.isFinite(n) && n >= 0 && n <= 255).sort((a, b) => a - b);
     for (const id of ids) {
       const hex = state.colormap[id] ?? state.colormap[String(id)];
       if (!hex) continue;
-      colors[id] = alpha >= 0.999 ? hex : colorWithAlpha(hex, alpha);
+      colors[id] = hex;
+    }
+    if (alpha !== 1) {
+      return {
+        color: [
+          "case",
+          ["<=", alpha, 0],
+          [0, 0, 0, 0],
+          ["palette", ["round", rawBand(bi, 0, 255)], colors]
+        ]
+      };
     }
     return {
       color: ["palette", ["round", rawBand(bi, 0, 255)], colors]
     };
-  }
-  function colorWithAlpha(color, alpha) {
-    const a = Math.max(0, Math.min(1, alpha));
-    const s = String(color || "").trim();
-    const hex = s.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
-    if (hex) {
-      let h = hex[1];
-      if (h.length === 3) h = h.split("").map((c) => c + c).join("");
-      const r = parseInt(h.slice(0, 2), 16);
-      const g = parseInt(h.slice(2, 4), 16);
-      const b = parseInt(h.slice(4, 6), 16);
-      return `rgba(${r},${g},${b},${a})`;
-    }
-    const rgb = s.match(/^rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)(?:\s*,\s*[\d.]+\s*)?\)$/i);
-    if (rgb) return `rgba(${rgb[1]},${rgb[2]},${rgb[3]},${a})`;
-    return color;
   }
   function planesFitUint8(planes) {
     if (!planes?.length) return true;
@@ -38923,20 +39052,6 @@ ${ifBlocks}
     };
   }
   function freeViewOptions(viewConfig = {}) {
-    const extent = viewConfig.extent;
-    let maxResolution = viewConfig.maxResolution;
-    let minResolution = viewConfig.minResolution;
-    if (extent && Number.isFinite(extent[0])) {
-      const w = Math.abs(extent[2] - extent[0]) || 1;
-      const h = Math.abs(extent[3] - extent[1]) || 1;
-      const fitish = Math.max(w, h);
-      maxResolution = Math.max(maxResolution || 0, fitish * 64);
-      const pixelish = Math.min(w, h) / 4096;
-      minResolution = Math.min(minResolution || pixelish, pixelish);
-    } else {
-      maxResolution = maxResolution || 1e7;
-      minResolution = minResolution || 1e-4;
-    }
     return {
       projection: viewConfig.projection,
       center: viewConfig.center,
@@ -38946,8 +39061,9 @@ ${ifBlocks}
       multiWorld: true,
       // false: updateSize on side-panel reflow must not keep zooming out.
       showFullExtent: false,
-      maxResolution,
-      minResolution
+      // Effectively unlimited zoom (OL always has some numeric bound).
+      minResolution: 1e-12,
+      maxResolution: 1e15
     };
   }
   function createEmptyMap(target, viewConfig) {
@@ -38982,6 +39098,8 @@ ${ifBlocks}
     const boundOpts = hasBounds ? { min: mins, max: maxs } : {};
     let sourceInfo;
     const externalOvers = Array.isArray(overviews) ? overviews : [];
+    const looksFloat = hasBounds && mins.some((lo, i) => lo < 0 || Number.isFinite(maxs[i]) && maxs[i] > 255);
+    const nodataOpt = looksFloat || blob ? { nodata: NaN } : {};
     if (blob && (overviewBlobs?.length || externalOvers.length)) {
       const mainUrl = URL.createObjectURL(blob);
       objectUrls.push(mainUrl);
@@ -38993,13 +39111,19 @@ ${ifBlocks}
         }),
         ...externalOvers
       ];
-      sourceInfo = { url: mainUrl, overviews: ovrUrls, ...boundOpts };
+      sourceInfo = { url: mainUrl, overviews: ovrUrls, ...boundOpts, ...nodataOpt };
     } else if (blob) {
-      sourceInfo = hasBounds ? { blob, ...boundOpts } : { blob, min: Array(bandCount).fill(0), max: Array(bandCount).fill(255) };
+      sourceInfo = hasBounds ? { blob, ...boundOpts, ...nodataOpt } : {
+        blob,
+        min: Array(bandCount).fill(0),
+        max: Array(bandCount).fill(255),
+        ...nodataOpt
+      };
     } else if (url) {
       sourceInfo = {
         url,
         ...boundOpts,
+        ...nodataOpt,
         ...externalOvers.length ? { overviews: [...externalOvers] } : {}
       };
     } else {
@@ -39037,14 +39161,28 @@ ${ifBlocks}
       }
     }
   }
+  function opacityFromStyleState(state) {
+    if (!state || state.mode !== "paletted") return 1;
+    const pct = Number(state.paletteOpacity);
+    if (!Number.isFinite(pct)) return 1;
+    return Math.max(0, Math.min(1, 1 - pct / 100));
+  }
   function applyStyle(layer, state) {
     if (!layer) return;
-    if (layer.get?.("rvKind") === "static") return;
+    if (layer.get?.("rvKind") === "static") {
+      if (typeof layer.setOpacity === "function") {
+        layer.setOpacity(opacityFromStyleState(state));
+      }
+      return;
+    }
     if (typeof layer.setStyle !== "function") return;
     const built = state && typeof state === "object" && state.color ? state : buildWebGlStyle(state);
     const wasVisible = layer.getVisible();
     layer.setStyle(built);
     if (!wasVisible) layer.setVisible(false);
+    if (typeof layer.setOpacity === "function" && state && !state.color) {
+      layer.setOpacity(opacityFromStyleState(state));
+    }
   }
   function fitMap(map, viewConfig) {
     if (!map) return;
@@ -39055,6 +39193,178 @@ ${ifBlocks}
     }
     const extent = view.getProjection()?.getExtent?.();
     if (extent) view.fit(extent, { padding: [24, 24, 24, 24], nearest: true });
+  }
+
+  // media/src/colorTable.js
+  var COLOR_TABLE_MAX = 256;
+  function serializeColorTable(table) {
+    const rows = Array.isArray(table) ? table.slice(0, COLOR_TABLE_MAX) : [];
+    const out = [];
+    for (const e of rows) {
+      const min = Number(e?.min);
+      const max = Number(e?.max);
+      const color = String(e?.color || "").trim();
+      if (!Number.isFinite(min) || !Number.isFinite(max) || !(max > min) || !color) continue;
+      out.push({ min, max, color });
+    }
+    return out;
+  }
+  function parseColorTable(raw) {
+    if (!Array.isArray(raw)) return [];
+    return serializeColorTable(raw);
+  }
+  function rangesOverlap(a, b) {
+    const a0 = Number(a?.min);
+    const a12 = Number(a?.max);
+    const b0 = Number(b?.min);
+    const b12 = Number(b?.max);
+    if (![a0, a12, b0, b12].every(Number.isFinite)) return false;
+    if (!(a12 > a0) || !(b12 > b0)) return false;
+    return a0 < b12 && b0 < a12;
+  }
+  function colorTableRangeConflicts(table, min, max, excludeIndex = -1) {
+    const probe = { min: Number(min), max: Number(max) };
+    if (!Number.isFinite(probe.min) || !Number.isFinite(probe.max) || !(probe.max > probe.min)) {
+      return true;
+    }
+    const rows = Array.isArray(table) ? table : [];
+    for (let i = 0; i < rows.length; i++) {
+      if (i === excludeIndex) continue;
+      if (rangesOverlap(probe, rows[i])) return true;
+    }
+    return false;
+  }
+  function suggestInsertRange(table, insertAt) {
+    const rows = Array.isArray(table) ? table : [];
+    const at = Math.max(0, Math.min(rows.length, Number(insertAt) || 0));
+    const prev = at > 0 ? rows[at - 1] : null;
+    const next3 = at < rows.length ? rows[at] : null;
+    if (!prev && !next3) return { min: 0, max: 1 };
+    if (!prev) {
+      const hi2 = Number(next3.min);
+      if (!Number.isFinite(hi2)) return null;
+      const lo2 = Number.isInteger(hi2) ? hi2 - 1 : hi2 - Math.max(Math.abs(hi2) * 1e-6, 1e-6);
+      if (!(hi2 > lo2)) return null;
+      if (colorTableRangeConflicts(rows, lo2, hi2)) return null;
+      return { min: lo2, max: hi2 };
+    }
+    if (!next3) {
+      const lo2 = Number(prev.max);
+      if (!Number.isFinite(lo2)) return null;
+      const hi2 = Number.isInteger(lo2) ? lo2 + 1 : lo2 + Math.max(Math.abs(lo2) * 1e-6, 1);
+      if (colorTableRangeConflicts(rows, lo2, hi2)) return null;
+      return { min: lo2, max: hi2 };
+    }
+    const lo = Number(prev.max);
+    const hi = Number(next3.min);
+    if (!Number.isFinite(lo) || !Number.isFinite(hi) || !(hi > lo)) return null;
+    let max = hi;
+    if (Number.isInteger(lo) && hi >= lo + 1) max = lo + 1;
+    else if (hi > lo) max = Math.min(hi, lo + Math.max((hi - lo) / 2, Number.EPSILON));
+    if (!(max > lo) || colorTableRangeConflicts(rows, lo, max)) return null;
+    return { min: lo, max };
+  }
+  function isIntegerLikeBand(dtype, stats, plane) {
+    const dt = String(dtype || "").toLowerCase();
+    if (/^(u?int\d*|byte|uint8|int8|uint16|int16|uint32|int32|int64|uint64)$/.test(dt) || dt.includes("int") || dt === "byte") {
+      return true;
+    }
+    if (stats && Number.isFinite(stats.min) && Number.isFinite(stats.max)) {
+      if (Number.isInteger(stats.min) && Number.isInteger(stats.max)) return true;
+    }
+    if (plane?.length) {
+      let seen = 0;
+      for (let i = 0; i < plane.length; i++) {
+        const v = plane[i];
+        if (!Number.isFinite(v)) continue;
+        if (!Number.isInteger(v)) return false;
+        if (++seen >= 64) return true;
+      }
+      return seen > 0;
+    }
+    return false;
+  }
+  function resolveBandMinMax(stats, plane) {
+    let lo = Number(stats?.min);
+    let hi = Number(stats?.max);
+    if (plane?.length) {
+      let pLo = Infinity;
+      let pHi = -Infinity;
+      for (let i = 0; i < plane.length; i++) {
+        const v = plane[i];
+        if (!Number.isFinite(v)) continue;
+        if (v < pLo) pLo = v;
+        if (v > pHi) pHi = v;
+      }
+      if (Number.isFinite(pLo) && Number.isFinite(pHi)) {
+        if (!Number.isFinite(lo) || !Number.isFinite(hi)) {
+          lo = pLo;
+          hi = pHi;
+        } else {
+          lo = Math.min(lo, pLo);
+          hi = Math.max(hi, pHi);
+        }
+      }
+    }
+    if (!Number.isFinite(lo) || !Number.isFinite(hi)) return { min: 0, max: 255 };
+    if (hi < lo) return { min: hi, max: lo };
+    if (hi === lo) return { min: lo, max: lo + 1 };
+    return { min: lo, max: hi };
+  }
+  function buildColorTableBreaks(min, max, integerLike) {
+    const lo0 = Number(min);
+    const hi0 = Number(max);
+    const lo = Number.isFinite(lo0) ? lo0 : 0;
+    let hi = Number.isFinite(hi0) ? hi0 : lo + 1;
+    if (hi <= lo) hi = lo + 1;
+    if (integerLike) {
+      const iLo = Math.trunc(lo);
+      const iHi = Math.trunc(hi);
+      const count = iHi - iLo + 1;
+      if (count >= 1 && count <= COLOR_TABLE_MAX) {
+        const out2 = [];
+        for (let v = iLo; v <= iHi; v++) {
+          out2.push({ min: v, max: v + 1 });
+        }
+        return out2;
+      }
+    }
+    const n = COLOR_TABLE_MAX;
+    const span = hi - lo;
+    const step = span / n;
+    const out = [];
+    for (let i = 0; i < n; i++) {
+      const a = lo + i * step;
+      const b = i === n - 1 ? hi + Math.abs(span || 1) * 1e-12 : lo + (i + 1) * step;
+      out.push({ min: a, max: b });
+    }
+    return out;
+  }
+  function colorTableFromLegacyMap(colormap, _labels = {}) {
+    if (!colormap || typeof colormap !== "object") return [];
+    const ids = Object.keys(colormap).map(Number).filter((n) => Number.isFinite(n)).sort((a, b) => a - b).slice(0, COLOR_TABLE_MAX);
+    return ids.map((id) => {
+      const hex = colormap[id] ?? colormap[String(id)] ?? "#808080";
+      return {
+        min: id,
+        max: id + 1,
+        color: String(hex)
+      };
+    });
+  }
+  function legacyMapFromColorTable(table) {
+    const out = {};
+    const rows = serializeColorTable(table);
+    for (let i = 0; i < rows.length; i++) {
+      out[i] = rows[i].color;
+    }
+    return out;
+  }
+  function formatBreak(v) {
+    if (!Number.isFinite(v)) return "";
+    if (Number.isInteger(v)) return String(v);
+    const s = v.toPrecision(8);
+    return String(Number(s));
   }
 
   // node_modules/proj4/lib/global.js
@@ -47655,13 +47965,27 @@ ${ifBlocks}
     const code = crsCode.startsWith("EPSG:") ? crsCode : `EPSG:${crsCode}`;
     let proj = get3(code);
     if (proj) return proj;
-    const num = code.replace("EPSG:", "");
+    const num = code.replace(/^EPSG:/i, "");
     if (EXTRA_DEFS[num]) {
       lib_default.defs(code, EXTRA_DEFS[num]);
       register(lib_default);
       proj = get3(code);
+      return proj || null;
     }
-    return proj || null;
+    const n = Number(num);
+    if (Number.isInteger(n) && n >= 32601 && n <= 32660) {
+      const zone = n - 32600;
+      lib_default.defs(code, `+proj=utm +zone=${zone} +datum=WGS84 +units=m +no_defs`);
+      register(lib_default);
+      return get3(code);
+    }
+    if (Number.isInteger(n) && n >= 32701 && n <= 32760) {
+      const zone = n - 32700;
+      lib_default.defs(code, `+proj=utm +zone=${zone} +south +datum=WGS84 +units=m +no_defs`);
+      register(lib_default);
+      return get3(code);
+    }
+    return null;
   }
   function projectionCode(proj) {
     try {
@@ -47679,6 +48003,29 @@ ${ifBlocks}
     if (/^EPSG:0$/i.test(code)) return true;
     return false;
   }
+  function extentArea(e) {
+    if (!e || e.length < 4) return 0;
+    const w = Math.abs(e[2] - e[0]);
+    const h = Math.abs(e[3] - e[1]);
+    if (!Number.isFinite(w) || !Number.isFinite(h)) return 0;
+    return w * h;
+  }
+  function extentsOverlap(a, b) {
+    if (!a || !b) return false;
+    const xOverlap = Math.min(a[2], b[2]) > Math.max(a[0], b[0]);
+    const yOverlap = Math.min(a[3], b[3]) > Math.max(a[1], b[1]);
+    return xOverlap && yOverlap;
+  }
+  function safeTransformExtent(extent, fromProj, toProj) {
+    if (!extent || !fromProj || !toProj) return null;
+    try {
+      const te = transformExtent(extent, fromProj, toProj);
+      if (!te || te.some((v) => !Number.isFinite(v))) return null;
+      return te;
+    } catch {
+      return null;
+    }
+  }
   function applyMapViewCrs(map, mapCrs, layerNativeViewConfig) {
     if (!map) return;
     const code = mapCrs && mapCrs !== "none" ? mapCrs : "EPSG:3857";
@@ -47691,12 +48038,10 @@ ${ifBlocks}
     const layerProj = layerNativeViewConfig?.projection || null;
     const layerExtent = layerNativeViewConfig?.extent;
     if (layerExtent && isLocalProjection(layerProj)) {
-      const viewProj = layerProj || oldProj || proj;
       map.setView(
         new View_default(
           freeViewOptions({
-            projection: viewProj,
-            extent: layerExtent
+            projection: proj
           })
         )
       );
@@ -47707,44 +48052,35 @@ ${ifBlocks}
       map.updateSize();
       return;
     }
-    let center = oldView.getCenter();
-    let resolution = oldView.getResolution();
-    if (oldProj && center) {
+    const layerTe = layerExtent && layerProj && !isLocalProjection(layerProj) ? safeTransformExtent(layerExtent, layerProj, proj) : null;
+    let viewTe = null;
+    if (oldProj) {
       try {
-        const extent = oldView.calculateExtent?.(map.getSize?.());
-        if (extent) {
-          const te = transformExtent(extent, oldProj, proj);
-          const layerTe = layerExtent && layerProj ? transformExtent(layerExtent, layerProj, proj) : layerExtent ? transformExtent(layerExtent, oldProj, proj) : te;
-          map.setView(
-            new View_default(
-              freeViewOptions({
-                projection: proj,
-                extent: layerTe
-              })
-            )
-          );
-          map.getView().fit(te, { padding: [24, 24, 24, 24], nearest: true });
-          map.updateSize();
-          return;
-        }
+        const size = map.getSize?.();
+        const extent = size && size[0] > 0 && size[1] > 0 ? oldView.calculateExtent(size) : oldView.calculateExtent?.([800, 800]);
+        viewTe = safeTransformExtent(extent, oldProj, proj);
       } catch {
+        viewTe = null;
       }
+    }
+    let fitTarget = null;
+    if (layerTe && viewTe && extentsOverlap(viewTe, layerTe) && extentArea(viewTe) > 0) {
+      fitTarget = viewTe;
+    } else if (layerTe) {
+      fitTarget = layerTe;
+    } else if (viewTe && extentArea(viewTe) > 0) {
+      fitTarget = viewTe;
     }
     map.setView(
       new View_default(
         freeViewOptions({
-          projection: proj,
-          center: center || [0, 0],
-          resolution: resolution || 1,
-          extent: layerExtent
+          projection: proj
         })
       )
     );
-    if (layerExtent) {
+    if (fitTarget) {
       try {
-        const from = layerProj || oldProj;
-        const te = from ? transformExtent(layerExtent, from, proj) : layerExtent;
-        map.getView().fit(te, { padding: [24, 24, 24, 24], nearest: true });
+        map.getView().fit(fitTarget, { padding: [24, 24, 24, 24], nearest: true });
       } catch {
       }
     }
@@ -47767,7 +48103,7 @@ ${ifBlocks}
       zh: {
         renderGray: "\u5355\u6CE2\u6BB5\u7070\u5EA6",
         renderRgb: "\u591A\u6CE2\u6BB5\u5F69\u8272",
-        renderPaletted: "\u8C03\u8272\u677F/\u552F\u4E00\u503C",
+        renderPaletted: "\u989C\u8272\u8868\u6E32\u67D3",
         grayBand: "\u7070\u5EA6\u6CE2\u6BB5",
         colorRamp: "\u989C\u8272\u68AF\u5EA6",
         rampBw: "\u9ED1\u5230\u767D",
@@ -47793,26 +48129,31 @@ ${ifBlocks}
         bandUnset: "\u672A\u8BBE\u7F6E",
         bandN: "\u6CE2\u6BB5",
         colValue: "\u503C",
+        colIndex: "ID",
+        colMin: "\u2265",
+        colMax: "<",
         colColor: "\u989C\u8272",
         colLabel: "\u6807\u6CE8",
         classify: "\u5206\u7C7B",
+        colorTableMax: "\u989C\u8272\u8868\u6700\u591A 256 \u9879",
+        colorTableOverlap: "\u533A\u95F4\u4E0D\u80FD\u4E0E\u73B0\u6709\u884C\u76F8\u4EA4",
+        tipCmapDrag: "\u62D6\u52A8\u8C03\u6574\u989C\u8272\u987A\u5E8F\uFF08ID \u4ECD\u4E3A\u884C\u53F7 0\u2026N\uFF09",
         deleteAll: "\u5168\u90E8\u5220\u9664",
         reloadCmap: "\u91CD\u8F7D\u8272\u8868",
         saveCmap: "\u4FDD\u5B58\u8272\u8868",
         savePlte: "\u53E6\u5B58\u4E3A PLTE",
         missingData: "\u7F3A\u5C11\u50CF\u7D20\u6570\u636E",
-        tipReload: "\u91CD\u65B0\u8BFB\u53D6 .vscode/raster-viewer.json",
-        tipSave: "\u5199\u5165 .vscode/raster-viewer.json",
-        tipPlte: "\u50CF\u7D20\u503C\u4E0D\u53D8\uFF0C\u7528\u5F53\u524D\u8272\u8868\u751F\u6210\u7D22\u5F15\u8272 PNG",
+        tipReload: "\u91CD\u65B0\u8BFB\u53D6 .vscode/dpviewlayer.json",
+        tipSave: "\u5199\u5165 .vscode/dpviewlayer.json",
+        tipPlte: "\u7C7B\u522B mask\uFF1A\u50CF\u7D20\u503C\u4E0D\u53D8\uFF0CPLTE \u6309\u4E0B\u9650\u503C\u7740\u8272\uFF1B\u8FDE\u7EED\u533A\u95F4\u5219\u91CD\u6620\u5C04\u4E3A\u884C\u53F7",
         tipReset: "\u5B9A\u4F4D\u5168\u56FE\uFF08\u9002\u5E94\u7A97\u53E3\uFF09",
         tipZoomNative: "\u6309\u539F\u56FE\u5206\u8FA8\u7387 1:1 \u663E\u793A",
-        locateMap: "\u5B9A\u4F4D\u5730\u56FE",
         mapHead: "\u5730\u56FE",
         clearLayers: "\u79FB\u9664",
         tipClearLayers: "\u79FB\u9664\u6240\u9009\u56FE\u5C42\uFF1BShift+\u70B9\u51FB\u4F5C\u7528\u4E8E\u5168\u90E8",
         tipEditAffine: "\u7F16\u8F91\u4EFF\u5C04",
-        tipAdd: "\u6DFB\u52A0\u7C7B\u522B",
-        tipRemove: "\u5220\u9664\u9009\u4E2D",
+        tipAdd: "\u5728\u9009\u4E2D\u884C\u4E0B\u65B9\u63D2\u5165\u4E00\u884C",
+        tipRemove: "\u5220\u9664\u9009\u4E2D\u884C",
         tipMore: "\u66F4\u591A",
         tipRemoveFile: "\u79FB\u9664",
         fileListEmpty: "\u53F3\u952E\u6587\u4EF6\u300C\u6DFB\u52A0\u4E3A\u56FE\u5C42\u300D\u52A0\u5165\u5F53\u524D\u89C6\u56FE",
@@ -47840,7 +48181,7 @@ ${ifBlocks}
       en: {
         renderGray: "Singleband gray",
         renderRgb: "Multiband color",
-        renderPaletted: "Paletted/Unique values",
+        renderPaletted: "Color table",
         grayBand: "Gray band",
         colorRamp: "Color ramp",
         rampBw: "Black to white",
@@ -47866,26 +48207,31 @@ ${ifBlocks}
         bandUnset: "Not set",
         bandN: "Band",
         colValue: "Value",
+        colIndex: "ID",
+        colMin: "\u2265",
+        colMax: "<",
         colColor: "Color",
         colLabel: "Label",
         classify: "Classify",
+        colorTableMax: "Color table is limited to 256 rows",
+        colorTableOverlap: "Range must not overlap existing rows",
+        tipCmapDrag: "Drag to reorder colors (ID stays row index 0\u2026N)",
         deleteAll: "Delete all",
         reloadCmap: "Reload colormap",
         saveCmap: "Save colormap",
         savePlte: "Save as PLTE",
         missingData: "Missing pixel data",
-        tipReload: "Reload .vscode/raster-viewer.json",
-        tipSave: "Write .vscode/raster-viewer.json",
-        tipPlte: "Export indexed PNG with current colormap",
+        tipReload: "Reload .vscode/dpviewlayer.json",
+        tipSave: "Write .vscode/dpviewlayer.json",
+        tipPlte: "Class masks: pixels unchanged, PLTE keyed by class value; continuous ranges remapped to row index",
         tipReset: "Fit layer to view",
         tipZoomNative: "1:1 native resolution",
-        locateMap: "Fit map",
         mapHead: "Map",
         clearLayers: "Remove",
         tipClearLayers: "Remove selected layers; Shift+click applies to all",
         tipEditAffine: "Edit affine",
-        tipAdd: "Add class",
-        tipRemove: "Remove selected",
+        tipAdd: "Insert a row below the selection",
+        tipRemove: "Delete the selected row",
         tipMore: "More",
         tipRemoveFile: "Remove",
         fileListEmpty: "Right-click a file \u2192 Add as Layer",
@@ -47913,6 +48259,11 @@ ${ifBlocks}
     };
     let lang = payload.uiLang === "en" ? "en" : "zh";
     let colormap = { ...payload.colormap || {} };
+    let colorTable = (() => {
+      const fromPayload = parseColorTable(payload.colorTable);
+      if (fromPayload.length) return fromPayload;
+      return colorTableFromLegacyMap(colormap, {});
+    })();
     let labels = {};
     let selectedValue = null;
     let userRenderMode = null;
@@ -47996,7 +48347,6 @@ ${ifBlocks}
     const btnReload = document.getElementById("btnReloadCmap");
     const btnSave = document.getElementById("btnSaveCmap");
     const btnSavePlte = document.getElementById("btnSavePlte");
-    const btnResetView = document.getElementById("btnResetView");
     const btnToggleVisibility = document.getElementById("btnToggleVisibility");
     const btnClearLayers = document.getElementById("btnClearLayers");
     const tabStyleEl = document.getElementById("tabStyle");
@@ -48110,8 +48460,6 @@ ${ifBlocks}
       document.querySelectorAll("[data-i18n]").forEach((el) => {
         el.textContent = t(el.getAttribute("data-i18n"));
       });
-      btnResetView.title = t("locateMap");
-      btnResetView.setAttribute("aria-label", t("locateMap"));
       if (btnToggleVisibility) {
         btnToggleVisibility.title = t("tipVisibility");
         btnToggleVisibility.setAttribute("aria-label", t("tipVisibility"));
@@ -48188,8 +48536,17 @@ ${ifBlocks}
     }
     function currentCrs() {
       const c = geo?.crs;
-      if (c && c !== "Local" && c !== "Unknown") return c;
+      if (c) return c;
       return mapCrs || "EPSG:3857";
+    }
+    function applyLayerCrsPolicy(g, w = width, h = height) {
+      const base = normalizeGeoRef(g, w, h);
+      if (normalizeEpsg(base.crs)) return base;
+      const crs = mapCrs || "EPSG:3857";
+      return { ...base, crs };
+    }
+    function fileHasOwnCrs(g) {
+      return g?.source === "geotiff" && !!normalizeEpsg(g?.crs);
     }
     function formatAffineNum(v) {
       if (!Number.isFinite(v)) return "NaN";
@@ -48210,9 +48567,9 @@ ${ifBlocks}
     }
     function geoCoordDecimals() {
       const res = map?.getView()?.getResolution?.();
-      if (!Number.isFinite(res) || res <= 0) return 3;
-      const d = Math.ceil(-Math.log10(res * 0.1));
-      return Math.max(0, Math.min(12, d));
+      if (!Number.isFinite(res) || res <= 0) return 6;
+      const d = Math.ceil(-Math.log10(res)) + 2;
+      return Math.max(4, Math.min(12, d));
     }
     function formatGeoCoord(v) {
       if (!Number.isFinite(v)) return "\u2014";
@@ -48263,6 +48620,7 @@ ${ifBlocks}
         renderMode,
         userRenderMode,
         colormap: { ...colormap },
+        colorTable: serializeColorTable(colorTable),
         labels: { ...labels },
         selectedValue,
         grayBand: grayBandEl.value,
@@ -48306,6 +48664,8 @@ ${ifBlocks}
         userRenderMode = null;
         renderMode = defaults3?.defaultRender || "gray";
         colormap = { ...defaults3?.colormap || {} };
+        const fromDefaults = parseColorTable(defaults3?.colorTable);
+        colorTable = fromDefaults.length ? fromDefaults : colorTableFromLegacyMap(colormap, {});
         labels = {};
         selectedValue = null;
         if (paletteRampEl) paletteRampEl.value = "random";
@@ -48317,6 +48677,7 @@ ${ifBlocks}
       renderMode = st.renderMode || renderMode;
       colormap = { ...st.colormap };
       labels = { ...st.labels };
+      colorTable = Array.isArray(st.colorTable) && st.colorTable.length ? parseColorTable(st.colorTable) : colorTableFromLegacyMap(colormap, labels);
       selectedValue = st.selectedValue;
       randomSeed = st.randomSeed || randomSeed;
       const assign3 = (el, v) => {
@@ -48386,13 +48747,12 @@ ${ifBlocks}
       const cached = fileCache.get(id);
       return cached?.visible !== false;
     }
-    function applyOlLayerVisibility(layer, visible) {
+    function applyOlLayerVisibility(layer, visible, styleState) {
       if (!layer) return;
-      const v = !!visible;
-      if (typeof layer.setOpacity === "function" && layer.getOpacity() !== 1) {
-        layer.setOpacity(1);
+      layer.setVisible(!!visible);
+      if (typeof layer.setOpacity === "function") {
+        layer.setOpacity(opacityFromStyleState(styleState));
       }
-      layer.setVisible(v);
     }
     function setLayerVisibility(id, visible) {
       const v = !!visible;
@@ -48400,7 +48760,7 @@ ${ifBlocks}
       const cached = fileCache.get(id);
       if (cached) {
         cached.visible = v;
-        applyOlLayerVisibility(cached.layer, v);
+        applyOlLayerVisibility(cached.layer, v, cached.styleState);
       }
       assertAllLayerVisibility();
     }
@@ -48409,18 +48769,36 @@ ${ifBlocks}
         if (!cached?.layer) continue;
         const vis = isLayerVisible(fid);
         cached.visible = vis;
-        applyOlLayerVisibility(cached.layer, vis);
+        applyOlLayerVisibility(cached.layer, vis, cached.styleState);
       }
+    }
+    function styleStateWithAlpha(state, layer, dataBands) {
+      const st = { ...state || {} };
+      const n = Math.max(1, Number(dataBands) || Number(st.bandCount) || 1);
+      st.bandCount = n;
+      const sb = Number(layer?.getSource?.()?.bandCount);
+      if (Number.isFinite(sb)) {
+        st.sourceBandCount = sb;
+        if (sb > n) st.alphaBand = sb;
+        else delete st.alphaBand;
+      }
+      return st;
     }
     function refreshAllCachedLayerStyles() {
       for (const [fid, cached] of fileCache) {
         if (!cached?.layer || !cached.styleState) continue;
         try {
-          applyStyle(cached.layer, cached.styleState);
+          const st = styleStateWithAlpha(
+            cached.styleState,
+            cached.layer,
+            cached.bandCount || cached.styleState.bandCount || 1
+          );
+          cached.styleState = st;
+          applyStyle(cached.layer, st);
         } catch (err2) {
           console.error("refresh style", fid, err2);
         }
-        applyOlLayerVisibility(cached.layer, isLayerVisible(fid));
+        applyOlLayerVisibility(cached.layer, isLayerVisible(fid), cached.styleState);
       }
       map?.render?.();
     }
@@ -48489,7 +48867,7 @@ ${ifBlocks}
         layerVisibility.set(id, next3);
         const cached = fileCache.get(id);
         if (cached) cached.visible = next3;
-        applyOlLayerVisibility(cached?.layer, next3);
+        applyOlLayerVisibility(cached?.layer, next3, cached?.styleState);
       }
       assertAllLayerVisibility();
       renderFileList();
@@ -48560,6 +48938,7 @@ ${ifBlocks}
               keepSelection: multi || range
             });
           } else {
+            setSideTab("style");
             renderFileList();
           }
         });
@@ -48609,7 +48988,7 @@ ${ifBlocks}
     }
     function removeFileLayer(id) {
       const cached = fileCache.get(id);
-      if (cached?.objectUrls) revokeLayerUrls(cached.objectUrls);
+      revokeCachedLayerUrls(cached);
       if (cached?.layer && map) {
         map.removeLayer(cached.layer);
       }
@@ -48639,10 +49018,14 @@ ${ifBlocks}
       };
     }
     async function createLayerFromArgs(srcArgs, opts) {
-      const { style, bandCount: nBands, zIndex, mins, maxs, geo: layerGeo } = opts;
-      const fileEpsg = normalizeEpsg(layerGeo?.crs || srcArgs.crs);
-      const projection = fileEpsg ? null : LOCAL_PIXEL_PROJECTION;
-      return createRasterLayer({
+      const { style, bandCount: nBands, zIndex, mins, maxs, geo: layerGeo, width: w, height: h } = opts;
+      let projection = null;
+      if (!srcArgs.blob) {
+        if (!fileHasOwnCrs(layerGeo)) {
+          projection = ensureProjection(layerGeo?.crs || mapCrs) || ensureProjection(mapCrs) || LOCAL_PIXEL_PROJECTION;
+        }
+      }
+      const created = await createRasterLayer({
         url: srcArgs.url,
         blob: srcArgs.blob,
         overviewBlobs: srcArgs.overviewBlobs,
@@ -48654,13 +49037,26 @@ ${ifBlocks}
         maxs,
         projection
       });
+      if (created.viewConfig && w && h) {
+        const extent = created.viewConfig.extent || extentFromGeo(w, h, layerGeo);
+        created.viewConfig = {
+          ...created.viewConfig,
+          ...extent ? { extent } : {},
+          width: w,
+          height: h
+        };
+      }
+      return created;
     }
     function layerSourceBounds(nBands, planes, stats, mode2) {
       if (mode2 === "paletted") {
-        return resolveSourceBounds(nBands, stats, planes, { lockByteRange: true });
+        return resolveSourceBounds(nBands, stats, planes);
       }
       if (planes?.length) {
         return resolveSourceBounds(nBands, stats, planes);
+      }
+      if (stats?.length && stats.some((s) => Number.isFinite(s?.min) && Number.isFinite(s?.max))) {
+        return resolveSourceBounds(nBands, stats, null);
       }
       return null;
     }
@@ -48688,12 +49084,15 @@ ${ifBlocks}
       payload.rasterUrl = rasterUrl;
       if (cached.colormap && !fileUiState.has(activeFileId)) {
         colormap = { ...cached.colormap };
+        const fromCache = parseColorTable(cached.colorTable);
+        if (fromCache.length) colorTable = fromCache;
       }
     }
     async function activateFile(id, { fit = false, requestIfMissing = false, keepSelection = false } = {}) {
       activeFileId = id;
       if (!keepSelection) selectOnly(id);
       else if (id) selectedFileIds.add(id);
+      setSideTab("style");
       const cached = fileCache.get(id);
       if (!cached || !cached.layer) {
         renderFileList();
@@ -48704,7 +49103,8 @@ ${ifBlocks}
       bindActiveFromCache(cached);
       restoreUiState(id, {
         defaultRender: cached.defaultRender,
-        colormap: cached.colormap
+        colormap: cached.colormap,
+        colorTable: cached.colorTable
       });
       if (!userRenderMode) {
         if (bandPlanes.length) {
@@ -48716,16 +49116,12 @@ ${ifBlocks}
       ready = bandPlanes.length > 0 || !!cached.layer;
       applyRenderModeUi();
       fillBandSelects();
-      if (bandPlanes.length && (!grayMinEl.value || !grayMaxEl.value)) {
-        setMinMaxInputsFromStats();
-      }
+      setMinMaxInputsFromStats();
+      ensureGrayStretchInputs();
       syncStretchParamUi();
       if (renderMode === "paletted") {
-        if (!sortedColormapIds().length && bandPlanes.length) classifyFromData(true);
-        else {
-          ensureLabelsForIds(sortedColormapIds());
-          renderCmapTable();
-        }
+        if (!colorTable.length) classifyFromData(true);
+        else renderCmapTable();
       }
       updateMeta();
       renderFileList();
@@ -48748,7 +49144,8 @@ ${ifBlocks}
         bindActiveFromCache(cached);
         restoreUiState(prevActive, {
           defaultRender: cached.defaultRender,
-          colormap: cached.colormap
+          colormap: cached.colormap,
+          colorTable: cached.colorTable
         });
         ready = bandPlanes.length > 0 || !!cached.layer;
         applyRenderModeUi();
@@ -48765,7 +49162,7 @@ ${ifBlocks}
       if (!cached?.layer) return;
       const vis = isLayerVisible(id);
       cached.visible = vis;
-      applyOlLayerVisibility(cached.layer, vis);
+      applyOlLayerVisibility(cached.layer, vis, cached.styleState);
     }
     function clearDecodePayload() {
       payload.indexBase64 = void 0;
@@ -48791,7 +49188,7 @@ ${ifBlocks}
       if (msg.width) payload.width = msg.width;
       if (msg.height) payload.height = msg.height;
       if (msg.geo) {
-        geo = normalizeGeoRef(msg.geo, msg.width || width, msg.height || height);
+        geo = applyLayerCrsPolicy(msg.geo, msg.width || width, msg.height || height);
         payload.geo = geo;
       }
       if (msg.rasterUrl) {
@@ -48801,26 +49198,41 @@ ${ifBlocks}
       if (Array.isArray(msg.overviewUrls)) {
         payload.overviewUrls = msg.overviewUrls;
       }
+      if (Array.isArray(msg.bandStats) && msg.bandStats.length) {
+        payload.bandStats = msg.bandStats;
+        bandStats = msg.bandStats.map((s) => ({
+          min: Number(s.min),
+          max: Number(s.max),
+          mean: s.mean != null ? Number(s.mean) : void 0,
+          stddev: s.stddev != null ? Number(s.stddev) : void 0
+        }));
+      }
       payload.awaitIndices = !!msg.awaitIndices;
       if (msg.indexBase64) {
         payload.indexBase64 = msg.indexBase64;
         payload.indexFormat = msg.indexFormat || "i32";
       }
       bandPlanes = [];
-      bandStats = [];
+      if (!Array.isArray(msg.bandStats) || !msg.bandStats.length) {
+        bandStats = [];
+      }
       bandCount = Math.max(1, Number(payload.bands) || 1);
       tileLayer = null;
       ready = false;
       restoreUiState(activeFileId, {
         defaultRender: msg.defaultRender || payload.defaultRender,
-        colormap: msg.colormap || payload.colormap
+        colormap: msg.colormap || payload.colormap,
+        colorTable: msg.colorTable || payload.colorTable
       });
       if (!fileUiState.has(activeFileId)) {
         userRenderMode = null;
         renderMode = msg.defaultRender || payload.defaultRender || "gray";
       }
-      if (!fileUiState.has(activeFileId) && msg.colormap) {
-        colormap = { ...msg.colormap };
+      if (!fileUiState.has(activeFileId) && (msg.colorTable || msg.colormap)) {
+        colormap = { ...msg.colormap || {} };
+        const fromMsg = parseColorTable(msg.colorTable);
+        colorTable = fromMsg.length ? fromMsg : colorTableFromLegacyMap(colormap, {});
+        syncColorTableLegacy();
       }
       updateMeta();
       renderFileList();
@@ -48837,9 +49249,7 @@ ${ifBlocks}
         geoInfoEl.textContent = info;
       }
       if (geoCrsLabelEl) {
-        const crs = currentCrs();
-        const src = geo?.source === "worldfile" ? "world file" : geo?.source === "geotiff" ? "GeoTIFF" : geo?.source === "identity" ? "\u9ED8\u8BA4" : geo?.source === "user" ? "\u7528\u6237" : "";
-        geoCrsLabelEl.textContent = src ? `${crs} \xB7 ${src}` : crs;
+        geoCrsLabelEl.textContent = currentCrs() || "\u2014";
       }
     }
     function escapeHtml(s) {
@@ -48858,19 +49268,23 @@ ${ifBlocks}
       const rawMax = grayMaxEl?.value;
       let min = Number(rawMin);
       let max = Number(rawMax);
-      const empty = rawMin === "" || rawMax === "" || rawMin == null || rawMax == null;
-      if (empty || !Number.isFinite(min) || !Number.isFinite(max) || max <= min) {
-        const bi = Number(grayBandEl?.value) || 0;
-        const s = bandStats[bi];
+      const minEmpty = rawMin === "" || rawMin == null;
+      const maxEmpty = rawMax === "" || rawMax == null;
+      const minBad = minEmpty || !Number.isFinite(min);
+      const maxBad = maxEmpty || !Number.isFinite(max);
+      const bi = Number(grayBandEl?.value) || 0;
+      const s = bandStats[bi];
+      const staleByteDefault = !minBad && !maxBad && min === 0 && max === 255 && s && Number.isFinite(s.min) && Number.isFinite(s.max) && (s.min < 0 || s.max > 255 || !Number.isInteger(s.min) || !Number.isInteger(s.max));
+      const orderBad = Number.isFinite(min) && Number.isFinite(max) && max <= min;
+      if (minBad || maxBad || orderBad || staleByteDefault) {
+        let dMin = 0;
+        let dMax = 255;
         if (s && Number.isFinite(s.min) && Number.isFinite(s.max)) {
-          min = s.min;
-          max = s.max <= s.min ? s.min + 1 : s.max;
-          if (grayMinEl) grayMinEl.value = String(min);
-          if (grayMaxEl) grayMaxEl.value = String(max);
-        } else {
-          min = 0;
-          max = 255;
+          dMin = s.min;
+          dMax = s.max <= s.min ? s.min + 1 : s.max;
         }
+        if (minBad || orderBad || staleByteDefault) min = dMin;
+        if (maxBad || orderBad || staleByteDefault) max = dMax;
       }
       return { min, max };
     }
@@ -48879,19 +49293,22 @@ ${ifBlocks}
       const rawMax = maxEl?.value;
       let min = Number(rawMin);
       let max = Number(rawMax);
-      const empty = rawMin === "" || rawMax === "" || rawMin == null || rawMax == null;
-      if (empty || !Number.isFinite(min) || !Number.isFinite(max) || max <= min) {
+      const minEmpty = rawMin === "" || rawMin == null;
+      const maxEmpty = rawMax === "" || rawMax == null;
+      const minBad = minEmpty || !Number.isFinite(min);
+      const maxBad = maxEmpty || !Number.isFinite(max);
+      const orderBad = Number.isFinite(min) && Number.isFinite(max) && max <= min;
+      if (minBad || maxBad || orderBad) {
         const bi = bandSel === "unset" || bandSel === "" ? -1 : Number(bandSel);
         const s = bi >= 0 ? bandStats[bi] : null;
+        let dMin = 0;
+        let dMax = 255;
         if (s && Number.isFinite(s.min) && Number.isFinite(s.max)) {
-          min = s.min;
-          max = s.max <= s.min ? s.min + 1 : s.max;
-        } else {
-          min = 0;
-          max = 255;
+          dMin = s.min;
+          dMax = s.max <= s.min ? s.min + 1 : s.max;
         }
-        if (minEl) minEl.value = String(min);
-        if (maxEl) maxEl.value = String(max);
+        if (minBad || orderBad) min = dMin;
+        if (maxBad || orderBad) max = dMax;
       }
       return { min, max };
     }
@@ -48907,6 +49324,8 @@ ${ifBlocks}
       const blueRange = ensureChannelStretch(blueMinEl, blueMaxEl, blueBandEl?.value);
       const nBands = Math.max(1, bandCount || bandPlanes.length || 1);
       const bounds = layerSourceBounds(nBands, bandPlanes, bandStats, renderMode) || (bandPlanes.length ? resolveSourceBounds(nBands, bandStats, bandPlanes) : null);
+      const src = tileLayer?.getSource?.();
+      const sourceBandCount = Number(src?.bandCount);
       return {
         mode: renderMode,
         grayBand: grayBandEl.value,
@@ -48927,8 +49346,12 @@ ${ifBlocks}
         paletteBand: paletteBandEl.value,
         paletteOpacity: Number(paletteOpacityEl?.value) || 0,
         colormap,
+        colorTable: serializeColorTable(colorTable),
         sourceMins: bounds?.mins,
-        sourceMaxs: bounds?.maxs
+        sourceMaxs: bounds?.maxs,
+        bandCount: nBands,
+        sourceBandCount: Number.isFinite(sourceBandCount) ? sourceBandCount : void 0,
+        alphaBand: Number.isFinite(sourceBandCount) && sourceBandCount > nBands ? sourceBandCount : void 0
       };
     }
     function mapToPixel(coord) {
@@ -49067,30 +49490,92 @@ ${ifBlocks}
       const y = Math.floor((extent[3] - layerCoord[1]) / sy);
       return { x, y, w, h };
     }
-    function sampleLayerAt(coord, fileMeta, cached) {
+    const geoTiffReaderCache = /* @__PURE__ */ new Map();
+    async function openGeoTiffReader(url) {
+      if (!url) throw new Error("missing geotiff url");
+      let p = geoTiffReaderCache.get(url);
+      if (!p) {
+        p = fromUrl(url).catch((err2) => {
+          geoTiffReaderCache.delete(url);
+          throw err2;
+        });
+        geoTiffReaderCache.set(url, p);
+      }
+      return p;
+    }
+    async function sampleGeoTiffPixel(url, x, y, nBands) {
+      const tiff = await openGeoTiffReader(url);
+      const image = await tiff.getImage();
+      const iw = image.getWidth();
+      const ih = image.getHeight();
+      if (x < 0 || y < 0 || x >= iw || y >= ih) return null;
+      const n = Math.max(1, Math.min(32, Number(nBands) || image.getSamplesPerPixel?.() || 1));
+      const samples = Array.from({ length: n }, (_, i) => i);
+      const data = await image.readRasters({
+        window: [x, y, x + 1, y + 1],
+        width: 1,
+        height: 1,
+        samples,
+        interleave: false
+      });
+      const bands = [];
+      for (let b = 0; b < n; b++) {
+        let v = NaN;
+        if (Array.isArray(data)) {
+          const plane = data[b];
+          v = plane != null ? Number(plane[0]) : NaN;
+        } else if (data && typeof data.length === "number") {
+          v = Number(data[b] ?? data[0]);
+        }
+        bands.push({ index: b + 1, value: Number.isFinite(v) ? v : NaN });
+      }
+      return bands;
+    }
+    function layerSampleUrl(cached) {
+      if (!cached) return "";
+      if (cached.rasterUrl) return cached.rasterUrl;
+      if (cached.objectUrls?.length) return cached.objectUrls[0];
+      return "";
+    }
+    async function sampleLayerAt(coord, fileMeta, cached) {
       const id = fileMeta?.id || cached?.filePath || "";
       const name = fileMeta?.name || cached?.filePath || id || "\u2014";
-      if (!cached?.bandPlanes?.length) {
-        return { id, name, hit: false, reason: "notLoaded", bands: [] };
-      }
       const pix = mapCoordToLayerPixel(coord, cached);
       if (!pix) return { id, name, hit: false, reason: "noData", bands: [] };
       if (pix.x < 0 || pix.y < 0 || pix.x >= pix.w || pix.y >= pix.h) {
         return { id, name, hit: false, reason: "out", bands: [] };
       }
-      const i = pix.y * pix.w + pix.x;
-      const bands = [];
-      for (let b = 0; b < cached.bandPlanes.length; b++) {
-        const plane = cached.bandPlanes[b];
-        const v = plane && i >= 0 && i < plane.length ? plane[i] : NaN;
-        bands.push({ index: b + 1, value: v });
+      if (cached?.bandPlanes?.length) {
+        const i = pix.y * pix.w + pix.x;
+        const bands = [];
+        for (let b = 0; b < cached.bandPlanes.length; b++) {
+          const plane = cached.bandPlanes[b];
+          const v = plane && i >= 0 && i < plane.length ? plane[i] : NaN;
+          bands.push({ index: b + 1, value: v });
+        }
+        return { id, name, hit: true, bands, pixel: pix };
       }
-      return { id, name, hit: true, bands, pixel: pix };
+      const url = layerSampleUrl(cached);
+      if (!url) return { id, name, hit: false, reason: "notLoaded", bands: [], pixel: pix };
+      try {
+        const nBands = cached.bandCount || cached.bandStats?.length || 1;
+        const bands = await sampleGeoTiffPixel(url, pix.x, pix.y, nBands);
+        if (!bands?.length) return { id, name, hit: false, reason: "noData", bands: [], pixel: pix };
+        return { id, name, hit: true, bands, pixel: pix };
+      } catch (err2) {
+        console.warn("identify sample", name, err2);
+        return { id, name, hit: false, reason: "notLoaded", bands: [], pixel: pix };
+      }
+    }
+    function identifyReasonText(reason) {
+      if (reason === "out") return t("identifyOut");
+      if (reason === "notLoaded") return t("identifyNotLoaded");
+      return t("identifyNoData");
     }
     function renderIdentifyResults(results) {
       if (!identifyBodyEl || !identifyEmptyEl || !identifyTableWrap) return;
-      const hits = (results || []).filter((r) => r.hit && r.bands?.length);
-      if (!hits.length) {
+      const list = (results || []).filter((r) => r.reason !== "out");
+      if (!list.length) {
         identifyEmptyEl.hidden = false;
         identifyTableWrap.hidden = true;
         identifyBodyEl.innerHTML = "";
@@ -49099,14 +49584,14 @@ ${ifBlocks}
       identifyEmptyEl.hidden = true;
       identifyTableWrap.hidden = false;
       const parts = [];
-      for (const r of hits) {
+      for (const r of list) {
         const collapsed = identifyCollapsed.has(r.id);
-        const caret = collapsed ? "\u25B6" : "\u25BC";
-        const pixText = r.pixel && Number.isFinite(r.pixel.x) && Number.isFinite(r.pixel.y) ? `${r.pixel.x}, ${r.pixel.y}` : "\u2014";
+        const caret = r.hit && r.bands?.length ? collapsed ? "\u25B6" : "\u25BC" : "";
+        const pixText = r.pixel && Number.isFinite(r.pixel.x) && Number.isFinite(r.pixel.y) ? `${r.pixel.x}, ${r.pixel.y}` : r.hit ? "\u2014" : identifyReasonText(r.reason);
         parts.push(
-          `<tr class="identify-group-row${collapsed ? " is-collapsed" : ""}" data-layer-id="${escapeAttr(r.id)}" data-act="toggle"><td><span class="identify-caret">${caret}</span> ${escapeHtml(r.name)}</td><td class="identify-pix">${escapeHtml(pixText)}</td></tr>`
+          `<tr class="identify-group-row${collapsed ? " is-collapsed" : ""}${r.hit ? "" : " is-miss"}" data-layer-id="${escapeAttr(r.id)}" data-act="toggle"><td>${caret ? `<span class="identify-caret">${caret}</span> ` : ""}${escapeHtml(r.name)}</td><td class="identify-pix">${escapeHtml(pixText)}</td></tr>`
         );
-        if (!collapsed) {
+        if (r.hit && r.bands?.length && !collapsed) {
           for (const b of r.bands) {
             const feat = `${t("bandN")}${b.index}`;
             parts.push(
@@ -49120,18 +49605,18 @@ ${ifBlocks}
         tr.addEventListener("click", () => {
           const id = tr.getAttribute("data-layer-id");
           if (!id) return;
+          const row = (lastIdentifyResults || []).find((r) => r.id === id);
+          if (!row?.hit || !row.bands?.length) return;
           if (identifyCollapsed.has(id)) identifyCollapsed.delete(id);
           else identifyCollapsed.add(id);
           renderIdentifyResults(lastIdentifyResults);
         });
       });
     }
-    function identifyAtCoordinate(coord) {
-      const results = [];
-      for (const f of fileList) {
-        const cached = fileCache.get(f.id);
-        results.push(sampleLayerAt(coord, f, cached));
-      }
+    async function identifyAtCoordinate(coord) {
+      const results = await Promise.all(
+        fileList.map((f) => sampleLayerAt(coord, f, fileCache.get(f.id)))
+      );
       lastIdentifyResults = results;
       renderIdentifyResults(results);
       setSideTab("identify");
@@ -49149,10 +49634,7 @@ ${ifBlocks}
       map.__rasterEventsWired = true;
       map.on("pointermove", (evt) => {
         if (hoverLocked) return;
-        if (!ready || evt.dragging) {
-          hideHover();
-          return;
-        }
+        if (!ready || evt.dragging) return;
         const pix = mapToPixel(evt.coordinate);
         if (!pix || pix.x < 0 || pix.y < 0 || pix.x >= width || pix.y >= height) {
           showHoverOutside(pix);
@@ -49160,18 +49642,24 @@ ${ifBlocks}
         }
         showHover(evt, pix.x, pix.y, pix);
       });
-      map.getViewport().addEventListener("mouseout", () => {
-        if (!hoverLocked) hideHover();
-      });
       map.on("moveend", updateZoomBadge);
       map.on("singleclick", (evt) => {
         if (!ready) return;
-        identifyAtCoordinate(evt.coordinate);
+        void identifyAtCoordinate(evt.coordinate);
       });
       map.getViewport().addEventListener("dblclick", (e) => {
         e.preventDefault();
         toggleHoverLock();
       });
+    }
+    function dropGeoTiffReader(url) {
+      if (url) geoTiffReaderCache.delete(url);
+    }
+    function revokeCachedLayerUrls(cached) {
+      if (!cached) return;
+      for (const u of cached.objectUrls || []) dropGeoTiffReader(u);
+      if (cached.rasterUrl) dropGeoTiffReader(cached.rasterUrl);
+      if (cached.objectUrls?.length) revokeLayerUrls(cached.objectUrls);
     }
     function normalizeMapCrsCode(raw) {
       const s = String(raw || "").trim();
@@ -49218,9 +49706,12 @@ ${ifBlocks}
       return mapCrsSelect.value || "EPSG:3857";
     }
     function blobCrsForGeo(fileGeo) {
-      const fileEpsg = normalizeEpsg(fileGeo?.crs);
-      if (fileEpsg) return `EPSG:${fileEpsg}`;
-      return null;
+      if (fileGeo?.source === "geotiff") {
+        const fileEpsg = normalizeEpsg(fileGeo.crs);
+        if (fileEpsg) return `EPSG:${fileEpsg}`;
+      }
+      const mapEpsg = normalizeEpsg(mapCrs);
+      return mapEpsg ? `EPSG:${mapEpsg}` : mapCrs || "EPSG:3857";
     }
     function syncMapCrsUi() {
       if (!mapCrsSelect) return;
@@ -49259,7 +49750,7 @@ ${ifBlocks}
       );
       if (!srcArgs.blob && !srcArgs.url) return;
       const zIndex = cached.layer?.getZIndex?.() ?? 0;
-      if (cached.objectUrls) revokeLayerUrls(cached.objectUrls);
+      revokeCachedLayerUrls(cached);
       if (cached.layer && map) map.removeLayer(cached.layer);
       const bounds = layerSourceBounds(
         nBands,
@@ -49286,10 +49777,12 @@ ${ifBlocks}
       cached.viewConfig = created.viewConfig;
       cached.rasterExtent = created.viewConfig?.extent || extentFromGeo(cached.width, cached.height, cached.geo);
       cached.nativeViewConfig = created.viewConfig;
+      cached.styleState = styleStateWithAlpha(style, created.layer, nBands);
+      applyStyle(created.layer, cached.styleState);
       if (cached.visible === false || layerVisibility.get(id) === false) {
-        applyOlLayerVisibility(created.layer, false);
+        applyOlLayerVisibility(created.layer, false, cached.styleState);
       } else {
-        applyOlLayerVisibility(created.layer, true);
+        applyOlLayerVisibility(created.layer, true, cached.styleState);
       }
       if (id === activeFileId) {
         tileLayer = cached.layer;
@@ -49314,6 +49807,10 @@ ${ifBlocks}
       syncMapCrsUi();
       for (const id of [...fileCache.keys()]) {
         try {
+          const cached = fileCache.get(id);
+          if (!cached || fileHasOwnCrs(cached.geo)) continue;
+          cached.geo = { ...cached.geo, crs: mapCrs };
+          if (id === activeFileId) geo = cached.geo;
           await rebuildLayerForFile(id);
         } catch (err2) {
           console.error("rebuild layer", id, err2);
@@ -49408,6 +49905,7 @@ ${ifBlocks}
       const snapProbe = payload.probeLabel;
       const snapPath = payload.filePath;
       const snapColormap = { ...colormap };
+      const snapColorTable = serializeColorTable(colorTable);
       const snapMode = renderMode;
       const styleState = collectStyleState();
       const style = buildWebGlStyle(styleState);
@@ -49461,7 +49959,7 @@ ${ifBlocks}
       }
       const prevVisible = isLayerVisible(fileId);
       const prevZ = existing?.layer?.getZIndex?.() ?? zIndex;
-      if (existing?.objectUrls) revokeLayerUrls(existing.objectUrls);
+      revokeCachedLayerUrls(existing);
       if (existing?.layer && map) map.removeLayer(existing.layer);
       const created = await createLayerFromArgs(srcArgs, {
         width: snapW,
@@ -49473,21 +49971,28 @@ ${ifBlocks}
         mins: srcBounds?.mins,
         maxs: srcBounds?.maxs
       });
-      applyOlLayerVisibility(created.layer, prevVisible);
+      applyOlLayerVisibility(created.layer, prevVisible, styleState);
+      const styled = styleStateWithAlpha(styleState, created.layer, nBands);
+      applyStyle(created.layer, styled);
       if (!map) {
         map = createEmptyMap(mapEl, created.viewConfig);
         wireMapEvents();
         try {
-          if (isLocalPixelProjection(created.viewConfig?.projection)) {
-            map.setView(new View_default(freeViewOptions(created.viewConfig)));
-          } else {
-            applyMapViewCrs(map, mapCrs, created.viewConfig);
+          if (!ensureProjection(mapCrs)) {
+            mapCrs = "EPSG:3857";
+            ensureProjection(mapCrs);
+            syncMapCrsUi();
           }
+          applyMapViewCrs(map, mapCrs, created.viewConfig);
         } catch (err2) {
           console.error(err2);
         }
       } else if (created.viewConfig && fileCache.size === 0) {
-        map.setView(new View_default(freeViewOptions(created.viewConfig)));
+        try {
+          applyMapViewCrs(map, mapCrs, created.viewConfig);
+        } catch (err2) {
+          console.error(err2);
+        }
       }
       map.addLayer(created.layer);
       const layerExtent = created.viewConfig?.extent || extentFromGeo(snapW, snapH, snapGeo);
@@ -49516,7 +50021,8 @@ ${ifBlocks}
         filePath: snapPath,
         format: snapFormat,
         colormap: snapColormap,
-        styleState,
+        colorTable: snapColorTable,
+        styleState: styled,
         visible: prevVisible
       });
       layerVisibility.set(fileId, prevVisible);
@@ -49537,20 +50043,19 @@ ${ifBlocks}
     let lastIdentifyResults = null;
     function showHover(_e, x, y, pix) {
       const i = y * width + x;
-      const gt = currentAffine();
-      const g = pixelToGeo(x, y, gt, true);
       lastHoverBandValues = [];
       if (bandPlanes.length) {
         for (let b = 0; b < bandPlanes.length; b++) {
           lastHoverBandValues.push(bandValue(b, i));
         }
       }
-      hoverEl.textContent = `${t("statusGeo")} ${formatGeoCoord(g.x)}, ${formatGeoCoord(g.y)}`;
+      const mx = pix?.mapX;
+      const my = pix?.mapY;
+      hoverEl.textContent = `${t("statusGeo")} ${formatGeoCoord(mx)}, ${formatGeoCoord(my)}`;
       hoverEl.classList.add("is-active");
     }
     function showHoverOutside(pix) {
       if (!pix || !Number.isFinite(pix.mapX) || !Number.isFinite(pix.mapY)) {
-        hideHover();
         return;
       }
       lastHoverBandValues = null;
@@ -49617,7 +50122,6 @@ ${ifBlocks}
       }
     }
     hideHover();
-    btnResetView.addEventListener("click", () => fitToView());
     btnToggleVisibility?.addEventListener("click", (e) => {
       toggleSelectedVisibility({ all: !!(e.shiftKey || e.altKey) });
     });
@@ -49668,7 +50172,16 @@ ${ifBlocks}
         Math.round(hk(h - 1 / 3) * 255)
       ];
     }
+    function syncColorTableLegacy() {
+      colormap = legacyMapFromColorTable(colorTable);
+      labels = {};
+    }
     function colorForClass(id) {
+      const row = colorTable[Number(id)];
+      if (row?.color) {
+        const rgb = hexToRgb(row.color);
+        if (rgb) return rgb;
+      }
       const hex = colormap[id] ?? colormap[String(id)];
       if (hex) {
         const rgb = hexToRgb(hex);
@@ -49678,32 +50191,57 @@ ${ifBlocks}
     }
     function colorForNewClass(id) {
       const ramp = paletteRampEl.value || "random";
-      const ids = sortedColormapIds();
-      const all2 = ids.includes(Number(id)) ? ids : [...ids, Number(id)].sort((a, b) => a - b);
-      const map2 = colorsForClasses(all2, ramp, { invert: false, seed: randomSeed });
+      const n = Math.max(1, colorTable.length || 1);
+      const idxs = Array.from({ length: n }, (_, i) => i);
+      if (!idxs.includes(Number(id))) idxs.push(Number(id));
+      idxs.sort((a, b) => a - b);
+      const map2 = colorsForClasses(idxs, ramp, { invert: false, seed: randomSeed });
       return map2[Number(id)] || map2[id] || "#808080";
     }
     function invertColormapColors() {
-      const ids = sortedColormapIds();
-      if (ids.length < 2) return;
-      const colors = ids.map((id) => colormap[id] ?? colormap[String(id)] ?? "#808080");
+      if (colorTable.length < 2) return;
+      const colors = colorTable.map((e) => e.color || "#808080");
       colors.reverse();
-      const next3 = {};
-      const nextLabels = { ...labels };
-      for (let i = 0; i < ids.length; i++) {
-        const id = ids[i];
-        next3[id] = colors[i];
-        if (nextLabels[String(id)] == null) nextLabels[String(id)] = String(id);
-      }
-      colormap = next3;
-      labels = nextLabels;
+      colorTable = colorTable.map((e, i) => ({ ...e, color: colors[i] }));
+      syncColorTableLegacy();
       renderCmapTable();
+      render3();
+    }
+    function moveColorTableRow(fromIdx, toIdx) {
+      const from = Number(fromIdx);
+      const to = Number(toIdx);
+      if (!Number.isFinite(from) || !Number.isFinite(to)) return;
+      if (from < 0 || from >= colorTable.length || to < 0 || to >= colorTable.length) return;
+      if (from === to) return;
+      const [row] = colorTable.splice(from, 1);
+      colorTable.splice(to, 0, row);
+      if (selectedValue === from) selectedValue = to;
+      else if (selectedValue != null) {
+        const s = Number(selectedValue);
+        if (from < s && to >= s) selectedValue = s - 1;
+        else if (from > s && to <= s) selectedValue = s + 1;
+      }
+      if (cmapBody) {
+        const rows = [...cmapBody.querySelectorAll(".cmap-row")];
+        const tr = rows[from];
+        const ref = rows[to];
+        if (tr && ref) {
+          if (from < to) ref.after(tr);
+          else ref.before(tr);
+          syncCmapRowIndices();
+          syncCmapSelection();
+        } else {
+          renderCmapTable();
+        }
+      }
+      syncColorTableLegacy();
       render3();
     }
     function syncPaletteOpacityLabel() {
       if (!paletteOpacityValEl) return;
       const v = Math.max(0, Math.min(100, Number(paletteOpacityEl?.value) || 0));
       paletteOpacityValEl.textContent = `${v}%`;
+      if (paletteOpacityEl) paletteOpacityEl.style.setProperty("--range-pct", `${v}%`);
     }
     function loadImage(src) {
       return new Promise((resolve, reject) => {
@@ -49792,48 +50330,42 @@ ${ifBlocks}
       }
       return [...counts.keys()].sort((a, b) => a - b);
     }
-    function ensureLabelsForIds(ids) {
-      for (const id of ids) {
-        const k = String(id);
-        if (labels[k] == null) labels[k] = k;
-        if (colormap[id] == null && colormap[k] == null) {
-          colormap[id] = colorForNewClass(id);
-        }
-      }
+    function ensureLabelsForIds(_ids) {
     }
     function syncColormapToRaster() {
-      if (renderMode !== "paletted" || !bandPlanes.length) return;
-      const ids = collectUniqueValues();
-      if (!ids.length) return;
-      if (ids.length > 64) return;
-      const existing = sortedColormapIds();
-      const idSet = new Set(ids);
-      const hasExtra = existing.some((id) => !idSet.has(id));
-      const missing = ids.some((id) => colormap[id] == null && colormap[String(id)] == null);
-      if (!existing.length || missing || payload.colormapSource === "default" && (hasExtra || existing.length > ids.length)) {
-        classifyFromData();
-      } else {
-        ensureLabelsForIds(ids);
-      }
+      if (renderMode !== "paletted") return;
+      if (colorTable.length) return;
+      classifyFromData(true);
     }
     function classifyFromData(forceRecolor = true) {
-      const ids = collectUniqueValues();
-      if (ids.length > 256) {
-        metaEl.textContent = lang === "zh" ? "\u552F\u4E00\u503C\u8FC7\u591A\uFF0C\u65E0\u6CD5\u4F5C\u4E3A\u8C03\u8272\u677F\u5206\u7C7B\uFF08\u8BF7\u6539\u7528\u7070\u5EA6/\u5F69\u8272\uFF09" : "Too many unique values for paletted mode";
+      const bi = Number(paletteBandEl?.value) || 0;
+      const plane = bandPlanes[bi];
+      const stats = bandStats[bi];
+      const { min, max } = resolveBandMinMax(stats, plane);
+      const integerLike = isIntegerLikeBand(payload.dtype, stats, plane);
+      const breaks = buildColorTableBreaks(min, max, integerLike);
+      if (!breaks.length) {
+        metaEl.textContent = lang === "zh" ? "\u65E0\u6CD5\u6839\u636E\u6CE2\u6BB5\u6700\u503C\u751F\u6210\u989C\u8272\u8868" : "Cannot build color table from band range";
+        return;
+      }
+      if (breaks.length > COLOR_TABLE_MAX) {
+        metaEl.textContent = t("colorTableMax");
         return;
       }
       const ramp = paletteRampEl.value || "random";
-      const assigned = colorsForClasses(ids, ramp, { invert: false, seed: randomSeed });
-      const nextMap = {};
-      const nextLabels = {};
-      for (const id of ids) {
-        const prev = colormap[id] ?? colormap[String(id)];
-        nextMap[id] = forceRecolor || !prev ? assigned[id] : prev;
-        nextLabels[String(id)] = labels[String(id)] ?? String(id);
-      }
-      colormap = nextMap;
-      labels = nextLabels;
+      const idxs = breaks.map((_, i) => i);
+      const assigned = colorsForClasses(idxs, ramp, { invert: false, seed: randomSeed });
+      const prev = colorTable;
+      colorTable = breaks.map((b, i) => {
+        const old = prev[i];
+        const color = !forceRecolor && old?.color ? old.color : assigned[i] || colorForNewClass(i);
+        return { min: b.min, max: b.max, color };
+      });
+      syncColorTableLegacy();
       selectedValue = null;
+      if (metaEl && /唯一值过多|Too many unique|无法根据|Cannot build|最多 256|limited to 256/i.test(metaEl.textContent || "")) {
+        metaEl.textContent = "";
+      }
       renderCmapTable();
       render3();
     }
@@ -49890,11 +50422,13 @@ ${ifBlocks}
       }
     }
     function applyStretchToInputs(mode2, plane, stats, minEl, maxEl, paramEl) {
-      if (!plane || !minEl || !maxEl) return;
+      if (!minEl || !maxEl) return;
+      if (!plane && !(stats && Number.isFinite(stats.min) && Number.isFinite(stats.max))) return;
+      const m = mode2 || "none";
       const param = Number(paramEl?.value);
-      const range = stretchRange(plane, stats, mode2, {
-        percent: mode2 === "percent" ? param : 2,
-        stddev: mode2 === "stddev" ? param : 2
+      const range = stretchRange(plane, stats, m, {
+        percent: m === "percent" ? param : 2,
+        stddev: m === "stddev" ? param : 2
       });
       minEl.value = String(range.min);
       maxEl.value = String(range.max);
@@ -49902,7 +50436,14 @@ ${ifBlocks}
     function setMinMaxInputsFromStats() {
       const gMode = grayContrastEl.value || "none";
       const bi = Number(grayBandEl.value) || 0;
-      applyStretchToInputs(gMode, bandPlanes[bi], bandStats[bi], grayMinEl, grayMaxEl, grayStretchParam);
+      applyStretchToInputs(
+        gMode,
+        bandPlanes[bi],
+        bandStats[bi],
+        grayMinEl,
+        grayMaxEl,
+        grayStretchParam
+      );
       const rMode = rgbContrastEl.value || "none";
       applyStretchToInputs(
         rMode,
@@ -49950,69 +50491,274 @@ ${ifBlocks}
       bandStats = [computeStats(values2)];
     }
     function sortedColormapIds() {
-      return Object.keys(colormap).map(Number).filter((n) => Number.isFinite(n)).sort((a, b) => a - b);
+      return colorTable.map((_, i) => i);
     }
     function escapeAttr(s) {
       return String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
     }
+    function syncCmapRowIndices() {
+      if (!cmapBody) return;
+      cmapBody.querySelectorAll(".cmap-row").forEach((tr, i) => {
+        tr.setAttribute("data-idx", String(i));
+        tr.querySelectorAll("[data-idx]").forEach((el) => el.setAttribute("data-idx", String(i)));
+        const idxTd = tr.querySelector(".cmap-idx");
+        if (idxTd) idxTd.textContent = String(i);
+      });
+    }
+    function syncCmapSelection() {
+      if (!cmapBody) return;
+      cmapBody.querySelectorAll(".cmap-row").forEach((tr, i) => {
+        tr.classList.toggle("is-selected", selectedValue === i);
+      });
+    }
+    function cmapRowHtml(e, i) {
+      const hex = e.color || "#808080";
+      const sel = selectedValue === i ? " is-selected" : "";
+      return `<tr class="cmap-row${sel}" data-idx="${i}" draggable="true" title="${escapeAttr(t("tipCmapDrag"))}">
+      <td class="cmap-idx" data-idx="${i}">${i}</td>
+      <td><input type="number" class="cmap-min" data-idx="${i}" value="${escapeAttr(formatBreak(e.min))}" step="any" /></td>
+      <td><input type="number" class="cmap-max" data-idx="${i}" value="${escapeAttr(formatBreak(e.max))}" step="any" /></td>
+      <td class="cmap-color-cell"><button type="button" class="cmap-swatch" data-idx="${i}" style="background:${escapeAttr(hex)}" title="${escapeAttr(hex)}" aria-label="${escapeAttr(hex)}"></button></td>
+    </tr>`;
+    }
+    let cmapDragFrom = null;
+    let cmapUiBound = false;
+    let cmapColorEditIdx = null;
+    function closeCmapColorPop() {
+      const pop = document.getElementById("cmapColorPop");
+      if (!pop) return;
+      pop.classList.add("hidden");
+      pop.hidden = true;
+      cmapColorEditIdx = null;
+    }
+    function openCmapColorPop(idx, anchorEl) {
+      const pop = document.getElementById("cmapColorPop");
+      const input = document.getElementById("cmapColorPopInput");
+      const side = document.getElementById("side");
+      if (!pop || !input || !colorTable[idx]) return;
+      cmapColorEditIdx = idx;
+      input.value = colorTable[idx].color || "#808080";
+      pop.classList.remove("hidden");
+      pop.hidden = false;
+      const sideRect = (side || document.body).getBoundingClientRect();
+      const a = anchorEl.getBoundingClientRect();
+      const pickerW = 240;
+      const pad = 8;
+      let left = a.left;
+      let top = a.top + a.height / 2;
+      if (sideRect.right - left < pickerW + pad) {
+        left = Math.max(sideRect.left + pad, sideRect.right - pickerW - pad);
+      }
+      pop.style.left = `${Math.round(left)}px`;
+      pop.style.top = `${Math.round(top)}px`;
+      try {
+        if (typeof input.showPicker === "function") input.showPicker();
+        else input.focus();
+      } catch {
+        input.focus();
+      }
+    }
+    function applyCmapColorFromPop() {
+      const input = document.getElementById("cmapColorPopInput");
+      if (!input || cmapColorEditIdx == null || !colorTable[cmapColorEditIdx]) return;
+      const i = cmapColorEditIdx;
+      const hex = input.value;
+      colorTable[i] = { ...colorTable[i], color: hex };
+      const sw = cmapBody?.querySelector(`.cmap-swatch[data-idx="${i}"]`);
+      if (sw) {
+        sw.style.background = hex;
+        sw.title = hex;
+        sw.setAttribute("aria-label", hex);
+      }
+      syncColorTableLegacy();
+      render3();
+    }
+    function ensureCmapUiBound() {
+      if (!cmapBody || cmapUiBound) return;
+      cmapUiBound = true;
+      const popInput = document.getElementById("cmapColorPopInput");
+      popInput?.addEventListener("input", () => applyCmapColorFromPop());
+      popInput?.addEventListener("change", () => {
+        applyCmapColorFromPop();
+        closeCmapColorPop();
+      });
+      popInput?.addEventListener("blur", () => {
+        setTimeout(() => {
+          const pop = document.getElementById("cmapColorPop");
+          if (pop && !pop.hidden && document.activeElement !== popInput) closeCmapColorPop();
+        }, 150);
+      });
+      document.addEventListener(
+        "pointerdown",
+        (ev) => {
+          const pop = document.getElementById("cmapColorPop");
+          if (!pop || pop.hidden) return;
+          if (pop.contains(ev.target) || ev.target.closest?.(".cmap-swatch")) return;
+          closeCmapColorPop();
+        },
+        true
+      );
+      cmapBody.addEventListener("click", (ev) => {
+        const sw = ev.target.closest?.(".cmap-swatch");
+        if (sw && cmapBody.contains(sw)) {
+          ev.preventDefault();
+          ev.stopPropagation();
+          const i = Number(sw.getAttribute("data-idx"));
+          if (Number.isFinite(i)) openCmapColorPop(i, sw);
+          return;
+        }
+        const tr = ev.target.closest?.(".cmap-row");
+        if (!tr || !cmapBody.contains(tr)) return;
+        if (ev.target.closest("input,button")) return;
+        selectedValue = Number(tr.getAttribute("data-idx"));
+        syncCmapSelection();
+      });
+      cmapBody.addEventListener("dragstart", (ev) => {
+        const tr = ev.target.closest?.(".cmap-row");
+        if (!tr || !cmapBody.contains(tr)) return;
+        if (ev.target.closest("input,button")) {
+          ev.preventDefault();
+          return;
+        }
+        cmapDragFrom = Number(tr.getAttribute("data-idx"));
+        tr.classList.add("is-dragging");
+        try {
+          ev.dataTransfer.effectAllowed = "move";
+          ev.dataTransfer.setData("text/plain", String(cmapDragFrom));
+        } catch {
+        }
+      });
+      cmapBody.addEventListener("dragend", (ev) => {
+        const tr = ev.target.closest?.(".cmap-row");
+        tr?.classList.remove("is-dragging");
+        cmapBody.querySelectorAll(".cmap-row.drag-over").forEach((r) => r.classList.remove("drag-over"));
+        cmapDragFrom = null;
+      });
+      cmapBody.addEventListener("dragover", (ev) => {
+        const tr = ev.target.closest?.(".cmap-row");
+        if (!tr || !cmapBody.contains(tr)) return;
+        ev.preventDefault();
+        try {
+          ev.dataTransfer.dropEffect = "move";
+        } catch {
+        }
+        tr.classList.add("drag-over");
+      });
+      cmapBody.addEventListener("dragleave", (ev) => {
+        const tr = ev.target.closest?.(".cmap-row");
+        if (!tr || !cmapBody.contains(tr)) return;
+        if (tr.contains(ev.relatedTarget)) return;
+        tr.classList.remove("drag-over");
+      });
+      cmapBody.addEventListener("drop", (ev) => {
+        const tr = ev.target.closest?.(".cmap-row");
+        if (!tr || !cmapBody.contains(tr)) return;
+        ev.preventDefault();
+        tr.classList.remove("drag-over");
+        let from = cmapDragFrom;
+        try {
+          const raw = ev.dataTransfer.getData("text/plain");
+          if (raw !== "" && Number.isFinite(Number(raw))) from = Number(raw);
+        } catch {
+        }
+        const to = Number(tr.getAttribute("data-idx"));
+        moveColorTableRow(from, to);
+      });
+      const onBreakChange = (ev, key2) => {
+        const el = ev.target;
+        if (!(el instanceof HTMLInputElement)) return;
+        const i = Number(el.getAttribute("data-idx"));
+        const row = colorTable[i];
+        if (!row) return;
+        const v = Number(el.value);
+        if (!Number.isFinite(v)) {
+          el.value = formatBreak(row[key2]);
+          return;
+        }
+        const next3 = { ...row, [key2]: v };
+        if (!(next3.max > next3.min)) {
+          el.value = formatBreak(row[key2]);
+          return;
+        }
+        if (colorTableRangeConflicts(colorTable, next3.min, next3.max, i)) {
+          el.value = formatBreak(row[key2]);
+          metaEl.textContent = t("colorTableOverlap");
+          return;
+        }
+        colorTable[i] = next3;
+        if (metaEl && metaEl.textContent === t("colorTableOverlap")) metaEl.textContent = "";
+        syncColorTableLegacy();
+        render3();
+      };
+      cmapBody.addEventListener("change", (ev) => {
+        const el = ev.target;
+        if (!(el instanceof HTMLInputElement)) return;
+        if (el.classList.contains("cmap-min")) onBreakChange(ev, "min");
+        else if (el.classList.contains("cmap-max")) onBreakChange(ev, "max");
+      });
+    }
     function renderCmapTable() {
       if (!cmapBody) return;
-      const ids = sortedColormapIds();
-      if (!ids.length) {
+      ensureCmapUiBound();
+      if (!colorTable.length) {
         cmapBody.innerHTML = "";
         return;
       }
-      cmapBody.innerHTML = ids.map((id) => {
-        const hex = colormap[id] ?? colormap[String(id)] ?? colorForNewClass(id);
-        const lab = labels[String(id)] ?? String(id);
-        const sel = selectedValue === id ? " is-selected" : "";
-        return `<tr class="cmap-row${sel}" data-id="${id}">
-          <td><input type="number" class="cmap-val" data-id="${id}" value="${id}" step="1" /></td>
-          <td><input type="color" class="cmap-color" data-id="${id}" value="${hex}" /></td>
-          <td><input type="text" class="cmap-label" data-id="${id}" value="${escapeAttr(lab)}" /></td>
-        </tr>`;
-      }).join("");
-      cmapBody.querySelectorAll(".cmap-row").forEach((tr) => {
-        tr.addEventListener("click", (e) => {
-          if (e.target.tagName === "INPUT") return;
-          selectedValue = Number(tr.getAttribute("data-id"));
-          renderCmapTable();
-        });
-      });
-      cmapBody.querySelectorAll(".cmap-color").forEach((el) => {
-        el.addEventListener("input", (e) => {
-          const id = e.target.getAttribute("data-id");
-          colormap[id] = e.target.value;
-          colormap[Number(id)] = e.target.value;
-          render3();
-        });
-      });
-      cmapBody.querySelectorAll(".cmap-label").forEach((el) => {
-        el.addEventListener("change", (e) => {
-          const id = e.target.getAttribute("data-id");
-          labels[id] = e.target.value;
-        });
-      });
-      cmapBody.querySelectorAll(".cmap-val").forEach((el) => {
-        el.addEventListener("change", (e) => {
-          const oldId = e.target.getAttribute("data-id");
-          const newId = Number(e.target.value);
-          if (!Number.isFinite(newId)) {
-            e.target.value = oldId;
-            return;
-          }
-          const hex = colormap[oldId] ?? colormap[Number(oldId)];
-          const lab = labels[oldId] ?? String(oldId);
-          delete colormap[oldId];
-          delete colormap[Number(oldId)];
-          delete labels[oldId];
-          colormap[newId] = hex;
-          labels[String(newId)] = lab;
-          if (selectedValue === Number(oldId)) selectedValue = newId;
-          renderCmapTable();
-          render3();
-        });
-      });
+      cmapBody.innerHTML = colorTable.map((e, i) => cmapRowHtml(e, i)).join("");
+    }
+    function insertColorTableRow() {
+      if (colorTable.length >= COLOR_TABLE_MAX) {
+        metaEl.textContent = t("colorTableMax");
+        return;
+      }
+      ensureCmapUiBound();
+      const sel = selectedValue != null && Number.isFinite(Number(selectedValue)) && selectedValue >= 0 && selectedValue < colorTable.length ? Number(selectedValue) : colorTable.length - 1;
+      const insertAt = sel < 0 ? 0 : sel + 1;
+      const gap = suggestInsertRange(colorTable, insertAt);
+      if (!gap || colorTableRangeConflicts(colorTable, gap.min, gap.max)) {
+        metaEl.textContent = t("colorTableOverlap");
+        return;
+      }
+      const entry = { min: gap.min, max: gap.max, color: colorForNewClass(insertAt) };
+      colorTable.splice(insertAt, 0, entry);
+      selectedValue = insertAt;
+      if (metaEl && /相交|overlap/i.test(metaEl.textContent || "")) metaEl.textContent = "";
+      const rows = cmapBody ? [...cmapBody.querySelectorAll(".cmap-row")] : [];
+      if (cmapBody && rows.length === colorTable.length - 1) {
+        const html = cmapRowHtml(entry, insertAt);
+        if (insertAt <= 0 || !rows[insertAt - 1]) {
+          cmapBody.insertAdjacentHTML("afterbegin", html);
+        } else {
+          rows[insertAt - 1].insertAdjacentHTML("afterend", html);
+        }
+        syncCmapRowIndices();
+        syncCmapSelection();
+      } else {
+        renderCmapTable();
+      }
+      syncColorTableLegacy();
+      render3();
+    }
+    function removeSelectedColorTableRow() {
+      if (!colorTable.length) return;
+      if (selectedValue == null || !Number.isFinite(Number(selectedValue)) || selectedValue < 0 || selectedValue >= colorTable.length) {
+        return;
+      }
+      const i = Number(selectedValue);
+      colorTable.splice(i, 1);
+      const rows = cmapBody ? [...cmapBody.querySelectorAll(".cmap-row")] : [];
+      if (rows[i]) {
+        rows[i].remove();
+        syncCmapRowIndices();
+      } else {
+        renderCmapTable();
+      }
+      if (!colorTable.length) selectedValue = null;
+      else if (i >= colorTable.length) selectedValue = colorTable.length - 1;
+      else selectedValue = i;
+      syncCmapSelection();
+      syncColorTableLegacy();
+      render3();
     }
     async function rasterFromDataUrl(src) {
       const img = await loadImage(src);
@@ -50028,7 +50774,7 @@ ${ifBlocks}
       try {
         width = payload.width || width;
         height = payload.height || height;
-        geo = normalizeGeoRef(payload.geo || geo, width, height);
+        geo = applyLayerCrsPolicy(payload.geo || geo, width, height);
         payload.geo = geo;
         rasterUrl = payload.rasterUrl || rasterUrl;
         const wantRgb = payload.kind === "image" || Math.max(1, Number(payload.bands) || 1) >= 3;
@@ -50100,7 +50846,7 @@ ${ifBlocks}
         }
         fillBandSelects();
         setMinMaxInputsFromStats();
-        if (bandPlanes.length) syncColormapToRaster();
+        if (renderMode === "paletted") syncColormapToRaster();
         ready = true;
         applyRenderModeUi();
         applyI18n();
@@ -50169,11 +50915,8 @@ ${ifBlocks}
       applyRenderModeUi();
       syncStretchParamUi();
       if (renderMode === "paletted") {
-        if (!sortedColormapIds().length && bandPlanes.length) classifyFromData(true);
-        else {
-          ensureLabelsForIds(sortedColormapIds());
-          renderCmapTable();
-        }
+        if (!colorTable.length) classifyFromData(true);
+        else renderCmapTable();
         updateMeta();
       }
       if (renderMode === "gray" || renderMode === "rgb") setMinMaxInputsFromStats();
@@ -50200,12 +50943,57 @@ ${ifBlocks}
         onRenderControlsChange();
       });
     });
-    [grayMinEl, grayMaxEl, redMinEl, redMaxEl, greenMinEl, greenMaxEl, blueMinEl, blueMaxEl].forEach(
-      (el) => {
-        el?.addEventListener("change", onRenderControlsChange);
-        el?.addEventListener("input", onRenderControlsChange);
+    function bindStretchPair(minEl, maxEl, defaultsFn) {
+      const pairValid = () => {
+        const rawA = minEl?.value;
+        const rawB = maxEl?.value;
+        if (rawA === "" || rawB === "" || rawA == null || rawB == null) return false;
+        const a = Number(rawA);
+        const b = Number(rawB);
+        return Number.isFinite(a) && Number.isFinite(b) && b > a;
+      };
+      const restoreIfNeeded = () => {
+        const d = defaultsFn();
+        const rawMin = minEl?.value;
+        const rawMax = maxEl?.value;
+        const min = Number(rawMin);
+        const max = Number(rawMax);
+        const minBad = rawMin === "" || rawMin == null || !Number.isFinite(min);
+        const maxBad = rawMax === "" || rawMax == null || !Number.isFinite(max);
+        if (minBad && minEl) minEl.value = String(d.min);
+        if (maxBad && maxEl) maxEl.value = String(d.max);
+        const a = Number(minEl?.value);
+        const b = Number(maxEl?.value);
+        if (!(Number.isFinite(a) && Number.isFinite(b) && b > a)) {
+          if (minEl) minEl.value = String(d.min);
+          if (maxEl) maxEl.value = String(d.max);
+        }
+      };
+      const onInput = () => {
+        if (!pairValid()) return;
+        onRenderControlsChange();
+      };
+      const onBlur = () => {
+        restoreIfNeeded();
+        onRenderControlsChange();
+      };
+      minEl?.addEventListener("input", onInput);
+      maxEl?.addEventListener("input", onInput);
+      minEl?.addEventListener("blur", onBlur);
+      maxEl?.addEventListener("blur", onBlur);
+    }
+    function stretchDefaultsForBand(bandSel) {
+      const bi = bandSel === "unset" || bandSel === "" ? -1 : Number(bandSel);
+      const s = bi >= 0 ? bandStats[bi] : null;
+      if (s && Number.isFinite(s.min) && Number.isFinite(s.max)) {
+        return { min: s.min, max: s.max <= s.min ? s.min + 1 : s.max };
       }
-    );
+      return { min: 0, max: 255 };
+    }
+    bindStretchPair(grayMinEl, grayMaxEl, () => stretchDefaultsForBand(grayBandEl?.value));
+    bindStretchPair(redMinEl, redMaxEl, () => stretchDefaultsForBand(redBandEl?.value));
+    bindStretchPair(greenMinEl, greenMaxEl, () => stretchDefaultsForBand(greenBandEl?.value));
+    bindStretchPair(blueMinEl, blueMaxEl, () => stretchDefaultsForBand(blueBandEl?.value));
     rgbContrastEl.addEventListener("change", () => {
       setMinMaxInputsFromStats();
       onRenderControlsChange();
@@ -50234,7 +51022,7 @@ ${ifBlocks}
       paletteRampSnapshot = null;
       syncStretchParamUi();
       if ((paletteRampEl.value || "random") === "random") bumpRandomSeed();
-      if (renderMode === "paletted" && bandPlanes.length) classifyFromData(true);
+      if (renderMode === "paletted") classifyFromData(true);
     });
     btnRampInvertEl?.addEventListener("click", () => invertColormapColors());
     paletteOpacityEl?.addEventListener("input", () => {
@@ -50246,25 +51034,10 @@ ${ifBlocks}
       if (renderMode === "paletted") onRenderControlsChange();
     });
     btnClassify.addEventListener("click", () => classifyFromData(true));
-    btnAddRow.addEventListener("click", () => {
-      const ids = sortedColormapIds();
-      const next3 = ids.length ? Math.max(...ids) + 1 : 0;
-      colormap[next3] = colorForNewClass(next3);
-      labels[String(next3)] = String(next3);
-      selectedValue = next3;
-      renderCmapTable();
-      render3();
-    });
-    btnRemoveRow.addEventListener("click", () => {
-      if (selectedValue == null) return;
-      delete colormap[selectedValue];
-      delete colormap[String(selectedValue)];
-      delete labels[String(selectedValue)];
-      selectedValue = null;
-      renderCmapTable();
-      render3();
-    });
+    btnAddRow.addEventListener("click", () => insertColorTableRow());
+    btnRemoveRow.addEventListener("click", () => removeSelectedColorTableRow());
     btnClearRows.addEventListener("click", () => {
+      colorTable = [];
       colormap = {};
       labels = {};
       selectedValue = null;
@@ -50279,7 +51052,11 @@ ${ifBlocks}
     moreMenu.addEventListener("click", (e) => e.stopPropagation());
     btnSave.addEventListener("click", () => {
       moreMenu.classList.add("hidden");
-      vscodeApi?.postMessage({ type: "saveColormap", colormap });
+      syncColorTableLegacy();
+      vscodeApi?.postMessage({
+        type: "saveColormap",
+        colorTable: serializeColorTable(colorTable)
+      });
     });
     btnReload.addEventListener("click", () => {
       moreMenu.classList.add("hidden");
@@ -50287,26 +51064,36 @@ ${ifBlocks}
     });
     btnSavePlte.addEventListener("click", () => {
       moreMenu.classList.add("hidden");
+      syncColorTableLegacy();
       vscodeApi?.postMessage({
         type: "saveAsPlte",
+        colorTable: serializeColorTable(colorTable),
         colormap,
-        indexBase64: payload.indexBase64
+        indexBase64: payload.indexBase64,
+        indexFormat: payload.indexFormat || "i32"
       });
     });
     applyRenderModeUi();
     syncPaletteOpacityLabel();
     renderFileList();
-    const minSideTopH = 280;
-    const minSideTabsH = 280;
+    const minSideTopH = 240;
+    const minSideTabsH = 240;
+    const minMapSectionH = 64;
     function sideTopUsableBounds(minH = minSideTopH, maxFrac = 0.85) {
       const viewH = sideEl?.clientHeight || sideEl?.getBoundingClientRect().height || 0;
-      const statusH = statusBarEl?.getBoundingClientRect().height || 0;
+      const mapSectionH = document.getElementById("mapSection")?.getBoundingClientRect().height || minMapSectionH;
       const splitH = splitInfoEl?.getBoundingClientRect().height || 5;
-      const usableInView = Math.max(0, viewH - statusH - splitH);
+      const usableInView = Math.max(0, viewH - mapSectionH - splitH);
       const minClamp = minH;
       const roomForTabs = Math.max(0, usableInView - minSideTabsH);
       const maxH = usableInView >= minH + minSideTabsH ? Math.max(minClamp, Math.min(Math.floor(usableInView * maxFrac), roomForTabs)) : minClamp;
-      return { sideH: viewH, usable: Math.max(usableInView, minH + minSideTabsH), usableInView, minClamp, maxH };
+      return {
+        sideH: viewH,
+        usable: Math.max(usableInView, minH + minSideTabsH),
+        usableInView,
+        minClamp,
+        maxH
+      };
     }
     function sideTopRatio() {
       const r = Number(sideEl?.dataset.splitRatio);
@@ -50406,6 +51193,48 @@ ${ifBlocks}
       });
     }
     wireHorizontalSplit(splitSideEl, "--side-width", 220, 0.65);
+    function wireIdentifyColResize() {
+      const table = document.getElementById("identifyTable");
+      if (!table || table.dataset.colResizeWired === "1") return;
+      table.dataset.colResizeWired = "1";
+      table.addEventListener("pointerdown", (ev) => {
+        const handle = ev.target?.closest?.(".identify-col-resizer");
+        if (!handle || ev.button !== 0) return;
+        ev.preventDefault();
+        ev.stopPropagation();
+        const rect = table.getBoundingClientRect();
+        const total = Math.max(1, rect.width);
+        const minPct = 18;
+        const maxPct = 78;
+        handle.classList.add("is-dragging");
+        document.body.classList.add("is-resizing-identify-col");
+        handle.setPointerCapture?.(ev.pointerId);
+        const onMove = (e) => {
+          const x = e.clientX - rect.left;
+          let pct = x / total * 100;
+          pct = Math.max(minPct, Math.min(maxPct, pct));
+          const pctStr = `${pct.toFixed(1)}%`;
+          table.style.setProperty("--identify-feat-pct", pctStr);
+          const featCol = table.querySelector(".identify-col-feat");
+          const valCol = table.querySelector(".identify-col-val");
+          if (featCol) featCol.style.width = pctStr;
+          if (valCol) valCol.style.width = `calc(100% - ${pctStr})`;
+        };
+        const onUp = (e) => {
+          handle.classList.remove("is-dragging");
+          document.body.classList.remove("is-resizing-identify-col");
+          try {
+            handle.releasePointerCapture?.(e.pointerId);
+          } catch {
+          }
+          window.removeEventListener("pointermove", onMove);
+          window.removeEventListener("pointerup", onUp);
+        };
+        window.addEventListener("pointermove", onMove);
+        window.addEventListener("pointerup", onUp);
+      });
+    }
+    wireIdentifyColResize();
     syncHoverLockUi();
     setSideTab("style");
     tabStyleEl?.addEventListener("click", () => setSideTab("style"));
@@ -50558,10 +51387,11 @@ ${ifBlocks}
         void init39();
         return;
       }
-      if (msg.type === "colormapLoaded" && msg.colormap) {
-        colormap = { ...msg.colormap };
-        labels = {};
-        ensureLabelsForIds(sortedColormapIds());
+      if (msg.type === "colormapLoaded" && (msg.colorTable || msg.colormap)) {
+        colormap = { ...msg.colormap || {} };
+        const fromMsg = parseColorTable(msg.colorTable);
+        colorTable = fromMsg.length ? fromMsg : colorTableFromLegacyMap(colormap, {});
+        syncColorTableLegacy();
         payload.colormapSource = "workspace";
         payload.colormapPath = msg.path || payload.colormapPath;
         renderCmapTable();

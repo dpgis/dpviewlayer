@@ -27,9 +27,9 @@
   };
   var __copyProps = (to, from, except, desc) => {
     if (from && typeof from === "object" || typeof from === "function") {
-      for (let key of __getOwnPropNames(from))
-        if (!__hasOwnProp.call(to, key) && key !== except)
-          __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+      for (let key2 of __getOwnPropNames(from))
+        if (!__hasOwnProp.call(to, key2) && key2 !== except)
+          __defProp(to, key2, { get: () => from[key2], enumerable: !(desc = __getOwnPropDesc(from, key2)) || desc.enumerable });
     }
     return to;
   };
@@ -293,12 +293,12 @@
       };
       tags = {};
       tagDefinitions = {};
-      for (const [key, value] of Object.entries(tagDictionary)) {
+      for (const [key2, value] of Object.entries(tagDictionary)) {
         const entry = (
           /** @type {TagDictionaryEntry} */
           value
         );
-        registerTag(entry.tag, entry.name || key, entry.type, entry.isArray, entry.eager);
+        registerTag(entry.tag, entry.name || key2, entry.type, entry.isArray, entry.eager);
       }
       fieldTagTypes = {
         256: "SHORT",
@@ -431,11 +431,11 @@
       };
       geoKeys = /** @type {Record<GeoKeyName, number>} */
       {};
-      for (const [key, name] of Object.entries(geoKeyNames)) {
+      for (const [key2, name] of Object.entries(geoKeyNames)) {
         geoKeys[
           /** @type {GeoKeyName} */
           name
-        ] = parseInt(key, 10);
+        ] = parseInt(key2, 10);
       }
     }
   });
@@ -2787,7 +2787,7 @@
         s.pending_buf[s.pending++] = b >>> 8 & 255;
         s.pending_buf[s.pending++] = b & 255;
       };
-      read_buf = (strm, buf, start, size) => {
+      read_buf = (strm, buf, start2, size) => {
         let len = strm.avail_in;
         if (len > size) {
           len = size;
@@ -2796,11 +2796,11 @@
           return 0;
         }
         strm.avail_in -= len;
-        buf.set(strm.input.subarray(strm.next_in, strm.next_in + len), start);
+        buf.set(strm.input.subarray(strm.next_in, strm.next_in + len), start2);
         if (strm.state.wrap === 1) {
-          strm.adler = adler32_1(strm.adler, buf, len, start);
+          strm.adler = adler32_1(strm.adler, buf, len, start2);
         } else if (strm.state.wrap === 2) {
-          strm.adler = crc32_1(strm.adler, buf, len, start);
+          strm.adler = crc32_1(strm.adler, buf, len, start2);
         }
         strm.next_in += len;
         strm.total_in += len;
@@ -2809,7 +2809,7 @@
       longest_match = (s, cur_match) => {
         let chain_length = s.max_chain_length;
         let scan = s.strstart;
-        let match;
+        let match2;
         let len;
         let best_len = s.prev_length;
         let nice_match = s.nice_match;
@@ -2827,14 +2827,14 @@
           nice_match = s.lookahead;
         }
         do {
-          match = cur_match;
-          if (_win[match + best_len] !== scan_end || _win[match + best_len - 1] !== scan_end1 || _win[match] !== _win[scan] || _win[++match] !== _win[scan + 1]) {
+          match2 = cur_match;
+          if (_win[match2 + best_len] !== scan_end || _win[match2 + best_len - 1] !== scan_end1 || _win[match2] !== _win[scan] || _win[++match2] !== _win[scan + 1]) {
             continue;
           }
           scan += 2;
-          match++;
+          match2++;
           do {
-          } while (_win[++scan] === _win[++match] && _win[++scan] === _win[++match] && _win[++scan] === _win[++match] && _win[++scan] === _win[++match] && _win[++scan] === _win[++match] && _win[++scan] === _win[++match] && _win[++scan] === _win[++match] && _win[++scan] === _win[++match] && scan < strend);
+          } while (_win[++scan] === _win[++match2] && _win[++scan] === _win[++match2] && _win[++scan] === _win[++match2] && _win[++scan] === _win[++match2] && _win[++scan] === _win[++match2] && _win[++scan] === _win[++match2] && _win[++scan] === _win[++match2] && _win[++scan] === _win[++match2] && scan < strend);
           len = MAX_MATCH - (strend - scan);
           scan = strend - MAX_MATCH;
           if (len > best_len) {
@@ -3751,8 +3751,8 @@
         deflateSetDictionary: deflateSetDictionary_1,
         deflateInfo
       };
-      _has = (obj, key) => {
-        return Object.prototype.hasOwnProperty.call(obj, key);
+      _has = (obj, key2) => {
+        return Object.prototype.hasOwnProperty.call(obj, key2);
       };
       assign = function(obj) {
         const sources = Array.prototype.slice.call(arguments, 1);
@@ -4015,7 +4015,7 @@
       };
       BAD$1 = 16209;
       TYPE$1 = 16191;
-      inffast = function inflate_fast(strm, start) {
+      inffast = function inflate_fast(strm, start2) {
         let _in;
         let last;
         let _out;
@@ -4045,7 +4045,7 @@
         last = _in + (strm.avail_in - 5);
         _out = strm.next_out;
         output = strm.output;
-        beg = _out - (start - strm.avail_out);
+        beg = _out - (start2 - strm.avail_out);
         end = _out + (strm.avail_out - 257);
         dmax = state.dmax;
         wsize = state.wsize;
@@ -4378,7 +4378,7 @@
         64,
         64
       ]);
-      inflate_table = (type, lens, lens_index, codes, table, table_index, work, opts) => {
+      inflate_table = (type, lens, lens_index, codes2, table, table_index, work, opts) => {
         const bits = opts.bits;
         let len = 0;
         let sym = 0;
@@ -4395,7 +4395,7 @@
         let mask;
         let next3;
         let base = null;
-        let match;
+        let match2;
         const count = new Uint16Array(MAXBITS + 1);
         const offs = new Uint16Array(MAXBITS + 1);
         let extra = null;
@@ -4403,7 +4403,7 @@
         for (len = 0; len <= MAXBITS; len++) {
           count[len] = 0;
         }
-        for (sym = 0; sym < codes; sym++) {
+        for (sym = 0; sym < codes2; sym++) {
           count[lens[lens_index + sym]]++;
         }
         root = bits;
@@ -4444,22 +4444,22 @@
         for (len = 1; len < MAXBITS; len++) {
           offs[len + 1] = offs[len] + count[len];
         }
-        for (sym = 0; sym < codes; sym++) {
+        for (sym = 0; sym < codes2; sym++) {
           if (lens[lens_index + sym] !== 0) {
             work[offs[lens[lens_index + sym]]++] = sym;
           }
         }
         if (type === CODES$1) {
           base = extra = work;
-          match = 20;
+          match2 = 20;
         } else if (type === LENS$1) {
           base = lbase;
           extra = lext;
-          match = 257;
+          match2 = 257;
         } else {
           base = dbase;
           extra = dext;
-          match = 0;
+          match2 = 0;
         }
         huff = 0;
         sym = 0;
@@ -4475,12 +4475,12 @@
         }
         for (; ; ) {
           here_bits = len - drop;
-          if (work[sym] + 1 < match) {
+          if (work[sym] + 1 < match2) {
             here_op = 0;
             here_val = work[sym];
-          } else if (work[sym] >= match) {
-            here_op = extra[work[sym] - match];
-            here_val = base[work[sym] - match];
+          } else if (work[sym] >= match2) {
+            here_op = extra[work[sym] - match2];
+            here_val = base[work[sym] - match2];
           } else {
             here_op = 32 + 64;
             here_val = 0;
@@ -4770,7 +4770,7 @@
         const hbuf = new Uint8Array(4);
         let opts;
         let n;
-        const order = (
+        const order2 = (
           /* permutation of code lengths */
           new Uint8Array([16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15])
         );
@@ -5227,12 +5227,12 @@
                     hold += input[next3++] << bits;
                     bits += 8;
                   }
-                  state.lens[order[state.have++]] = hold & 7;
+                  state.lens[order2[state.have++]] = hold & 7;
                   hold >>>= 3;
                   bits -= 3;
                 }
                 while (state.have < 19) {
-                  state.lens[order[state.have++]] = 0;
+                  state.lens[order2[state.have++]] = 0;
                 }
                 state.lencode = state.lendyn;
                 state.lenbits = 7;
@@ -5946,7 +5946,7 @@
           CntZImage.decode = function(input, options) {
             options = options || {};
             var skipMask = options.encodedMaskData || options.encodedMaskData === null;
-            var parsedData = parse2(input, options.inputOffset || 0, skipMask);
+            var parsedData = parse3(input, options.inputOffset || 0, skipMask);
             var noDataValue = options.noDataValue !== null ? options.noDataValue : CntZImage.defaultNoDataValue;
             var uncompressedData = uncompressPixelValues(
               parsedData,
@@ -6119,7 +6119,7 @@
             }
             return Object.keys(bitDepths);
           };
-          var parse2 = function(input, fp, skipMask) {
+          var parse3 = function(input, fp, skipMask) {
             var data = {};
             var fileIdView = new Uint8Array(input, fp, 10);
             data.fileIdentifierString = String.fromCharCode.apply(null, fileIdView);
@@ -7986,11 +7986,11 @@
          * @returns {ArrayBufferLike}
          */
         decodeBlock(buffer2) {
-          const params = (
+          const params2 = (
             /** @type {LercDecoderParameters} */
             this.parameters
           );
-          const addCompression = params.LercParameters?.[LercParameters.AddCompression];
+          const addCompression = params2.LercParameters?.[LercParameters.AddCompression];
           let decoded = buffer2;
           switch (addCompression) {
             case LercAddCompression.None:
@@ -8275,10 +8275,10 @@
   function listenOnce(target, type, listener, thisArg) {
     return listen(target, type, listener, thisArg, true);
   }
-  function unlistenByKey(key) {
-    if (key && key.target) {
-      key.target.removeEventListener(key.type, key.listener);
-      clear(key);
+  function unlistenByKey(key2) {
+    if (key2 && key2.target) {
+      key2.target.removeEventListener(key2.type, key2.listener);
+      clear(key2);
     }
   }
 
@@ -8688,23 +8688,23 @@
      * @protected
      */
     onceInternal(type, listener) {
-      let key;
+      let key2;
       if (Array.isArray(type)) {
         const len = type.length;
-        key = new Array(len);
+        key2 = new Array(len);
         for (let i = 0; i < len; ++i) {
-          key[i] = listenOnce(this, type[i], listener);
+          key2[i] = listenOnce(this, type[i], listener);
         }
       } else {
-        key = listenOnce(
+        key2 = listenOnce(
           this,
           /** @type {string} */
           type,
           listener
         );
       }
-      listener.ol_key = key;
-      return key;
+      listener.ol_key = key2;
+      return key2;
     }
     /**
      * Unlisten for a certain type of event.
@@ -8713,12 +8713,12 @@
      * @protected
      */
     unInternal(type, listener) {
-      const key = (
+      const key2 = (
         /** @type {Object} */
         listener.ol_key
       );
-      if (key) {
-        unByKey(key);
+      if (key2) {
+        unByKey(key2);
       } else if (Array.isArray(type)) {
         for (let i = 0, ii = type.length; i < ii; ++i) {
           this.removeEventListener(type[i], listener);
@@ -8731,15 +8731,15 @@
   Observable.prototype.on;
   Observable.prototype.once;
   Observable.prototype.un;
-  function unByKey(key) {
-    if (Array.isArray(key)) {
-      for (let i = 0, ii = key.length; i < ii; ++i) {
-        unlistenByKey(key[i]);
+  function unByKey(key2) {
+    if (Array.isArray(key2)) {
+      for (let i = 0, ii = key2.length; i < ii; ++i) {
+        unlistenByKey(key2[i]);
       }
     } else {
       unlistenByKey(
         /** @type {import("./events.js").EventsKey} */
-        key
+        key2
       );
     }
   }
@@ -8761,9 +8761,9 @@
      * @param {string} key The property name.
      * @param {*} oldValue The old value for `key`.
      */
-    constructor(type, key, oldValue) {
+    constructor(type, key2, oldValue) {
       super(type);
-      this.key = key;
+      this.key = key2;
       this.oldValue = oldValue;
     }
   };
@@ -8788,10 +8788,10 @@
      * @return {*} Value.
      * @api
      */
-    get(key) {
+    get(key2) {
       let value;
-      if (this.values_ && this.values_.hasOwnProperty(key)) {
-        value = this.values_[key];
+      if (this.values_ && this.values_.hasOwnProperty(key2)) {
+        value = this.values_[key2];
       }
       return value;
     }
@@ -8831,30 +8831,30 @@
      * @param {string} key Key name.
      * @param {*} oldValue Old value.
      */
-    notify(key, oldValue) {
+    notify(key2, oldValue) {
       let eventType;
-      eventType = `change:${key}`;
+      eventType = `change:${key2}`;
       if (this.hasListener(eventType)) {
-        this.dispatchEvent(new ObjectEvent(eventType, key, oldValue));
+        this.dispatchEvent(new ObjectEvent(eventType, key2, oldValue));
       }
       eventType = ObjectEventType_default.PROPERTYCHANGE;
       if (this.hasListener(eventType)) {
-        this.dispatchEvent(new ObjectEvent(eventType, key, oldValue));
+        this.dispatchEvent(new ObjectEvent(eventType, key2, oldValue));
       }
     }
     /**
      * @param {string} key Key name.
      * @param {import("./events.js").Listener} listener Listener.
      */
-    addChangeListener(key, listener) {
-      this.addEventListener(`change:${key}`, listener);
+    addChangeListener(key2, listener) {
+      this.addEventListener(`change:${key2}`, listener);
     }
     /**
      * @param {string} key Key name.
      * @param {import("./events.js").Listener} listener Listener.
      */
-    removeChangeListener(key, listener) {
-      this.removeEventListener(`change:${key}`, listener);
+    removeChangeListener(key2, listener) {
+      this.removeEventListener(`change:${key2}`, listener);
     }
     /**
      * Sets a value.
@@ -8863,15 +8863,15 @@
      * @param {boolean} [silent] Update without triggering an event.
      * @api
      */
-    set(key, value, silent) {
+    set(key2, value, silent) {
       const values2 = this.values_ || (this.values_ = {});
       if (silent) {
-        values2[key] = value;
+        values2[key2] = value;
       } else {
-        const oldValue = values2[key];
-        values2[key] = value;
+        const oldValue = values2[key2];
+        values2[key2] = value;
         if (oldValue !== value) {
-          this.notify(key, oldValue);
+          this.notify(key2, oldValue);
         }
       }
     }
@@ -8883,8 +8883,8 @@
      * @api
      */
     setProperties(values2, silent) {
-      for (const key in values2) {
-        this.set(key, values2[key], silent);
+      for (const key2 in values2) {
+        this.set(key2, values2[key2], silent);
       }
     }
     /**
@@ -8904,15 +8904,15 @@
      * @param {boolean} [silent] Unset without triggering an event.
      * @api
      */
-    unset(key, silent) {
-      if (this.values_ && key in this.values_) {
-        const oldValue = this.values_[key];
-        delete this.values_[key];
+    unset(key2, silent) {
+      if (this.values_ && key2 in this.values_) {
+        const oldValue = this.values_[key2];
+        delete this.values_[key2];
         if (isEmpty(this.values_)) {
           this.values_ = null;
         }
         if (!silent) {
-          this.notify(key, oldValue);
+          this.notify(key2, oldValue);
         }
       }
     }
@@ -9771,8 +9771,8 @@
      * @param {string} key Key.
      * @return {boolean} Is key queued.
      */
-    isKeyQueued(key) {
-      return key in this.queuedElements_;
+    isKeyQueued(key2) {
+      return key2 in this.queuedElements_;
     }
     /**
      * @param {T} element Element.
@@ -10396,9 +10396,9 @@
     }
     return extent;
   }
-  function intersectsSegment(extent, start, end) {
+  function intersectsSegment(extent, start2, end) {
     let intersects3 = false;
-    const startRel = coordinateRelationship(extent, start);
+    const startRel = coordinateRelationship(extent, start2);
     const endRel = coordinateRelationship(extent, end);
     if (startRel === Relationship_default.INTERSECTING || endRel === Relationship_default.INTERSECTING) {
       intersects3 = true;
@@ -10407,8 +10407,8 @@
       const minY = extent[1];
       const maxX = extent[2];
       const maxY = extent[3];
-      const startX = start[0];
-      const startY = start[1];
+      const startX = start2[0];
+      const startY = start2[1];
       const endX = end[0];
       const endY = end[1];
       const slope = (endY - startY) / (endX - startX);
@@ -11010,9 +11010,9 @@
   function zoneFromCode(code) {
     let epsgId = 0;
     for (const re of epsgRegExes) {
-      const match = code.match(re);
-      if (match) {
-        epsgId = parseInt(match[1]);
+      const match2 = code.match(re);
+      if (match2) {
+        epsgId = parseInt(match2[1]);
         break;
       }
     }
@@ -11032,7 +11032,7 @@
     }
     return { number, north };
   }
-  function makeTransformFunction(transformer, zone) {
+  function makeTransformFunction(transformer2, zone) {
     return function(input, output, dimension, stride) {
       const length = input.length;
       dimension = dimension > 1 ? dimension : 2;
@@ -11047,7 +11047,7 @@
       for (let i = 0; i < length; i += stride) {
         const x = input[i];
         const y = input[i + 1];
-        const coord = transformer(x, y, zone);
+        const coord = transformer2(x, y, zone);
         output[i] = coord[0];
         output[i + 1] = coord[1];
       }
@@ -11216,18 +11216,18 @@
       })
     );
   }
-  function addCoordinateTransforms(source, destination, forward, inverse) {
+  function addCoordinateTransforms(source, destination, forward35, inverse35) {
     const sourceProj = get3(source);
     const destProj = get3(destination);
     add3(
       sourceProj,
       destProj,
-      createTransformFromCoordinateTransform(forward)
+      createTransformFromCoordinateTransform(forward35)
     );
     add3(
       destProj,
       sourceProj,
-      createTransformFromCoordinateTransform(inverse)
+      createTransformFromCoordinateTransform(inverse35)
     );
   }
   function equivalent(projection1, projection2) {
@@ -11351,7 +11351,7 @@
     }
     return transformExtent(extent, userProjection, destProjection);
   }
-  function createSafeCoordinateTransform(sourceProj, destProj, transform2) {
+  function createSafeCoordinateTransform(sourceProj, destProj, transform3) {
     return function(coord) {
       let transformed, worldsAway;
       if (sourceProj.canWrapX()) {
@@ -11364,9 +11364,9 @@
         }
         coord[0] = clamp(coord[0], sourceExtent[0], sourceExtent[2]);
         coord[1] = clamp(coord[1], sourceExtent[1], sourceExtent[3]);
-        transformed = transform2(coord);
+        transformed = transform3(coord);
       } else {
-        transformed = transform2(coord);
+        transformed = transform3(coord);
       }
       if (worldsAway && destProj.canWrapX()) {
         transformed[0] += worldsAway * getWidth(destProj.getExtent());
@@ -11391,22 +11391,22 @@
   function create() {
     return [1, 0, 0, 1, 0, 0];
   }
-  function reset(transform2) {
-    return set(transform2, 1, 0, 0, 1, 0, 0);
+  function reset(transform3) {
+    return set(transform3, 1, 0, 0, 1, 0, 0);
   }
-  function multiply(transform1, transform2) {
+  function multiply(transform1, transform22) {
     const a12 = transform1[0];
     const b12 = transform1[1];
     const c1 = transform1[2];
     const d1 = transform1[3];
     const e1 = transform1[4];
     const f1 = transform1[5];
-    const a22 = transform2[0];
-    const b22 = transform2[1];
-    const c2 = transform2[2];
-    const d2 = transform2[3];
-    const e2 = transform2[4];
-    const f2 = transform2[5];
+    const a22 = transform22[0];
+    const b22 = transform22[1];
+    const c2 = transform22[2];
+    const d2 = transform22[3];
+    const e2 = transform22[4];
+    const f2 = transform22[5];
     transform1[0] = a12 * a22 + c1 * b22;
     transform1[1] = b12 * a22 + d1 * b22;
     transform1[2] = a12 * c2 + c1 * d2;
@@ -11415,43 +11415,43 @@
     transform1[5] = b12 * e2 + d1 * f2 + f1;
     return transform1;
   }
-  function set(transform2, a, b, c, d, e, f) {
-    transform2[0] = a;
-    transform2[1] = b;
-    transform2[2] = c;
-    transform2[3] = d;
-    transform2[4] = e;
-    transform2[5] = f;
-    return transform2;
+  function set(transform3, a, b, c, d, e, f) {
+    transform3[0] = a;
+    transform3[1] = b;
+    transform3[2] = c;
+    transform3[3] = d;
+    transform3[4] = e;
+    transform3[5] = f;
+    return transform3;
   }
-  function apply(transform2, coordinate) {
+  function apply(transform3, coordinate) {
     const x = coordinate[0];
     const y = coordinate[1];
-    coordinate[0] = transform2[0] * x + transform2[2] * y + transform2[4];
-    coordinate[1] = transform2[1] * x + transform2[3] * y + transform2[5];
+    coordinate[0] = transform3[0] * x + transform3[2] * y + transform3[4];
+    coordinate[1] = transform3[1] * x + transform3[3] * y + transform3[5];
     return coordinate;
   }
-  function rotate2(transform2, angle) {
+  function rotate2(transform3, angle) {
     const cos = Math.cos(angle);
     const sin = Math.sin(angle);
-    return multiply(transform2, set(tmp_, cos, sin, -sin, cos, 0, 0));
+    return multiply(transform3, set(tmp_, cos, sin, -sin, cos, 0, 0));
   }
-  function scale2(transform2, x, y) {
-    return multiply(transform2, set(tmp_, x, 0, 0, y, 0, 0));
+  function scale2(transform3, x, y) {
+    return multiply(transform3, set(tmp_, x, 0, 0, y, 0, 0));
   }
-  function translate(transform2, dx, dy) {
-    return multiply(transform2, set(tmp_, 1, 0, 0, 1, dx, dy));
+  function translate(transform3, dx, dy) {
+    return multiply(transform3, set(tmp_, 1, 0, 0, 1, dx, dy));
   }
-  function compose(transform2, dx1, dy1, sx, sy, angle, dx2, dy2) {
+  function compose(transform3, dx1, dy1, sx, sy, angle, dx2, dy2) {
     const sin = Math.sin(angle);
     const cos = Math.cos(angle);
-    transform2[0] = sx * cos;
-    transform2[1] = sy * sin;
-    transform2[2] = -sx * sin;
-    transform2[3] = sy * cos;
-    transform2[4] = dx2 * sx * cos - dy2 * sx * sin + dx1;
-    transform2[5] = dx2 * sy * sin + dy2 * sy * cos + dy1;
-    return transform2;
+    transform3[0] = sx * cos;
+    transform3[1] = sy * sin;
+    transform3[2] = -sx * sin;
+    transform3[3] = sy * cos;
+    transform3[4] = dx2 * sx * cos - dy2 * sx * sin + dx1;
+    transform3[5] = dx2 * sy * sin + dy2 * sy * cos + dy1;
+    return transform3;
   }
   function makeInverse(target, source) {
     const det = determinant(source);
@@ -11479,15 +11479,15 @@
   }
 
   // node_modules/ol/geom/flat/transform.js
-  function transform2D(flatCoordinates, offset, end, stride, transform2, dest, destinationStride) {
+  function transform2D(flatCoordinates, offset, end, stride, transform3, dest, destinationStride) {
     dest = dest ? dest : [];
     destinationStride = destinationStride ? destinationStride : 2;
     let i = 0;
     for (let j = offset; j < end; j += stride) {
       const x = flatCoordinates[j];
       const y = flatCoordinates[j + 1];
-      dest[i++] = transform2[0] * x + transform2[2] * y + transform2[4];
-      dest[i++] = transform2[1] * x + transform2[3] * y + transform2[5];
+      dest[i++] = transform3[0] * x + transform3[2] * y + transform3[4];
+      dest[i++] = transform3[1] * x + transform3[3] * y + transform3[5];
       for (let k = 2; k < destinationStride; k++) {
         dest[i++] = flatCoordinates[j + k];
       }
@@ -11564,12 +11564,12 @@
       this.simplifiedGeometryMaxMinSquaredTolerance = 0;
       this.simplifiedGeometryRevision = 0;
       this.simplifyTransformedInternal = memoizeOne(
-        (revision, squaredTolerance, transform2) => {
-          if (!transform2) {
+        (revision, squaredTolerance, transform3) => {
+          if (!transform3) {
             return this.getSimplifiedGeometry(squaredTolerance);
           }
           const clone2 = this.clone();
-          clone2.applyTransform(transform2);
+          clone2.applyTransform(transform3);
           return clone2.getSimplifiedGeometry(squaredTolerance);
         }
       );
@@ -11581,11 +11581,11 @@
      * @param {import("../proj.js").TransformFunction} [transform] Optional transform function.
      * @return {Geometry} Simplified geometry.
      */
-    simplifyTransformed(squaredTolerance, transform2) {
+    simplifyTransformed(squaredTolerance, transform3) {
       return this.simplifyTransformedInternal(
         this.getRevision(),
         squaredTolerance,
-        transform2
+        transform3
       );
     }
     /**
@@ -13576,8 +13576,8 @@
      */
     applyOptions_(options) {
       const properties = Object.assign({}, options);
-      for (const key in ViewProperty_default) {
-        delete properties[key];
+      for (const key2 in ViewProperty_default) {
+        delete properties[key2];
       }
       this.setProperties(properties, true);
       const resolutionConstraintInfo = createResolutionConstraint(options);
@@ -13738,7 +13738,7 @@
         }
         return;
       }
-      let start = Date.now();
+      let start2 = Date.now();
       let center = this.targetCenter_.slice();
       let resolution = this.targetResolution_;
       let rotation = this.targetRotation_;
@@ -13749,7 +13749,7 @@
           arguments[i]
         );
         const animation = {
-          start,
+          start: start2,
           complete: false,
           anchor: options.anchor,
           duration: options.duration !== void 0 ? options.duration : 1e3,
@@ -13779,7 +13779,7 @@
         if (isNoopAnimation(animation)) {
           animation.complete = true;
         } else {
-          start += animation.duration;
+          start2 += animation.duration;
         }
         series.push(animation);
       }
@@ -15580,7 +15580,7 @@
       }
       const rotation = frameState.viewState.rotation;
       if (rotation != this.rotation_) {
-        const transform2 = "rotate(" + rotation + "rad)";
+        const transform3 = "rotate(" + rotation + "rad)";
         if (this.autoHide_) {
           const contains2 = this.element.classList.contains(CLASS_HIDDEN);
           if (!contains2 && rotation === 0) {
@@ -15589,7 +15589,7 @@
             this.element.classList.remove(CLASS_HIDDEN);
           }
         }
-        this.label_.style.transform = transform2;
+        this.label_.style.transform = transform3;
       }
       this.rotation_ = rotation;
     }
@@ -16679,17 +16679,17 @@
           /** @type {KeyboardEvent} */
           mapBrowserEvent.originalEvent
         );
-        const key = keyEvent.key;
-        if (this.condition_(mapBrowserEvent) && (key == Key_default.DOWN || key == Key_default.LEFT || key == Key_default.RIGHT || key == Key_default.UP)) {
+        const key2 = keyEvent.key;
+        if (this.condition_(mapBrowserEvent) && (key2 == Key_default.DOWN || key2 == Key_default.LEFT || key2 == Key_default.RIGHT || key2 == Key_default.UP)) {
           const map = mapBrowserEvent.map;
           const view = map.getView();
           const mapUnitsDelta = view.getResolution() * this.pixelDelta_;
           let deltaX = 0, deltaY = 0;
-          if (key == Key_default.DOWN) {
+          if (key2 == Key_default.DOWN) {
             deltaY = -mapUnitsDelta;
-          } else if (key == Key_default.LEFT) {
+          } else if (key2 == Key_default.LEFT) {
             deltaX = -mapUnitsDelta;
-          } else if (key == Key_default.RIGHT) {
+          } else if (key2 == Key_default.RIGHT) {
             deltaX = mapUnitsDelta;
           } else {
             deltaY = mapUnitsDelta;
@@ -16735,10 +16735,10 @@
           /** @type {KeyboardEvent} */
           mapBrowserEvent.originalEvent
         );
-        const key = keyEvent.key;
-        if (this.condition_(mapBrowserEvent) && (key === "+" || key === "-")) {
+        const key2 = keyEvent.key;
+        if (this.condition_(mapBrowserEvent) && (key2 === "+" || key2 === "-")) {
           const map = mapBrowserEvent.map;
-          const delta = key === "+" ? this.delta_ : -this.delta_;
+          const delta = key2 === "+" ? this.delta_ : -this.delta_;
           const view = map.getView();
           zoomByDelta(view, delta, void 0, this.duration_);
           keyEvent.preventDefault();
@@ -17663,9 +17663,9 @@
      */
     handleLayersRemove_(collectionEvent) {
       const layer = collectionEvent.element;
-      const key = getUid(layer);
-      this.listenerKeys_[key].forEach(unlistenByKey);
-      delete this.listenerKeys_[key];
+      const key2 = getUid(layer);
+      this.listenerKeys_[key2].forEach(unlistenByKey);
+      delete this.listenerKeys_[key2];
       this.dispatchEvent(new GroupEvent(GroupEventType.REMOVELAYER, layer));
       this.changed();
     }
@@ -18378,22 +18378,22 @@
     }
     _build(items, left, right, height) {
       const N = right - left + 1;
-      let M = this._maxEntries;
+      let M5 = this._maxEntries;
       let node;
-      if (N <= M) {
+      if (N <= M5) {
         node = createNode(items.slice(left, right + 1));
         calcBBox(node, this.toBBox);
         return node;
       }
       if (!height) {
-        height = Math.ceil(Math.log(N) / Math.log(M));
-        M = Math.ceil(N / Math.pow(M, height - 1));
+        height = Math.ceil(Math.log(N) / Math.log(M5));
+        M5 = Math.ceil(N / Math.pow(M5, height - 1));
       }
       node = createNode([]);
       node.leaf = false;
       node.height = height;
-      const N2 = Math.ceil(N / M);
-      const N1 = N2 * Math.ceil(Math.sqrt(M));
+      const N2 = Math.ceil(N / M5);
+      const N1 = N2 * Math.ceil(Math.sqrt(M5));
       multiSelect(items, left, right, N1, this.compareMinX);
       for (let i = left; i <= right; i += N1) {
         const right2 = Math.min(i + N1 - 1, right);
@@ -18449,10 +18449,10 @@
     // split overflowed node into two
     _split(insertPath, level2) {
       const node = insertPath[level2];
-      const M = node.children.length;
+      const M5 = node.children.length;
       const m = this._minEntries;
-      this._chooseSplitAxis(node, m, M);
-      const splitIndex = this._chooseSplitIndex(node, m, M);
+      this._chooseSplitAxis(node, m, M5);
+      const splitIndex = this._chooseSplitIndex(node, m, M5);
       const newNode = createNode(node.children.splice(splitIndex, node.children.length - splitIndex));
       newNode.height = node.height;
       newNode.leaf = node.leaf;
@@ -18467,13 +18467,13 @@
       this.data.leaf = false;
       calcBBox(this.data, this.toBBox);
     }
-    _chooseSplitIndex(node, m, M) {
+    _chooseSplitIndex(node, m, M5) {
       let index;
       let minOverlap = Infinity;
       let minArea = Infinity;
-      for (let i = m; i <= M - m; i++) {
+      for (let i = m; i <= M5 - m; i++) {
         const bbox1 = distBBox(node, 0, i, this.toBBox);
-        const bbox2 = distBBox(node, i, M, this.toBBox);
+        const bbox2 = distBBox(node, i, M5, this.toBBox);
         const overlap = intersectionArea(bbox1, bbox2);
         const area = bboxArea(bbox1) + bboxArea(bbox2);
         if (overlap < minOverlap) {
@@ -18487,29 +18487,29 @@
           }
         }
       }
-      return index || M - m;
+      return index || M5 - m;
     }
     // sorts node children by the best axis for split
-    _chooseSplitAxis(node, m, M) {
+    _chooseSplitAxis(node, m, M5) {
       const compareMinX = node.leaf ? this.compareMinX : compareNodeMinX;
       const compareMinY = node.leaf ? this.compareMinY : compareNodeMinY;
-      const xMargin = this._allDistMargin(node, m, M, compareMinX);
-      const yMargin = this._allDistMargin(node, m, M, compareMinY);
+      const xMargin = this._allDistMargin(node, m, M5, compareMinX);
+      const yMargin = this._allDistMargin(node, m, M5, compareMinY);
       if (xMargin < yMargin) node.children.sort(compareMinX);
     }
     // total margin of all possible split distributions where each node is at least m full
-    _allDistMargin(node, m, M, compare) {
+    _allDistMargin(node, m, M5, compare) {
       node.children.sort(compare);
       const toBBox = this.toBBox;
       const leftBBox = distBBox(node, 0, m, toBBox);
-      const rightBBox = distBBox(node, M - m, M, toBBox);
+      const rightBBox = distBBox(node, M5 - m, M5, toBBox);
       let margin = bboxMargin(leftBBox) + bboxMargin(rightBBox);
-      for (let i = m; i < M - m; i++) {
+      for (let i = m; i < M5 - m; i++) {
         const child = node.children[i];
         extend3(leftBBox, node.leaf ? toBBox(child) : child);
         margin += bboxMargin(leftBBox);
       }
-      for (let i = M - m - 1; i >= m; i--) {
+      for (let i = M5 - m - 1; i >= m; i--) {
         const child = node.children[i];
         extend3(rightBBox, node.leaf ? toBBox(child) : child);
         margin += bboxMargin(rightBBox);
@@ -18758,9 +18758,9 @@
     }
     if (cacheSize >= MAX_CACHE_SIZE) {
       let i = 0;
-      for (const key in cache2) {
+      for (const key2 in cache2) {
         if ((i++ & 3) === 0) {
-          delete cache2[key];
+          delete cache2[key2];
           --cacheSize;
         }
       }
@@ -18848,19 +18848,19 @@
     return type in typeNames;
   }
   function typeName(type) {
-    const names = [];
+    const names38 = [];
     for (const namedType of namedTypes) {
       if (includesType(type, namedType)) {
-        names.push(typeNames[namedType]);
+        names38.push(typeNames[namedType]);
       }
     }
-    if (names.length === 0) {
+    if (names38.length === 0) {
       return "untyped";
     }
-    if (names.length < 3) {
-      return names.join(" or ");
+    if (names38.length < 3) {
+      return names38.join(" or ");
     }
-    return names.slice(0, -1).join(", ") + ", or " + names[names.length - 1];
+    return names38.slice(0, -1).join(", ") + ", or " + names38[names38.length - 1];
   }
   function includesType(broad, specific) {
     return (broad & specific) === specific;
@@ -19204,24 +19204,24 @@
     const argsCount = encoded.length - 1;
     const args = new Array(argsCount);
     for (let i = 0; i < argsCount; ++i) {
-      const key = encoded[i + 1];
-      switch (typeof key) {
+      const key2 = encoded[i + 1];
+      switch (typeof key2) {
         case "number": {
-          args[i] = new LiteralExpression(NumberType, key);
+          args[i] = new LiteralExpression(NumberType, key2);
           break;
         }
         case "string": {
-          args[i] = new LiteralExpression(StringType, key);
+          args[i] = new LiteralExpression(StringType, key2);
           break;
         }
         default: {
           throw new Error(
-            `expected a string key or numeric array index for a get operation, got ${key}`
+            `expected a string key or numeric array index for a get operation, got ${key2}`
           );
         }
       }
       if (i === 0) {
-        context.properties.add(String(key));
+        context.properties.add(String(key2));
       }
     }
     return args;
@@ -19318,8 +19318,8 @@
     const args = new Array(argsCount - 2);
     for (let i = 0; i < argsCount - 2; i += 2) {
       try {
-        const match = parse(encoded[i + 2], input.type, context);
-        args[i] = match;
+        const match2 = parse(encoded[i + 2], input.type, context);
+        args[i] = match2;
       } catch (err2) {
         throw new Error(
           `failed to parse argument ${i + 1} of match expression: ${err2.message}`
@@ -19692,11 +19692,11 @@
               /** @type {LiteralExpression} */
               args[i]
             );
-            const key = (
+            const key2 = (
               /** @type {string|number} */
               keyExpression.value
             );
-            value = value[key];
+            value = value[key2];
           }
           return value;
         };
@@ -19716,14 +19716,14 @@
               /** @type {LiteralExpression} */
               args[i]
             );
-            const key = (
+            const key2 = (
               /** @type {string|number} */
               keyExpression.value
             );
-            if (!value || !Object.hasOwn(value, key)) {
+            if (!value || !Object.hasOwn(value, key2)) {
               return false;
             }
-            value = value[key];
+            value = value[key2];
           }
           return true;
         };
@@ -20141,11 +20141,11 @@
     expire() {
       if (this.canExpireCache()) {
         let i = 0;
-        for (const key in this.cache_) {
-          const iconImage = this.cache_[key];
+        for (const key2 in this.cache_) {
+          const iconImage = this.cache_[key2];
           if ((i++ & 3) === 0 && !iconImage.hasListener()) {
-            delete this.cache_[key];
-            delete this.patternCache_[key];
+            delete this.cache_[key2];
+            delete this.patternCache_[key2];
             --this.cacheSize_;
           }
         }
@@ -20157,8 +20157,8 @@
      * @return {import("./IconImage.js").default} Icon image.
      */
     get(src, color) {
-      const key = getCacheKey(src, color);
-      const icon = key in this.cache_ ? this.cache_[key] : null;
+      const key2 = getCacheKey(src, color);
+      const icon = key2 in this.cache_ ? this.cache_[key2] : null;
       return icon;
     }
     /**
@@ -20167,8 +20167,8 @@
      * @return {CanvasPattern} Icon image.
      */
     getPattern(src, color) {
-      const key = getCacheKey(src, color);
-      return key in this.patternCache_ ? this.patternCache_[key] : null;
+      const key2 = getCacheKey(src, color);
+      return key2 in this.patternCache_ ? this.patternCache_[key2] : null;
     }
     /**
      * @param {string} src Src.
@@ -20177,22 +20177,22 @@
      * @param {boolean} [pattern] Also cache a `'repeat'` pattern with this `iconImage`.
      */
     set(src, color, iconImage, pattern) {
-      const key = getCacheKey(src, color);
-      const update = key in this.cache_;
-      this.cache_[key] = iconImage;
+      const key2 = getCacheKey(src, color);
+      const update = key2 in this.cache_;
+      this.cache_[key2] = iconImage;
       if (pattern) {
         if (iconImage.getImageState() === ImageState_default.IDLE) {
           iconImage.load();
         }
         if (iconImage.getImageState() === ImageState_default.LOADING) {
           iconImage.ready().then(() => {
-            this.patternCache_[key] = getSharedCanvasContext2D().createPattern(
+            this.patternCache_[key2] = getSharedCanvasContext2D().createPattern(
               iconImage.getImage(1),
               "repeat"
             );
           });
         } else {
-          this.patternCache_[key] = getSharedCanvasContext2D().createPattern(
+          this.patternCache_[key2] = getSharedCanvasContext2D().createPattern(
             iconImage.getImage(1),
             "repeat"
           );
@@ -21070,9 +21070,9 @@
         lineCap = this.stroke_.getLineCap() ?? defaultLineCap;
         miterLimit = this.stroke_.getMiterLimit() ?? defaultMiterLimit;
       }
-      const add4 = this.calculateLineJoinSize_(lineJoin, strokeWidth, miterLimit);
+      const add5 = this.calculateLineJoinSize_(lineJoin, strokeWidth, miterLimit);
       const maxRadius = Math.max(this.radius, this.radius2_ || 0);
-      const size = Math.ceil(2 * maxRadius + add4);
+      const size = Math.ceil(2 * maxRadius + add5);
       return {
         strokeStyle,
         strokeWidth,
@@ -23891,8 +23891,8 @@
       if (matches.length === 0) {
         return void 0;
       }
-      const order = 1 / matches.length;
-      matches.forEach((m, i) => m.distanceSq += i * order);
+      const order2 = 1 / matches.length;
+      matches.forEach((m, i) => m.distanceSq += i * order2);
       matches.sort((a, b) => a.distanceSq - b.distanceSq);
       matches.some((m) => {
         return result = m.callback(m.feature, m.layer, m.geometry);
@@ -24065,11 +24065,11 @@
             mapContext.save();
             const opacity = container.style.opacity || canvas.style.opacity;
             mapContext.globalAlpha = opacity === "" ? 1 : Number(opacity);
-            const transform2 = canvas.style.transform;
-            if (transform2) {
+            const transform3 = canvas.style.transform;
+            if (transform3) {
               mapContext.transform(
                 .../** @type {[number, number, number, number, number, number]} */
-                fromString(transform2)
+                fromString(transform3)
               );
             } else {
               const w = parseFloat(canvas.style.width) / canvas.width;
@@ -24971,9 +24971,9 @@
             this,
             this.moveTolerance_
           );
-          for (const key in MapBrowserEventType_default) {
+          for (const key2 in MapBrowserEventType_default) {
             this.mapBrowserEventHandler_.addEventListener(
-              MapBrowserEventType_default[key],
+              MapBrowserEventType_default[key2],
               this.handleMapBrowserEvent.bind(this)
             );
           }
@@ -25330,9 +25330,9 @@
       if (targetElement) {
         let width, height;
         if (isCanvas(targetElement)) {
-          const transform2 = targetElement.getContext("2d").getTransform();
-          width = targetElement.width / transform2.a;
-          height = targetElement.height / transform2.d;
+          const transform3 = targetElement.getContext("2d").getTransform();
+          width = targetElement.width / transform3.a;
+          height = targetElement.height / transform3.d;
         } else {
           const computedStyle = getComputedStyle(targetElement);
           width = targetElement.offsetWidth - parseFloat(computedStyle["borderLeftWidth"]) - parseFloat(computedStyle["paddingLeft"]) - parseFloat(computedStyle["paddingRight"]) - parseFloat(computedStyle["borderRightWidth"]);
@@ -25439,13 +25439,13 @@
   function create2() {
     return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
   }
-  function fromTransform(mat4, transform2) {
-    mat4[0] = transform2[0];
-    mat4[1] = transform2[1];
-    mat4[4] = transform2[2];
-    mat4[5] = transform2[3];
-    mat4[12] = transform2[4];
-    mat4[13] = transform2[5];
+  function fromTransform(mat4, transform3) {
+    mat4[0] = transform3[0];
+    mat4[1] = transform3[1];
+    mat4[4] = transform3[2];
+    mat4[5] = transform3[3];
+    mat4[12] = transform3[4];
+    mat4[13] = transform3[5];
     return mat4;
   }
   function orthographic(left, right, bottom, top, near, far, out) {
@@ -26005,17 +26005,17 @@
     FLOAT
   };
   var canvasCache = {};
-  function getSharedCanvasCacheKey(key) {
-    return "shared/" + key;
+  function getSharedCanvasCacheKey(key2) {
+    return "shared/" + key2;
   }
   var uniqueCanvasCacheKeyCount = 0;
   function getUniqueCanvasCacheKey() {
-    const key = "unique/" + uniqueCanvasCacheKeyCount;
+    const key2 = "unique/" + uniqueCanvasCacheKeyCount;
     uniqueCanvasCacheKeyCount += 1;
-    return key;
+    return key2;
   }
-  function getOrCreateContext(key) {
-    let cacheItem = canvasCache[key];
+  function getOrCreateContext(key2) {
+    let cacheItem = canvasCache[key2];
     if (!cacheItem) {
       const canvas = document.createElement("canvas");
       canvas.width = 1;
@@ -26024,13 +26024,13 @@
       canvas.style.left = "0";
       const context = getContext(canvas);
       cacheItem = { users: 0, context };
-      canvasCache[key] = cacheItem;
+      canvasCache[key2] = cacheItem;
     }
     cacheItem.users += 1;
     return cacheItem.context;
   }
-  function releaseCanvas2(key) {
-    const cacheItem = canvasCache[key];
+  function releaseCanvas2(key2) {
+    const cacheItem = canvasCache[key2];
     if (!cacheItem) {
       return;
     }
@@ -26046,7 +26046,7 @@
     const canvas = gl.canvas;
     canvas.width = 1;
     canvas.height = 1;
-    delete canvasCache[key];
+    delete canvasCache[key2];
   }
   var WebGLHelper = class extends Disposable_default {
     /**
@@ -26329,13 +26329,13 @@
      * @param {number} start Start index.
      * @param {number} end End index.
      */
-    drawElements(start, end) {
+    drawElements(start2, end) {
       const gl = this.gl_;
       this.getExtension("OES_element_index_uint");
       const elementType = gl.UNSIGNED_INT;
       const elementSize = 4;
-      const numItems = end - start;
-      const offsetInBytes = start * elementSize;
+      const numItems = end - start2;
+      const offsetInBytes = start2 * elementSize;
       gl.drawElements(gl.TRIANGLES, numItems, elementType, offsetInBytes);
     }
     /**
@@ -26345,14 +26345,14 @@
      * @param {number} end End index.
      * @param {number} instanceCount The number of instances to render
      */
-    drawElementsInstanced(start, end, instanceCount) {
+    drawElementsInstanced(start2, end, instanceCount) {
       const gl = this.gl_;
       this.getExtension("OES_element_index_uint");
       const ext = this.getInstancedRenderingExtension_();
       const elementType = gl.UNSIGNED_INT;
       const elementSize = 4;
-      const numItems = end - start;
-      const offsetInBytes = start * elementSize;
+      const numItems = end - start2;
+      const offsetInBytes = start2 * elementSize;
       ext.drawElementsInstancedANGLE(
         gl.TRIANGLES,
         numItems,
@@ -26624,13 +26624,13 @@
      * @param {import("../transform.js").Transform} transform Transform to update.
      * @return {import("../transform.js").Transform} The updated transform object.
      */
-    makeProjectionTransform(frameState, transform2) {
+    makeProjectionTransform(frameState, transform3) {
       const size = frameState.size;
       const rotation = frameState.viewState.rotation;
       const resolution = frameState.viewState.resolution;
       const center = frameState.viewState.center;
       compose(
-        transform2,
+        transform3,
         0,
         0,
         2 / (resolution * size[0]),
@@ -26639,7 +26639,7 @@
         -center[0],
         -center[1]
       );
-      return transform2;
+      return transform3;
     }
     /**
      * Give a value for a standard float uniform
@@ -26936,14 +26936,14 @@
       if (!this.transition_) {
         return 1;
       }
-      let start = this.transitionStarts_[id];
-      if (!start) {
-        start = time;
-        this.transitionStarts_[id] = start;
-      } else if (start === -1) {
+      let start2 = this.transitionStarts_[id];
+      if (!start2) {
+        start2 = time;
+        this.transitionStarts_[id] = start2;
+      } else if (start2 === -1) {
         return 1;
       }
-      const delta = time - start + 1e3 / 60;
+      const delta = time - start2 + 1e3 / 60;
       if (delta >= this.transition_) {
         return 1;
       }
@@ -27576,11 +27576,11 @@
         )
       ) : getTransform(this.targetProj_, this.sourceProj_);
       this.transformInv_ = function(c) {
-        const key = c[0] + "/" + c[1];
-        if (!transformInvCache[key]) {
-          transformInvCache[key] = transformInv(c);
+        const key2 = c[0] + "/" + c[1];
+        if (!transformInvCache[key2]) {
+          transformInvCache[key2] = transformInv(c);
         }
-        return transformInvCache[key];
+        return transformInvCache[key2];
       };
       this.maxSourceExtent_ = maxSourceExtent;
       this.errorThresholdSquared_ = errorThreshold * errorThreshold;
@@ -28640,8 +28640,8 @@
      * @param {string} key Key.
      * @return {boolean} Contains key.
      */
-    containsKey(key) {
-      return this.entries_.hasOwnProperty(key);
+    containsKey(key2) {
+      return this.entries_.hasOwnProperty(key2);
     }
     /**
      * @param {function(T, string, LRUCache<T>): ?} f The function
@@ -28661,8 +28661,8 @@
      * @param {*} [options] Options (reserved for subclasses).
      * @return {T} Value.
      */
-    get(key, options) {
-      const entry = this.entries_[key];
+    get(key2, options) {
+      const entry = this.entries_[key2];
       assert(
         entry !== void 0,
         "Tried to get a value for a key that does not exist in the cache"
@@ -28689,8 +28689,8 @@
      * @param {string} key The entry key.
      * @return {T} The removed entry.
      */
-    remove(key) {
-      const entry = this.entries_[key];
+    remove(key2) {
+      const entry = this.entries_[key2];
       assert(
         entry !== void 0,
         "Tried to get a value for a key that does not exist in the cache"
@@ -28711,7 +28711,7 @@
         entry.newer.older = entry.older;
         entry.older.newer = entry.newer;
       }
-      delete this.entries_[key];
+      delete this.entries_[key2];
       --this.count_;
       return entry.value_;
     }
@@ -28769,8 +28769,8 @@
      * @param {string} key Key.
      * @return {T|undefined} Value.
      */
-    peek(key) {
-      return this.entries_[key]?.value_;
+    peek(key2) {
+      return this.entries_[key2]?.value_;
     }
     /**
      * @return {T} value Value.
@@ -28793,21 +28793,21 @@
      * @param {string} key Key.
      * @param {T} value Value.
      */
-    replace(key, value) {
-      this.get(key);
-      this.entries_[key].value_ = value;
+    replace(key2, value) {
+      this.get(key2);
+      this.entries_[key2].value_ = value;
     }
     /**
      * @param {string} key Key.
      * @param {T} value Value.
      */
-    set(key, value) {
+    set(key2, value) {
       assert(
-        !(key in this.entries_),
+        !(key2 in this.entries_),
         "Tried to set a value for a key that is used already"
       );
       const entry = {
-        key_: key,
+        key_: key2,
         newer: null,
         older: this.newest_,
         value_: value
@@ -28818,7 +28818,7 @@
         this.newest_.newer = entry;
       }
       this.newest_ = entry;
-      this.entries_[key] = entry;
+      this.entries_[key2] = entry;
       ++this.count_;
     }
     /**
@@ -28888,8 +28888,8 @@
     /**
      * @param {string} key The new stale key.
      */
-    prependStaleKey(key) {
-      this.staleKeys_.unshift(key);
+    prependStaleKey(key2) {
+      this.staleKeys_.unshift(key2);
       if (this.staleKeys_.length > this.maxStaleKeys) {
         this.staleKeys_.length = this.maxStaleKeys;
       }
@@ -30318,9 +30318,9 @@
       const fallback = compiledArgs[compiledArgs.length - 1];
       let result = null;
       for (let i = compiledArgs.length - 3; i >= 1; i -= 2) {
-        const match = compiledArgs[i];
+        const match2 = compiledArgs[i];
         const output = compiledArgs[i + 1];
-        result = `(${input} == ${match} ? ${output} : ${result || fallback})`;
+        result = `(${input} == ${match2} ? ${output} : ${result || fallback})`;
       }
       return result;
     }),
@@ -30978,11 +30978,11 @@ ${ifBlocks}
       return ReflectApply(target, thisArg, args);
     };
   }
-  function uncurryThisGetter(target, key) {
+  function uncurryThisGetter(target, key2) {
     return uncurryThis(
       ReflectGetOwnPropertyDescriptor(
         target,
-        key
+        key2
       ).get
     );
   }
@@ -31023,7 +31023,7 @@ ${ifBlocks}
     ObjectPrototype.__lookupGetter__ ? uncurryThis(
       /** @type {any} */
       ObjectPrototype.__lookupGetter__
-    ) : (object, key) => {
+    ) : (object, key2) => {
       if (object == null) {
         throw NativeTypeError(
           CANNOT_CONVERT_UNDEFINED_OR_NULL_TO_OBJECT
@@ -31031,7 +31031,7 @@ ${ifBlocks}
       }
       let target = NativeObject(object);
       do {
-        const descriptor = ReflectGetOwnPropertyDescriptor(target, key);
+        const descriptor = ReflectGetOwnPropertyDescriptor(target, key2);
         if (descriptor !== void 0) {
           if (ObjectHasOwn(descriptor, "get")) {
             return descriptor.get;
@@ -31167,11 +31167,11 @@ ${ifBlocks}
       configurable: true
     }
   });
-  for (const key of ReflectOwnKeys(ArrayIteratorPrototype)) {
-    if (key === "next") {
+  for (const key2 of ReflectOwnKeys(ArrayIteratorPrototype)) {
+    if (key2 === "next") {
       continue;
     }
-    ObjectDefineProperty(DummyArrayIteratorPrototype, key, ReflectGetOwnPropertyDescriptor(ArrayIteratorPrototype, key));
+    ObjectDefineProperty(DummyArrayIteratorPrototype, key2, ReflectGetOwnPropertyDescriptor(ArrayIteratorPrototype, key2));
   }
 
   // node_modules/@petamoriken/float16/src/_util/converter.mjs
@@ -31270,33 +31270,33 @@ ${ifBlocks}
       const pattern = attributeName + "\\=" + char + "([^" + char + "]*)" + char;
       if (debug) console.log("[xml-utils] pattern:", pattern);
       const re = new RegExp(pattern);
-      const match = re.exec(opening);
-      if (debug) console.log("[xml-utils] match:", match);
-      if (match) return match[1];
+      const match2 = re.exec(opening);
+      if (debug) console.log("[xml-utils] match:", match2);
+      if (match2) return match2[1];
     }
   }
 
   // node_modules/xml-utils/index-of-match.mjs
   function indexOfMatch(xml, pattern, startIndex) {
     const re = new RegExp(pattern);
-    const match = re.exec(xml.slice(startIndex));
-    if (match) return startIndex + match.index;
+    const match2 = re.exec(xml.slice(startIndex));
+    if (match2) return startIndex + match2.index;
     else return -1;
   }
 
   // node_modules/xml-utils/index-of-match-end.mjs
   function indexOfMatchEnd(xml, pattern, startIndex) {
     const re = new RegExp(pattern);
-    const match = re.exec(xml.slice(startIndex));
-    if (match) return startIndex + match.index + match[0].length - 1;
+    const match2 = re.exec(xml.slice(startIndex));
+    if (match2) return startIndex + match2.index + match2[0].length - 1;
     else return -1;
   }
 
   // node_modules/xml-utils/count-substring.mjs
   function countSubstring(string, substring) {
     const pattern = new RegExp(substring, "g");
-    const match = string.match(pattern);
-    return match ? match.length : 0;
+    const match2 = string.match(pattern);
+    return match2 ? match2.length : 0;
   }
 
   // node_modules/xml-utils/find-tag-by-name.mjs
@@ -31305,11 +31305,11 @@ ${ifBlocks}
     const nested = !(options && typeof options.nested === false);
     const startIndex = options && options.startIndex || 0;
     if (debug) console.log("[xml-utils] starting findTagByName with", tagName, " and ", options);
-    const start = indexOfMatch(xml, `<${tagName}[ 
+    const start2 = indexOfMatch(xml, `<${tagName}[ 
 >/]`, startIndex);
-    if (debug) console.log("[xml-utils] start:", start);
-    if (start === -1) return void 0;
-    const afterStart = xml.slice(start + tagName.length);
+    if (debug) console.log("[xml-utils] start:", start2);
+    if (start2 === -1) return void 0;
+    const afterStart = xml.slice(start2 + tagName.length);
     let relativeEnd = indexOfMatchEnd(afterStart, "^[^<]*[ /]>", 0);
     const selfClosing = relativeEnd !== -1 && afterStart[relativeEnd - 1] === "/";
     if (debug) console.log("[xml-utils] selfClosing:", selfClosing);
@@ -31329,17 +31329,17 @@ ${ifBlocks}
         relativeEnd = indexOfMatchEnd(afterStart, "[ /]" + tagName + ">", 0);
       }
     }
-    const end = start + tagName.length + relativeEnd + 1;
+    const end = start2 + tagName.length + relativeEnd + 1;
     if (debug) console.log("[xml-utils] end:", end);
     if (end === -1) return void 0;
-    const outer = xml.slice(start, end);
+    const outer = xml.slice(start2, end);
     let inner;
     if (selfClosing) {
       inner = null;
     } else {
       inner = outer.slice(outer.indexOf(">") + 1, outer.lastIndexOf("<"));
     }
-    return { inner, outer, start, end };
+    return { inner, outer, start: start2, end };
   }
 
   // node_modules/xml-utils/find-tags-by-name.mjs
@@ -31716,9 +31716,9 @@ ${ifBlocks}
   }
 
   // node_modules/geotiff/dist-module/geotiffimage.js
-  function sum(array, start, end) {
+  function sum(array, start2, end) {
     let s = 0;
-    for (let i = start; i < end; ++i) {
+    for (let i = start2; i < end; ++i) {
       s += array[i];
     }
     return s;
@@ -32575,9 +32575,9 @@ ${ifBlocks}
           [width, 0],
           [width, height]
         ];
-        const projected = corners.map(([I, J]) => [
-          d + a * I + b * J,
-          h + e * I + f * J
+        const projected = corners.map(([I2, J]) => [
+          d + a * I2 + b * J,
+          h + e * I2 + f * J
         ]);
         const xs = projected.map((pt) => pt[0]);
         const ys = projected.map((pt) => pt[1]);
@@ -33053,8 +33053,8 @@ ${ifBlocks}
       return Object.fromEntries(items);
     }
     const obj = {};
-    for (const [key, value] of items) {
-      obj[key.toLowerCase()] = value;
+    for (const [key2, value] of items) {
+      obj[key2.toLowerCase()] = value;
     }
     return obj;
   }
@@ -33081,13 +33081,13 @@ ${ifBlocks}
     return { type, params: itemsToObject(paramsItems) };
   }
   function parseContentRange(rawContentRange) {
-    let start = NaN;
+    let start2 = NaN;
     let end = NaN;
     let total = NaN;
     if (rawContentRange) {
-      [, start, end, total] = (rawContentRange.match(/bytes (\d+)-(\d+)\/(\d+)/) || []).map(Number);
+      [, start2, end, total] = (rawContentRange.match(/bytes (\d+)-(\d+)\/(\d+)/) || []).map(Number);
     }
-    return { start, end, total };
+    return { start: start2, end, total };
   }
   function parseByteRanges(responseArrayBuffer, boundary) {
     let offset = -1;
@@ -33118,13 +33118,13 @@ ${ifBlocks}
       }
       const endOfHeaders = innerText.indexOf(CRLFCRLF);
       const headers = parseHeaders(innerText.substr(0, endOfHeaders));
-      const { start, end, total } = parseContentRange(headers["content-range"]);
+      const { start: start2, end, total } = parseContentRange(headers["content-range"]);
       const startOfData = offset + startBoundary.length + endOfHeaders + CRLFCRLF.length;
-      const length = end + 1 - start;
+      const length = end + 1 - start2;
       out.push({
         headers,
         data: responseArrayBuffer.slice(startOfData, startOfData + length),
-        offset: start,
+        offset: start2,
         length,
         fileSize: total
       });
@@ -33184,34 +33184,34 @@ ${ifBlocks}
       if (typeof this.onEviction !== "function") {
         return;
       }
-      for (const [key, item] of cache3) {
-        this.onEviction(key, item.value);
+      for (const [key2, item] of cache3) {
+        this.onEviction(key2, item.value);
       }
     }
-    _deleteIfExpired(key, item) {
+    _deleteIfExpired(key2, item) {
       if (typeof item.expiry === "number" && item.expiry <= Date.now()) {
         if (typeof this.onEviction === "function") {
-          this.onEviction(key, item.value);
+          this.onEviction(key2, item.value);
         }
-        return this.delete(key);
+        return this.delete(key2);
       }
       return false;
     }
-    _getOrDeleteIfExpired(key, item) {
-      const deleted = this._deleteIfExpired(key, item);
+    _getOrDeleteIfExpired(key2, item) {
+      const deleted = this._deleteIfExpired(key2, item);
       if (deleted === false) {
         return item.value;
       }
     }
-    _getItemValue(key, item) {
-      return item.expiry ? this._getOrDeleteIfExpired(key, item) : item.value;
+    _getItemValue(key2, item) {
+      return item.expiry ? this._getOrDeleteIfExpired(key2, item) : item.value;
     }
-    _peek(key, cache3) {
-      const item = cache3.get(key);
-      return this._getItemValue(key, item);
+    _peek(key2, cache3) {
+      const item = cache3.get(key2);
+      return this._getItemValue(key2, item);
     }
-    _set(key, value) {
-      this.cache.set(key, value);
+    _set(key2, value) {
+      this.cache.set(key2, value);
       this._size++;
       if (this._size >= this.maxSize) {
         this._size = 0;
@@ -33220,76 +33220,76 @@ ${ifBlocks}
         this.cache = /* @__PURE__ */ new Map();
       }
     }
-    _moveToRecent(key, item) {
-      this.oldCache.delete(key);
-      this._set(key, item);
+    _moveToRecent(key2, item) {
+      this.oldCache.delete(key2);
+      this._set(key2, item);
     }
     *_entriesAscending() {
       for (const item of this.oldCache) {
-        const [key, value] = item;
-        if (!this.cache.has(key)) {
-          const deleted = this._deleteIfExpired(key, value);
+        const [key2, value] = item;
+        if (!this.cache.has(key2)) {
+          const deleted = this._deleteIfExpired(key2, value);
           if (deleted === false) {
             yield item;
           }
         }
       }
       for (const item of this.cache) {
-        const [key, value] = item;
-        const deleted = this._deleteIfExpired(key, value);
+        const [key2, value] = item;
+        const deleted = this._deleteIfExpired(key2, value);
         if (deleted === false) {
           yield item;
         }
       }
     }
-    get(key) {
-      if (this.cache.has(key)) {
-        const item = this.cache.get(key);
-        return this._getItemValue(key, item);
+    get(key2) {
+      if (this.cache.has(key2)) {
+        const item = this.cache.get(key2);
+        return this._getItemValue(key2, item);
       }
-      if (this.oldCache.has(key)) {
-        const item = this.oldCache.get(key);
-        if (this._deleteIfExpired(key, item) === false) {
-          this._moveToRecent(key, item);
+      if (this.oldCache.has(key2)) {
+        const item = this.oldCache.get(key2);
+        if (this._deleteIfExpired(key2, item) === false) {
+          this._moveToRecent(key2, item);
           return item.value;
         }
       }
     }
-    set(key, value, { maxAge = this.maxAge } = {}) {
+    set(key2, value, { maxAge = this.maxAge } = {}) {
       const expiry = typeof maxAge === "number" && maxAge !== Number.POSITIVE_INFINITY ? Date.now() + maxAge : void 0;
-      if (this.cache.has(key)) {
-        this.cache.set(key, {
+      if (this.cache.has(key2)) {
+        this.cache.set(key2, {
           value,
           expiry
         });
       } else {
-        this._set(key, { value, expiry });
+        this._set(key2, { value, expiry });
       }
       return this;
     }
-    has(key) {
-      if (this.cache.has(key)) {
-        return !this._deleteIfExpired(key, this.cache.get(key));
+    has(key2) {
+      if (this.cache.has(key2)) {
+        return !this._deleteIfExpired(key2, this.cache.get(key2));
       }
-      if (this.oldCache.has(key)) {
-        return !this._deleteIfExpired(key, this.oldCache.get(key));
+      if (this.oldCache.has(key2)) {
+        return !this._deleteIfExpired(key2, this.oldCache.get(key2));
       }
       return false;
     }
-    peek(key) {
-      if (this.cache.has(key)) {
-        return this._peek(key, this.cache);
+    peek(key2) {
+      if (this.cache.has(key2)) {
+        return this._peek(key2, this.cache);
       }
-      if (this.oldCache.has(key)) {
-        return this._peek(key, this.oldCache);
+      if (this.oldCache.has(key2)) {
+        return this._peek(key2, this.oldCache);
       }
     }
-    delete(key) {
-      const deleted = this.cache.delete(key);
+    delete(key2) {
+      const deleted = this.cache.delete(key2);
       if (deleted) {
         this._size--;
       }
-      return this.oldCache.delete(key) || deleted;
+      return this.oldCache.delete(key2) || deleted;
     }
     clear() {
       this.cache.clear();
@@ -33317,8 +33317,8 @@ ${ifBlocks}
       this.maxSize = newSize;
     }
     *keys() {
-      for (const [key] of this) {
-        yield key;
+      for (const [key2] of this) {
+        yield key2;
       }
     }
     *values() {
@@ -33328,18 +33328,18 @@ ${ifBlocks}
     }
     *[Symbol.iterator]() {
       for (const item of this.cache) {
-        const [key, value] = item;
-        const deleted = this._deleteIfExpired(key, value);
+        const [key2, value] = item;
+        const deleted = this._deleteIfExpired(key2, value);
         if (deleted === false) {
-          yield [key, value.value];
+          yield [key2, value.value];
         }
       }
       for (const item of this.oldCache) {
-        const [key, value] = item;
-        if (!this.cache.has(key)) {
-          const deleted = this._deleteIfExpired(key, value);
+        const [key2, value] = item;
+        if (!this.cache.has(key2)) {
+          const deleted = this._deleteIfExpired(key2, value);
           if (deleted === false) {
-            yield [key, value.value];
+            yield [key2, value.value];
           }
         }
       }
@@ -33348,27 +33348,27 @@ ${ifBlocks}
       let items = [...this.cache];
       for (let i = items.length - 1; i >= 0; --i) {
         const item = items[i];
-        const [key, value] = item;
-        const deleted = this._deleteIfExpired(key, value);
+        const [key2, value] = item;
+        const deleted = this._deleteIfExpired(key2, value);
         if (deleted === false) {
-          yield [key, value.value];
+          yield [key2, value.value];
         }
       }
       items = [...this.oldCache];
       for (let i = items.length - 1; i >= 0; --i) {
         const item = items[i];
-        const [key, value] = item;
-        if (!this.cache.has(key)) {
-          const deleted = this._deleteIfExpired(key, value);
+        const [key2, value] = item;
+        if (!this.cache.has(key2)) {
+          const deleted = this._deleteIfExpired(key2, value);
           if (deleted === false) {
-            yield [key, value.value];
+            yield [key2, value.value];
           }
         }
       }
     }
     *entriesAscending() {
-      for (const [key, value] of this._entriesAscending()) {
-        yield [key, value.value];
+      for (const [key2, value] of this._entriesAscending()) {
+        yield [key2, value.value];
       }
     }
     get size() {
@@ -33376,8 +33376,8 @@ ${ifBlocks}
         return this.oldCache.size;
       }
       let oldCacheSize = 0;
-      for (const key of this.oldCache.keys()) {
-        if (!this.cache.has(key)) {
+      for (const key2 of this.oldCache.keys()) {
+        if (!this.cache.has(key2)) {
           oldCacheSize++;
         }
       }
@@ -33387,8 +33387,8 @@ ${ifBlocks}
       return this.entriesAscending();
     }
     forEach(callbackFunction, thisArgument = this) {
-      for (const [key, value] of this.entriesAscending()) {
-        callbackFunction.call(thisArgument, value, key, this);
+      for (const [key2, value] of this.entriesAscending()) {
+        callbackFunction.call(thisArgument, value, key2, this);
       }
     }
     get [Symbol.toStringTag]() {
@@ -33398,9 +33398,9 @@ ${ifBlocks}
 
   // node_modules/geotiff/dist-module/utils.js
   function assign2(target, source) {
-    for (const key in source) {
-      if (source.hasOwnProperty(key)) {
-        target[key] = source[key];
+    for (const key2 in source) {
+      if (source.hasOwnProperty(key2)) {
+        target[key2] = source[key2];
       }
     }
     return target;
@@ -33420,10 +33420,10 @@ ${ifBlocks}
   }
   function invert(oldObj) {
     const newObj = {};
-    for (const key in oldObj) {
-      if (oldObj.hasOwnProperty(key)) {
-        const value = oldObj[key];
-        newObj[value] = key;
+    for (const key2 in oldObj) {
+      if (oldObj.hasOwnProperty(key2)) {
+        const value = oldObj[key2];
+        newObj[value] = key2;
       }
     }
     return newObj;
@@ -33439,9 +33439,9 @@ ${ifBlocks}
     return new Promise((resolve) => setTimeout(resolve, milliseconds));
   }
   function zip(a, b) {
-    const A = Array.isArray(a) ? a : Array.from(a);
+    const A5 = Array.isArray(a) ? a : Array.from(a);
     const B = Array.isArray(b) ? b : Array.from(b);
-    return A.map((k, i) => [k, B[i]]);
+    return A5.map((k, i) => [k, B[i]]);
   }
   var AbortError = class _AbortError extends Error {
     constructor(...args) {
@@ -33862,8 +33862,8 @@ ${ifBlocks}
         const xhr = new XMLHttpRequest();
         xhr.open("GET", this.url);
         xhr.responseType = "arraybuffer";
-        for (const [key, value] of Object.entries(headers)) {
-          xhr.setRequestHeader(key, value);
+        for (const [key2, value] of Object.entries(headers)) {
+          xhr.setRequestHeader(key2, value);
         }
         xhr.onload = () => {
           const data = xhr.response;
@@ -34008,19 +34008,19 @@ ${ifBlocks}
       if (!response.ok) {
         throw new Error("Error fetching data.");
       } else if (response.status === 206) {
-        const { type, params } = parseContentType(response.getHeader("content-type"));
+        const { type, params: params2 } = parseContentType(response.getHeader("content-type"));
         if (type === "multipart/byteranges") {
-          const byteRanges = parseByteRanges(await response.getData(), params.boundary);
+          const byteRanges = parseByteRanges(await response.getData(), params2.boundary);
           this._fileSize = byteRanges[0].fileSize || null;
           return byteRanges;
         }
         const data = await response.getData();
-        const { start, end, total } = parseContentRange(response.getHeader("content-range"));
+        const { start: start2, end, total } = parseContentRange(response.getHeader("content-range"));
         this._fileSize = total || null;
         const first = [{
           data,
-          offset: start,
-          length: end + 1 - start
+          offset: start2,
+          length: end + 1 - start2
         }];
         if (slices.length > 1) {
           const others = await Promise.all(slices.slice(1).map((slice) => this.fetchSlice(slice, signal)));
@@ -34474,7 +34474,7 @@ ${ifBlocks}
       }
       const geoKeyDirectory = {};
       for (let i = 4; i <= rawGeoKeyDirectory[3] * 4; i += 4) {
-        const key = (
+        const key2 = (
           /** @type {Record<number, import('./globals.js').GeoKeyName>} */
           geoKeyNames[rawGeoKeyDirectory[i]]
         );
@@ -34490,7 +34490,7 @@ ${ifBlocks}
         } else {
           value = this.getValue(location);
           if (typeof value === "undefined" || value === null) {
-            throw new Error(`Could not get value of geoKey '${key}'.`);
+            throw new Error(`Could not get value of geoKey '${key2}'.`);
           } else if (typeof value === "string") {
             value = value.substring(offset, offset + count - 1);
           } else if (value.subarray) {
@@ -34500,7 +34500,7 @@ ${ifBlocks}
             }
           }
         }
-        geoKeyDirectory[key] = value;
+        geoKeyDirectory[key2] = value;
       }
       return geoKeyDirectory;
     }
@@ -34739,31 +34739,31 @@ ${ifBlocks}
     let offset = _offset;
     const keys = (
       /** @type {Array<keyof fieldTagTypes>} */
-      Object.keys(ifd).filter((key) => {
-        return key !== void 0 && key !== null && key !== "undefined";
+      Object.keys(ifd).filter((key2) => {
+        return key2 !== void 0 && key2 !== null && key2 !== "undefined";
       }).map(Number)
     );
     bin.writeUshort(data, offset, keys.length);
     offset += 2;
     let eoff = offset + 12 * keys.length + 4;
-    for (const key of keys) {
+    for (const key2 of keys) {
       const typeName2 = (
         /** @type {keyof typeName2byte} */
-        fieldTagTypes[key]
+        fieldTagTypes[key2]
       );
       const typeNum = typeName2byte[typeName2];
       if (typeName2 == null || typeName2 === void 0 || typeof typeName2 === "undefined") {
-        throw new Error(`unknown type of tag: ${key}`);
+        throw new Error(`unknown type of tag: ${key2}`);
       }
-      let val = ifd[key];
+      let val = ifd[key2];
       if (val === void 0) {
-        throw new Error(`failed to get value for key ${key}`);
+        throw new Error(`failed to get value for key ${key2}`);
       }
       if (typeName2 === "ASCII" && typeof val === "string" && endsWith(val, "\0") === false) {
         val += "\0";
       }
       const num = val.length;
-      bin.writeUshort(data, offset, key);
+      bin.writeUshort(data, offset, key2);
       offset += 2;
       bin.writeUshort(data, offset, typeNum);
       offset += 2;
@@ -34900,12 +34900,12 @@ ${ifBlocks}
   };
   var convertToTids = (input) => {
     const result = {};
-    for (const key in input) {
-      if (key !== "StripOffsets") {
-        if (!name2code[key]) {
-          console.error(key, "not in name2code:", Object.keys(name2code));
+    for (const key2 in input) {
+      if (key2 !== "StripOffsets") {
+        if (!name2code[key2]) {
+          console.error(key2, "not in name2code:", Object.keys(name2code));
         }
-        result[name2code[key]] = input[key];
+        result[name2code[key2]] = input[key2];
       }
     }
     return result;
@@ -35029,7 +35029,7 @@ ${ifBlocks}
       finalMetadata.GeogCitationGeoKey = "WGS 84";
       finalMetadata.GTModelTypeGeoKey = 2;
     }
-    const geoKeys2 = Object.keys(finalMetadata).filter((key) => endsWith(key, "GeoKey")).sort((a, b) => name2code[a] - name2code[b]);
+    const geoKeys2 = Object.keys(finalMetadata).filter((key2) => endsWith(key2, "GeoKey")).sort((a, b) => name2code[a] - name2code[b]);
     if (!finalMetadata.GeoKeyDirectory) {
       let geoAsciiParams = finalMetadata.GeoAsciiParams || "";
       if (typeof geoAsciiParams !== "string") {
@@ -35458,8 +35458,8 @@ ${ifBlocks}
         }
         const fullString = getValues2(slice, fieldTypes.ASCII, metadataSize, offset);
         const ghostValues = {};
-        fullString.split("\n").filter((line) => line.length > 0).map((line) => line.split("=")).forEach(([key, value]) => {
-          ghostValues[key] = value;
+        fullString.split("\n").filter((line) => line.length > 0).map((line) => line.split("=")).forEach(([key2, value]) => {
+          ghostValues[key2] = value;
         });
         this.ghostValues = ghostValues;
       }
@@ -35595,15 +35595,15 @@ ${ifBlocks}
 
   // node_modules/ol/proj/proj4.js
   var registered = null;
-  function register(proj4) {
-    registered = proj4;
-    const projCodes = Object.keys(proj4.defs);
+  function register(proj43) {
+    registered = proj43;
+    const projCodes = Object.keys(proj43.defs);
     const len = projCodes.length;
     let i, j;
     for (i = 0; i < len; ++i) {
       const code = projCodes[i];
       if (!get(code)) {
-        const def = proj4.defs(code);
+        const def = proj43.defs(code);
         let units = (
           /** @type {import("./Units.js").Units} */
           def.units
@@ -35628,15 +35628,15 @@ ${ifBlocks}
         const code2 = projCodes[j];
         const proj2 = get(code2);
         if (!get2(code1, code2)) {
-          if (proj4.defs[code1] === proj4.defs[code2]) {
+          if (proj43.defs[code1] === proj43.defs[code2]) {
             addEquivalentProjections([proj1, proj2]);
           } else {
-            const transform2 = proj4(code1, code2);
+            const transform3 = proj43(code1, code2);
             addCoordinateTransforms(
               proj1,
               proj2,
-              createSafeCoordinateTransform(proj1, proj2, transform2.forward),
-              createSafeCoordinateTransform(proj2, proj1, transform2.inverse)
+              createSafeCoordinateTransform(proj1, proj2, transform3.forward),
+              createSafeCoordinateTransform(proj2, proj1, transform3.inverse)
             );
           }
         }
@@ -35659,15 +35659,15 @@ ${ifBlocks}
     return response.text();
   };
   async function fromProjectionCode(code) {
-    const proj4 = registered;
-    if (!proj4) {
+    const proj43 = registered;
+    if (!proj43) {
       throw new Error("Proj4 must be registered first with register(proj4)");
     }
-    if (proj4.defs(code)) {
+    if (proj43.defs(code)) {
       return get(code);
     }
-    proj4.defs(code, await projLookup(code));
-    register(proj4);
+    proj43.defs(code, await projLookup(code));
+    register(proj43);
     return get(code);
   }
 
@@ -37293,9 +37293,9 @@ ${ifBlocks}
      * @param {string} key The key for tiles.
      * @protected
      */
-    setKey(key) {
-      if (this.key_ !== key) {
-        this.key_ = key;
+    setKey(key2) {
+      if (this.key_ !== key2) {
+        this.key_ = key2;
         this.changed();
       }
     }
@@ -37610,8 +37610,8 @@ ${ifBlocks}
       if (!tileCoord) {
         return null;
       }
-      const key = this.getKey();
-      const cacheKey = getCacheKey2(this, key, z, x, y);
+      const key2 = this.getKey();
+      const cacheKey = getCacheKey2(this, key2, z, x, y);
       if (tileCache && tileCache.containsKey(cacheKey)) {
         return (
           /** @type {TileType} */
@@ -38599,21 +38599,21 @@ ${ifBlocks}
     return 1;
   }
   function buildWebGlStyle(state) {
-    const mode = state.mode || "gray";
+    const mode2 = state.mode || "gray";
     const alpha = sourceAlphaExpr(state);
-    if (mode === "gray") {
+    if (mode2 === "gray") {
       const bi0 = Number(state.grayBand) || 0;
       const bi2 = bi0 + 1;
-      const sb = sourceBound(state, bi0, 0, 255);
-      const raw = rawBand(bi2, sb.min, sb.max);
+      const sb2 = sourceBound(state, bi0, 0, 255);
+      const raw2 = rawBand(bi2, sb2.min, sb2.max);
       const ramp = state.grayRamp || "blackwhite";
       const invertBw = ramp === "whiteblack";
       let min = Number(state.grayMin);
       let max = Number(state.grayMax);
-      if (!Number.isFinite(min)) min = sb.min;
-      if (!Number.isFinite(max)) max = sb.max;
+      if (!Number.isFinite(min)) min = sb2.min;
+      if (!Number.isFinite(max)) max = sb2.max;
       if (max <= min) max = min + 1;
-      let v = stretchExpr(raw, min, max, false);
+      let v = stretchExpr(raw2, min, max, false);
       if (invertBw) v = ["-", 1, v];
       if (CONTINUOUS_RAMPS[ramp]) {
         const stops = interpolateStops(ramp, 0, 1, false);
@@ -38628,19 +38628,19 @@ ${ifBlocks}
       }
       return { color: ["array", v, v, v, alpha] };
     }
-    if (mode === "rgb") {
+    if (mode2 === "rgb") {
       const channel = (sel, min, max) => {
         if (sel === "unset" || sel === "" || sel == null) return 0;
         const bi0 = Number(sel);
         const bi2 = bi0 + 1;
-        const sb = sourceBound(state, bi0, 0, 255);
-        const raw = rawBand(bi2, sb.min, sb.max);
+        const sb2 = sourceBound(state, bi0, 0, 255);
+        const raw2 = rawBand(bi2, sb2.min, sb2.max);
         let lo = Number(min);
         let hi = Number(max);
-        if (!Number.isFinite(lo)) lo = sb.min;
-        if (!Number.isFinite(hi)) hi = sb.max;
+        if (!Number.isFinite(lo)) lo = sb2.min;
+        if (!Number.isFinite(hi)) hi = sb2.max;
         if (hi <= lo) hi = lo + 1;
-        return stretchExpr(raw, lo, hi, false);
+        return stretchExpr(raw2, lo, hi, false);
       };
       return {
         color: [
@@ -38653,9 +38653,39 @@ ${ifBlocks}
       };
     }
     const bi = (Number(state.paletteBand) || 0) + 1;
-    const colors = new Array(256).fill("rgba(0,0,0,0)");
+    const sb = sourceBound(state, Number(state.paletteBand) || 0, 0, 255);
+    const raw = rawBand(bi, sb.min, sb.max);
     const opacityPct = Number(state.paletteOpacity);
     const palAlpha = Number.isFinite(opacityPct) ? Math.max(0, Math.min(1, 1 - opacityPct / 100)) : 1;
+    const table = Array.isArray(state.colorTable) ? state.colorTable : null;
+    if (table && table.length) {
+      const entries = table.map((e) => ({
+        min: Number(e?.min),
+        max: Number(e?.max),
+        color: e?.color
+      })).filter(
+        (e) => Number.isFinite(e.min) && Number.isFinite(e.max) && e.max > e.min && e.color
+      ).slice(0, 256);
+      const caseExpr = ["case"];
+      for (const e of entries) {
+        caseExpr.push([
+          "all",
+          [">=", raw, e.min],
+          ["<", raw, e.max]
+        ]);
+        caseExpr.push(
+          palAlpha >= 0.999 ? e.color : colorWithAlpha(e.color, palAlpha)
+        );
+      }
+      caseExpr.push([0, 0, 0, 0]);
+      if (alpha !== 1) {
+        return {
+          color: ["case", ["<=", alpha, 0], [0, 0, 0, 0], caseExpr]
+        };
+      }
+      return { color: caseExpr };
+    }
+    const colors = new Array(256).fill("rgba(0,0,0,0)");
     const ids = Object.keys(state.colormap || {}).map(Number).filter((n) => Number.isFinite(n) && n >= 0 && n <= 255).sort((a, b) => a - b);
     for (const id of ids) {
       const hex = state.colormap[id] ?? state.colormap[String(id)];
@@ -38834,20 +38864,6 @@ ${ifBlocks}
     };
   }
   function freeViewOptions(viewConfig = {}) {
-    const extent = viewConfig.extent;
-    let maxResolution = viewConfig.maxResolution;
-    let minResolution = viewConfig.minResolution;
-    if (extent && Number.isFinite(extent[0])) {
-      const w = Math.abs(extent[2] - extent[0]) || 1;
-      const h = Math.abs(extent[3] - extent[1]) || 1;
-      const fitish = Math.max(w, h);
-      maxResolution = Math.max(maxResolution || 0, fitish * 64);
-      const pixelish = Math.min(w, h) / 4096;
-      minResolution = Math.min(minResolution || pixelish, pixelish);
-    } else {
-      maxResolution = maxResolution || 1e7;
-      minResolution = minResolution || 1e-4;
-    }
     return {
       projection: viewConfig.projection,
       center: viewConfig.center,
@@ -38857,8 +38873,9 @@ ${ifBlocks}
       multiWorld: true,
       // false: updateSize on side-panel reflow must not keep zooming out.
       showFullExtent: false,
-      maxResolution,
-      minResolution
+      // Effectively unlimited zoom (OL always has some numeric bound).
+      minResolution: 1e-12,
+      maxResolution: 1e15
     };
   }
   function createEmptyMap(target, viewConfig) {
@@ -38894,7 +38911,7 @@ ${ifBlocks}
     let sourceInfo;
     const externalOvers = Array.isArray(overviews) ? overviews : [];
     const looksFloat = hasBounds && mins.some((lo, i) => lo < 0 || Number.isFinite(maxs[i]) && maxs[i] > 255);
-    const nodataOpt = looksFloat ? { nodata: NaN } : {};
+    const nodataOpt = looksFloat || blob ? { nodata: NaN } : {};
     if (blob && (overviewBlobs?.length || externalOvers.length)) {
       const mainUrl = URL.createObjectURL(blob);
       objectUrls.push(mainUrl);
@@ -38908,7 +38925,12 @@ ${ifBlocks}
       ];
       sourceInfo = { url: mainUrl, overviews: ovrUrls, ...boundOpts, ...nodataOpt };
     } else if (blob) {
-      sourceInfo = hasBounds ? { blob, ...boundOpts, ...nodataOpt } : { blob, min: Array(bandCount).fill(0), max: Array(bandCount).fill(255) };
+      sourceInfo = hasBounds ? { blob, ...boundOpts, ...nodataOpt } : {
+        blob,
+        min: Array(bandCount).fill(0),
+        max: Array(bandCount).fill(255),
+        ...nodataOpt
+      };
     } else if (url) {
       sourceInfo = {
         url,
@@ -38942,104 +38964,8728 @@ ${ifBlocks}
     if (style) layer.setStyle(style);
     return { layer, source, viewConfig, objectUrls };
   }
-  function applyStyle(layer, state) {
-    if (!layer) return;
-    if (layer.get?.("rvKind") === "static") return;
-    if (typeof layer.setStyle !== "function") return;
-    const built = state && typeof state === "object" && state.color ? state : buildWebGlStyle(state);
-    const wasVisible = layer.getVisible();
-    layer.setStyle(built);
-    if (!wasVisible) layer.setVisible(false);
-  }
-  function fitMap(map, viewConfig) {
-    if (!map) return;
-    const view = map.getView();
-    if (viewConfig?.extent) {
-      view.fit(viewConfig.extent, { padding: [24, 24, 24, 24], nearest: true });
-      return;
+
+  // node_modules/proj4/lib/global.js
+  function global_default(defs2) {
+    defs2("EPSG:4326", "+title=WGS 84 (long/lat) +proj=longlat +ellps=WGS84 +datum=WGS84 +units=degrees");
+    defs2("EPSG:4269", "+title=NAD83 (long/lat) +proj=longlat +a=6378137.0 +b=6356752.31414036 +ellps=GRS80 +datum=NAD83 +units=degrees");
+    defs2("EPSG:3857", "+title=WGS 84 / Pseudo-Mercator +proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +no_defs");
+    for (var i = 1; i <= 60; ++i) {
+      defs2("EPSG:" + (32600 + i), "+proj=utm +zone=" + i + " +datum=WGS84 +units=m");
+      defs2("EPSG:" + (32700 + i), "+proj=utm +zone=" + i + " +south +datum=WGS84 +units=m");
     }
-    const extent = view.getProjection()?.getExtent?.();
-    if (extent) view.fit(extent, { padding: [24, 24, 24, 24], nearest: true });
+    defs2("EPSG:5041", "+title=WGS 84 / UPS North (E,N) +proj=stere +lat_0=90 +lon_0=0 +k=0.994 +x_0=2000000 +y_0=2000000 +datum=WGS84 +units=m");
+    defs2("EPSG:5042", "+title=WGS 84 / UPS South (E,N) +proj=stere +lat_0=-90 +lon_0=0 +k=0.994 +x_0=2000000 +y_0=2000000 +datum=WGS84 +units=m");
+    defs2.WGS84 = defs2["EPSG:4326"];
+    defs2["EPSG:3785"] = defs2["EPSG:3857"];
+    defs2.GOOGLE = defs2["EPSG:3857"];
+    defs2["EPSG:900913"] = defs2["EPSG:3857"];
+    defs2["EPSG:102113"] = defs2["EPSG:3857"];
   }
 
-  // scripts/smoke/harness.js
-  function identityGeo(h) {
+  // node_modules/proj4/lib/constants/values.js
+  var PJD_3PARAM = 1;
+  var PJD_7PARAM = 2;
+  var PJD_GRIDSHIFT = 3;
+  var PJD_WGS84 = 4;
+  var PJD_NODATUM = 5;
+  var SRS_WGS84_SEMIMAJOR = 6378137;
+  var SRS_WGS84_SEMIMINOR = 6356752314e-3;
+  var SRS_WGS84_ESQUARED = 0.0066943799901413165;
+  var SEC_TO_RAD = 484813681109536e-20;
+  var HALF_PI = Math.PI / 2;
+  var SIXTH = 0.16666666666666666;
+  var RA4 = 0.04722222222222222;
+  var RA6 = 0.022156084656084655;
+  var EPSLN = 1e-10;
+  var D2R = 0.017453292519943295;
+  var R2D = 57.29577951308232;
+  var FORTPI = Math.PI / 4;
+  var TWO_PI = Math.PI * 2;
+  var SPI = 3.14159265359;
+
+  // node_modules/proj4/lib/constants/PrimeMeridian.js
+  var primeMeridian = {};
+  primeMeridian.greenwich = 0;
+  primeMeridian.lisbon = -9.131906111111;
+  primeMeridian.paris = 2.337229166667;
+  primeMeridian.bogota = -74.080916666667;
+  primeMeridian.madrid = -3.687938888889;
+  primeMeridian.rome = 12.452333333333;
+  primeMeridian.bern = 7.439583333333;
+  primeMeridian.jakarta = 106.807719444444;
+  primeMeridian.ferro = -17.666666666667;
+  primeMeridian.brussels = 4.367975;
+  primeMeridian.stockholm = 18.058277777778;
+  primeMeridian.athens = 23.7163375;
+  primeMeridian.oslo = 10.722916666667;
+  var PrimeMeridian_default = primeMeridian;
+
+  // node_modules/proj4/lib/constants/units.js
+  var units_default = {
+    mm: { to_meter: 1e-3 },
+    cm: { to_meter: 0.01 },
+    ft: { to_meter: 0.3048 },
+    "us-ft": { to_meter: 1200 / 3937 },
+    fath: { to_meter: 1.8288 },
+    kmi: { to_meter: 1852 },
+    "us-ch": { to_meter: 20.1168402336805 },
+    "us-mi": { to_meter: 1609.34721869444 },
+    km: { to_meter: 1e3 },
+    "ind-ft": { to_meter: 0.30479841 },
+    "ind-yd": { to_meter: 0.91439523 },
+    mi: { to_meter: 1609.344 },
+    yd: { to_meter: 0.9144 },
+    ch: { to_meter: 20.1168 },
+    link: { to_meter: 0.201168 },
+    dm: { to_meter: 0.1 },
+    in: { to_meter: 0.0254 },
+    "ind-ch": { to_meter: 20.11669506 },
+    "us-in": { to_meter: 0.025400050800101 },
+    "us-yd": { to_meter: 0.914401828803658 }
+  };
+
+  // node_modules/proj4/lib/match.js
+  var ignoredChar = /[\s_\-\/\(\)]/g;
+  function match(obj, key2) {
+    if (obj[key2]) {
+      return obj[key2];
+    }
+    var keys = Object.keys(obj);
+    var lkey = key2.toLowerCase().replace(ignoredChar, "");
+    var i = -1;
+    var testkey, processedKey;
+    while (++i < keys.length) {
+      testkey = keys[i];
+      processedKey = testkey.toLowerCase().replace(ignoredChar, "");
+      if (processedKey === lkey) {
+        return obj[testkey];
+      }
+    }
+  }
+
+  // node_modules/proj4/lib/projString.js
+  function projString_default(defData) {
+    var self2 = {};
+    var paramObj = defData.split("+").map(function(v) {
+      return v.trim();
+    }).filter(function(a) {
+      return a;
+    }).reduce(function(p, a) {
+      var split = a.split("=");
+      split.push(true);
+      p[split[0].toLowerCase()] = split[1];
+      return p;
+    }, {});
+    var paramName, paramVal, paramOutname;
+    var params2 = {
+      proj: "projName",
+      datum: "datumCode",
+      rf: function(v) {
+        self2.rf = parseFloat(v);
+      },
+      lat_0: function(v) {
+        self2.lat0 = v * D2R;
+      },
+      lat_1: function(v) {
+        self2.lat1 = v * D2R;
+      },
+      lat_2: function(v) {
+        self2.lat2 = v * D2R;
+      },
+      lat_ts: function(v) {
+        self2.lat_ts = v * D2R;
+      },
+      lon_0: function(v) {
+        self2.long0 = v * D2R;
+      },
+      lon_1: function(v) {
+        self2.long1 = v * D2R;
+      },
+      lon_2: function(v) {
+        self2.long2 = v * D2R;
+      },
+      alpha: function(v) {
+        self2.alpha = parseFloat(v) * D2R;
+      },
+      gamma: function(v) {
+        self2.rectified_grid_angle = parseFloat(v) * D2R;
+      },
+      lonc: function(v) {
+        self2.longc = v * D2R;
+      },
+      x_0: function(v) {
+        self2.x0 = parseFloat(v);
+      },
+      y_0: function(v) {
+        self2.y0 = parseFloat(v);
+      },
+      k_0: function(v) {
+        self2.k0 = parseFloat(v);
+      },
+      k: function(v) {
+        self2.k0 = parseFloat(v);
+      },
+      a: function(v) {
+        self2.a = parseFloat(v);
+      },
+      b: function(v) {
+        self2.b = parseFloat(v);
+      },
+      r: function(v) {
+        self2.a = self2.b = parseFloat(v);
+      },
+      r_a: function() {
+        self2.R_A = true;
+      },
+      zone: function(v) {
+        self2.zone = parseInt(v, 10);
+      },
+      south: function() {
+        self2.utmSouth = true;
+      },
+      towgs84: function(v) {
+        self2.datum_params = v.split(",").map(function(a) {
+          return parseFloat(a);
+        });
+      },
+      to_meter: function(v) {
+        self2.to_meter = parseFloat(v);
+      },
+      units: function(v) {
+        self2.units = v;
+        var unit = match(units_default, v);
+        if (unit) {
+          self2.to_meter = unit.to_meter;
+        }
+      },
+      from_greenwich: function(v) {
+        self2.from_greenwich = v * D2R;
+      },
+      pm: function(v) {
+        var pm = match(PrimeMeridian_default, v);
+        self2.from_greenwich = (pm ? pm : parseFloat(v)) * D2R;
+      },
+      nadgrids: function(v) {
+        if (v === "@null") {
+          self2.datumCode = "none";
+        } else {
+          self2.nadgrids = v;
+        }
+      },
+      axis: function(v) {
+        var legalAxis = "ewnsud";
+        if (v.length === 3 && legalAxis.indexOf(v.substr(0, 1)) !== -1 && legalAxis.indexOf(v.substr(1, 1)) !== -1 && legalAxis.indexOf(v.substr(2, 1)) !== -1) {
+          self2.axis = v;
+        }
+      },
+      approx: function() {
+        self2.approx = true;
+      },
+      over: function() {
+        self2.over = true;
+      }
+    };
+    for (paramName in paramObj) {
+      paramVal = paramObj[paramName];
+      if (paramName in params2) {
+        paramOutname = params2[paramName];
+        if (typeof paramOutname === "function") {
+          paramOutname(paramVal);
+        } else {
+          self2[paramOutname] = paramVal;
+        }
+      } else {
+        self2[paramName] = paramVal;
+      }
+    }
+    if (typeof self2.datumCode === "string" && self2.datumCode !== "WGS84") {
+      self2.datumCode = self2.datumCode.toLowerCase();
+    }
+    self2["projStr"] = defData;
+    return self2;
+  }
+
+  // node_modules/wkt-parser/PROJJSONBuilderBase.js
+  var PROJJSONBuilderBase = class {
+    static getId(node) {
+      const idNode = node.find((child) => Array.isArray(child) && child[0] === "ID");
+      if (idNode && idNode.length >= 3) {
+        return {
+          authority: idNode[1],
+          code: parseInt(idNode[2], 10)
+        };
+      }
+      return null;
+    }
+    static convertUnit(node, type = "unit") {
+      if (!node || node.length < 3) {
+        return { type, name: "unknown", conversion_factor: null };
+      }
+      const name = node[1];
+      const conversionFactor = parseFloat(node[2]) || null;
+      const idNode = node.find((child) => Array.isArray(child) && child[0] === "ID");
+      const id = idNode ? {
+        authority: idNode[1],
+        code: parseInt(idNode[2], 10)
+      } : null;
+      return {
+        type,
+        name,
+        conversion_factor: conversionFactor,
+        id
+      };
+    }
+    static convertAxis(node) {
+      const name = node[1] || "Unknown";
+      let direction;
+      const abbreviationMatch = name.match(/^\((.)\)$/);
+      if (abbreviationMatch) {
+        const abbreviation = abbreviationMatch[1].toUpperCase();
+        if (abbreviation === "E") direction = "east";
+        else if (abbreviation === "N") direction = "north";
+        else if (abbreviation === "U") direction = "up";
+        else if (node[2]) direction = node[2];
+        else throw new Error(`Unknown axis abbreviation: ${abbreviation}`);
+      } else {
+        direction = node[2] || "unknown";
+      }
+      const orderNode = node.find((child) => Array.isArray(child) && child[0] === "ORDER");
+      const order2 = orderNode ? parseInt(orderNode[1], 10) : null;
+      const unitNode = node.find(
+        (child) => Array.isArray(child) && (child[0] === "LENGTHUNIT" || child[0] === "ANGLEUNIT" || child[0] === "SCALEUNIT")
+      );
+      const unit = this.convertUnit(unitNode);
+      return {
+        name,
+        direction,
+        // Use the valid PROJJSON direction value
+        unit,
+        order: order2
+      };
+    }
+    static extractAxes(node) {
+      return node.filter((child) => Array.isArray(child) && child[0] === "AXIS").map((axis) => this.convertAxis(axis)).sort((a, b) => (a.order || 0) - (b.order || 0));
+    }
+    static convert(node, result = {}) {
+      switch (node[0]) {
+        case "PROJCRS":
+          result.type = "ProjectedCRS";
+          result.name = node[1];
+          result.base_crs = node.find((child) => Array.isArray(child) && child[0] === "BASEGEOGCRS") ? this.convert(node.find((child) => Array.isArray(child) && child[0] === "BASEGEOGCRS")) : null;
+          result.conversion = node.find((child) => Array.isArray(child) && child[0] === "CONVERSION") ? this.convert(node.find((child) => Array.isArray(child) && child[0] === "CONVERSION")) : null;
+          const csNode = node.find((child) => Array.isArray(child) && child[0] === "CS");
+          if (csNode) {
+            result.coordinate_system = {
+              type: csNode[1],
+              axis: this.extractAxes(node)
+            };
+          }
+          const lengthUnitNode = node.find((child) => Array.isArray(child) && child[0] === "LENGTHUNIT");
+          if (lengthUnitNode) {
+            const unit2 = this.convertUnit(lengthUnitNode);
+            result.coordinate_system.unit = unit2;
+          }
+          result.id = this.getId(node);
+          break;
+        case "BASEGEOGCRS":
+        case "GEOGCRS":
+        case "GEODCRS":
+          result.type = node[0] === "GEODCRS" ? "GeodeticCRS" : "GeographicCRS";
+          result.name = node[1];
+          const datumOrEnsembleNode = node.find(
+            (child) => Array.isArray(child) && (child[0] === "DATUM" || child[0] === "ENSEMBLE")
+          );
+          if (datumOrEnsembleNode) {
+            const datumOrEnsemble = this.convert(datumOrEnsembleNode);
+            if (datumOrEnsembleNode[0] === "ENSEMBLE") {
+              result.datum_ensemble = datumOrEnsemble;
+            } else {
+              result.datum = datumOrEnsemble;
+            }
+            const primem = node.find((child) => Array.isArray(child) && child[0] === "PRIMEM");
+            if (primem && primem[1] !== "Greenwich") {
+              datumOrEnsemble.prime_meridian = {
+                name: primem[1],
+                longitude: parseFloat(primem[2])
+              };
+            }
+          }
+          result.coordinate_system = {
+            type: "ellipsoidal",
+            axis: this.extractAxes(node)
+          };
+          result.id = this.getId(node);
+          break;
+        case "DATUM":
+          result.type = "GeodeticReferenceFrame";
+          result.name = node[1];
+          result.ellipsoid = node.find((child) => Array.isArray(child) && child[0] === "ELLIPSOID") ? this.convert(node.find((child) => Array.isArray(child) && child[0] === "ELLIPSOID")) : null;
+          break;
+        case "ENSEMBLE":
+          result.type = "DatumEnsemble";
+          result.name = node[1];
+          result.members = node.filter((child) => Array.isArray(child) && child[0] === "MEMBER").map((member) => ({
+            type: "DatumEnsembleMember",
+            name: member[1],
+            id: this.getId(member)
+            // Extract ID as { authority, code }
+          }));
+          const accuracyNode = node.find((child) => Array.isArray(child) && child[0] === "ENSEMBLEACCURACY");
+          if (accuracyNode) {
+            result.accuracy = parseFloat(accuracyNode[1]);
+          }
+          const ellipsoidNode = node.find((child) => Array.isArray(child) && child[0] === "ELLIPSOID");
+          if (ellipsoidNode) {
+            result.ellipsoid = this.convert(ellipsoidNode);
+          }
+          result.id = this.getId(node);
+          break;
+        case "ELLIPSOID":
+          result.type = "Ellipsoid";
+          result.name = node[1];
+          result.semi_major_axis = parseFloat(node[2]);
+          result.inverse_flattening = parseFloat(node[3]);
+          const units = node.find((child) => Array.isArray(child) && child[0] === "LENGTHUNIT") ? this.convert(node.find((child) => Array.isArray(child) && child[0] === "LENGTHUNIT"), result) : null;
+          break;
+        case "CONVERSION":
+          result.type = "Conversion";
+          result.name = node[1];
+          result.method = node.find((child) => Array.isArray(child) && child[0] === "METHOD") ? this.convert(node.find((child) => Array.isArray(child) && child[0] === "METHOD")) : null;
+          result.parameters = node.filter((child) => Array.isArray(child) && child[0] === "PARAMETER").map((param) => this.convert(param));
+          break;
+        case "METHOD":
+          result.type = "Method";
+          result.name = node[1];
+          result.id = this.getId(node);
+          break;
+        case "PARAMETER":
+          result.type = "Parameter";
+          result.name = node[1];
+          result.value = parseFloat(node[2]);
+          result.unit = this.convertUnit(
+            node.find(
+              (child) => Array.isArray(child) && (child[0] === "LENGTHUNIT" || child[0] === "ANGLEUNIT" || child[0] === "SCALEUNIT")
+            )
+          );
+          result.id = this.getId(node);
+          break;
+        case "BOUNDCRS":
+          result.type = "BoundCRS";
+          const sourceCrsNode = node.find((child) => Array.isArray(child) && child[0] === "SOURCECRS");
+          if (sourceCrsNode) {
+            const sourceCrsContent = sourceCrsNode.find((child) => Array.isArray(child));
+            result.source_crs = sourceCrsContent ? this.convert(sourceCrsContent) : null;
+          }
+          const targetCrsNode = node.find((child) => Array.isArray(child) && child[0] === "TARGETCRS");
+          if (targetCrsNode) {
+            const targetCrsContent = targetCrsNode.find((child) => Array.isArray(child));
+            result.target_crs = targetCrsContent ? this.convert(targetCrsContent) : null;
+          }
+          const transformationNode = node.find((child) => Array.isArray(child) && child[0] === "ABRIDGEDTRANSFORMATION");
+          if (transformationNode) {
+            result.transformation = this.convert(transformationNode);
+          } else {
+            result.transformation = null;
+          }
+          break;
+        case "ABRIDGEDTRANSFORMATION":
+          result.type = "Transformation";
+          result.name = node[1];
+          result.method = node.find((child) => Array.isArray(child) && child[0] === "METHOD") ? this.convert(node.find((child) => Array.isArray(child) && child[0] === "METHOD")) : null;
+          result.parameters = node.filter((child) => Array.isArray(child) && (child[0] === "PARAMETER" || child[0] === "PARAMETERFILE")).map((param) => {
+            if (param[0] === "PARAMETER") {
+              return this.convert(param);
+            } else if (param[0] === "PARAMETERFILE") {
+              return {
+                name: param[1],
+                value: param[2],
+                id: {
+                  "authority": "EPSG",
+                  "code": 8656
+                }
+              };
+            }
+          });
+          if (result.parameters.length === 7) {
+            const scaleDifference = result.parameters[6];
+            if (scaleDifference.name === "Scale difference") {
+              scaleDifference.value = Math.round((scaleDifference.value - 1) * 1e12) / 1e6;
+            }
+          }
+          result.id = this.getId(node);
+          break;
+        case "AXIS":
+          if (!result.coordinate_system) {
+            result.coordinate_system = { type: "unspecified", axis: [] };
+          }
+          result.coordinate_system.axis.push(this.convertAxis(node));
+          break;
+        case "LENGTHUNIT":
+          const unit = this.convertUnit(node, "LinearUnit");
+          if (result.coordinate_system && result.coordinate_system.axis) {
+            result.coordinate_system.axis.forEach((axis) => {
+              if (!axis.unit) {
+                axis.unit = unit;
+              }
+            });
+          }
+          if (unit.conversion_factor && unit.conversion_factor !== 1) {
+            if (result.semi_major_axis) {
+              result.semi_major_axis = {
+                value: result.semi_major_axis,
+                unit
+              };
+            }
+          }
+          break;
+        default:
+          result.keyword = node[0];
+          break;
+      }
+      return result;
+    }
+  };
+  var PROJJSONBuilderBase_default = PROJJSONBuilderBase;
+
+  // node_modules/wkt-parser/PROJJSONBuilder2015.js
+  var PROJJSONBuilder2015 = class extends PROJJSONBuilderBase_default {
+    static convert(node, result = {}) {
+      super.convert(node, result);
+      if (result.coordinate_system && result.coordinate_system.subtype === "Cartesian") {
+        delete result.coordinate_system;
+      }
+      if (result.usage) {
+        delete result.usage;
+      }
+      return result;
+    }
+  };
+  var PROJJSONBuilder2015_default = PROJJSONBuilder2015;
+
+  // node_modules/wkt-parser/PROJJSONBuilder2019.js
+  var PROJJSONBuilder2019 = class extends PROJJSONBuilderBase_default {
+    static convert(node, result = {}) {
+      super.convert(node, result);
+      const csNode = node.find((child) => Array.isArray(child) && child[0] === "CS");
+      if (csNode) {
+        result.coordinate_system = {
+          subtype: csNode[1],
+          axis: this.extractAxes(node)
+        };
+      }
+      const usageNode = node.find((child) => Array.isArray(child) && child[0] === "USAGE");
+      if (usageNode) {
+        const scope = usageNode.find((child) => Array.isArray(child) && child[0] === "SCOPE");
+        const area = usageNode.find((child) => Array.isArray(child) && child[0] === "AREA");
+        const bbox = usageNode.find((child) => Array.isArray(child) && child[0] === "BBOX");
+        result.usage = {};
+        if (scope) {
+          result.usage.scope = scope[1];
+        }
+        if (area) {
+          result.usage.area = area[1];
+        }
+        if (bbox) {
+          result.usage.bbox = bbox.slice(1);
+        }
+      }
+      return result;
+    }
+  };
+  var PROJJSONBuilder2019_default = PROJJSONBuilder2019;
+
+  // node_modules/wkt-parser/buildPROJJSON.js
+  function detectWKT2Version(root) {
+    if (root.find((child) => Array.isArray(child) && child[0] === "USAGE")) {
+      return "2019";
+    }
+    if (root.find((child) => Array.isArray(child) && child[0] === "CS")) {
+      return "2015";
+    }
+    if (root[0] === "BOUNDCRS" || root[0] === "PROJCRS" || root[0] === "GEOGCRS") {
+      return "2015";
+    }
+    return "2015";
+  }
+  function buildPROJJSON(root) {
+    const version = detectWKT2Version(root);
+    const builder = version === "2019" ? PROJJSONBuilder2019_default : PROJJSONBuilder2015_default;
+    return builder.convert(root);
+  }
+
+  // node_modules/wkt-parser/detectWKTVersion.js
+  function detectWKTVersion(wkt) {
+    const normalizedWKT = wkt.toUpperCase();
+    if (normalizedWKT.includes("PROJCRS") || normalizedWKT.includes("GEOGCRS") || normalizedWKT.includes("BOUNDCRS") || normalizedWKT.includes("VERTCRS") || normalizedWKT.includes("LENGTHUNIT") || normalizedWKT.includes("ANGLEUNIT") || normalizedWKT.includes("SCALEUNIT")) {
+      return "WKT2";
+    }
+    if (normalizedWKT.includes("PROJCS") || normalizedWKT.includes("GEOGCS") || normalizedWKT.includes("LOCAL_CS") || normalizedWKT.includes("VERT_CS") || normalizedWKT.includes("UNIT")) {
+      return "WKT1";
+    }
+    return "WKT1";
+  }
+
+  // node_modules/wkt-parser/parser.js
+  var parser_default = parseString;
+  var NEUTRAL = 1;
+  var KEYWORD = 2;
+  var NUMBER = 3;
+  var QUOTED = 4;
+  var AFTERQUOTE = 5;
+  var ENDED = -1;
+  var whitespace = /\s/;
+  var latin = /[A-Za-z]/;
+  var keyword = /[A-Za-z84_]/;
+  var endThings = /[,\]]/;
+  var digets = /[\d\.E\-\+]/;
+  function Parser(text) {
+    if (typeof text !== "string") {
+      throw new Error("not a string");
+    }
+    this.text = text.trim();
+    this.level = 0;
+    this.place = 0;
+    this.root = null;
+    this.stack = [];
+    this.currentObject = null;
+    this.state = NEUTRAL;
+  }
+  Parser.prototype.readCharicter = function() {
+    var char = this.text[this.place++];
+    if (this.state !== QUOTED) {
+      while (whitespace.test(char)) {
+        if (this.place >= this.text.length) {
+          return;
+        }
+        char = this.text[this.place++];
+      }
+    }
+    switch (this.state) {
+      case NEUTRAL:
+        return this.neutral(char);
+      case KEYWORD:
+        return this.keyword(char);
+      case QUOTED:
+        return this.quoted(char);
+      case AFTERQUOTE:
+        return this.afterquote(char);
+      case NUMBER:
+        return this.number(char);
+      case ENDED:
+        return;
+    }
+  };
+  Parser.prototype.afterquote = function(char) {
+    if (char === '"') {
+      this.word += '"';
+      this.state = QUOTED;
+      return;
+    }
+    if (endThings.test(char)) {
+      this.word = this.word.trim();
+      this.afterItem(char);
+      return;
+    }
+    throw new Error(`havn't handled "` + char + '" in afterquote yet, index ' + this.place);
+  };
+  Parser.prototype.afterItem = function(char) {
+    if (char === ",") {
+      if (this.word !== null) {
+        this.currentObject.push(this.word);
+      }
+      this.word = null;
+      this.state = NEUTRAL;
+      return;
+    }
+    if (char === "]") {
+      this.level--;
+      if (this.word !== null) {
+        this.currentObject.push(this.word);
+        this.word = null;
+      }
+      this.state = NEUTRAL;
+      this.currentObject = this.stack.pop();
+      if (!this.currentObject) {
+        this.state = ENDED;
+      }
+      return;
+    }
+  };
+  Parser.prototype.number = function(char) {
+    if (digets.test(char)) {
+      this.word += char;
+      return;
+    }
+    if (endThings.test(char)) {
+      this.word = parseFloat(this.word);
+      this.afterItem(char);
+      return;
+    }
+    throw new Error(`havn't handled "` + char + '" in number yet, index ' + this.place);
+  };
+  Parser.prototype.quoted = function(char) {
+    if (char === '"') {
+      this.state = AFTERQUOTE;
+      return;
+    }
+    this.word += char;
+    return;
+  };
+  Parser.prototype.keyword = function(char) {
+    if (keyword.test(char)) {
+      this.word += char;
+      return;
+    }
+    if (char === "[") {
+      var newObjects = [];
+      newObjects.push(this.word);
+      this.level++;
+      if (this.root === null) {
+        this.root = newObjects;
+      } else {
+        this.currentObject.push(newObjects);
+      }
+      this.stack.push(this.currentObject);
+      this.currentObject = newObjects;
+      this.state = NEUTRAL;
+      return;
+    }
+    if (endThings.test(char)) {
+      this.afterItem(char);
+      return;
+    }
+    throw new Error(`havn't handled "` + char + '" in keyword yet, index ' + this.place);
+  };
+  Parser.prototype.neutral = function(char) {
+    if (latin.test(char)) {
+      this.word = char;
+      this.state = KEYWORD;
+      return;
+    }
+    if (char === '"') {
+      this.word = "";
+      this.state = QUOTED;
+      return;
+    }
+    if (digets.test(char)) {
+      this.word = char;
+      this.state = NUMBER;
+      return;
+    }
+    if (endThings.test(char)) {
+      this.afterItem(char);
+      return;
+    }
+    throw new Error(`havn't handled "` + char + '" in neutral yet, index ' + this.place);
+  };
+  Parser.prototype.output = function() {
+    while (this.place < this.text.length) {
+      this.readCharicter();
+    }
+    if (this.state === ENDED) {
+      return this.root;
+    }
+    throw new Error('unable to parse string "' + this.text + '". State is ' + this.state);
+  };
+  function parseString(txt) {
+    var parser = new Parser(txt);
+    return parser.output();
+  }
+
+  // node_modules/wkt-parser/process.js
+  function mapit(obj, key2, value) {
+    if (Array.isArray(key2)) {
+      value.unshift(key2);
+      key2 = null;
+    }
+    var thing = key2 ? {} : obj;
+    var out = value.reduce(function(newObj, item) {
+      sExpr(item, newObj);
+      return newObj;
+    }, thing);
+    if (key2) {
+      obj[key2] = out;
+    }
+  }
+  function sExpr(v, obj) {
+    if (!Array.isArray(v)) {
+      obj[v] = true;
+      return;
+    }
+    var key2 = v.shift();
+    if (key2 === "PARAMETER") {
+      key2 = v.shift();
+    }
+    if (v.length === 1) {
+      if (Array.isArray(v[0])) {
+        obj[key2] = {};
+        sExpr(v[0], obj[key2]);
+        return;
+      }
+      obj[key2] = v[0];
+      return;
+    }
+    if (!v.length) {
+      obj[key2] = true;
+      return;
+    }
+    if (key2 === "TOWGS84") {
+      obj[key2] = v;
+      return;
+    }
+    if (key2 === "AXIS") {
+      if (!(key2 in obj)) {
+        obj[key2] = [];
+      }
+      obj[key2].push(v);
+      return;
+    }
+    if (!Array.isArray(key2)) {
+      obj[key2] = {};
+    }
+    var i;
+    switch (key2) {
+      case "UNIT":
+      case "PRIMEM":
+      case "VERT_DATUM":
+        obj[key2] = {
+          name: v[0].toLowerCase(),
+          convert: v[1]
+        };
+        if (v.length === 3) {
+          sExpr(v[2], obj[key2]);
+        }
+        return;
+      case "SPHEROID":
+      case "ELLIPSOID":
+        obj[key2] = {
+          name: v[0],
+          a: v[1],
+          rf: v[2]
+        };
+        if (v.length === 4) {
+          sExpr(v[3], obj[key2]);
+        }
+        return;
+      case "EDATUM":
+      case "ENGINEERINGDATUM":
+      case "LOCAL_DATUM":
+      case "DATUM":
+      case "VERT_CS":
+      case "VERTCRS":
+      case "VERTICALCRS":
+        v[0] = ["name", v[0]];
+        mapit(obj, key2, v);
+        return;
+      case "COMPD_CS":
+      case "COMPOUNDCRS":
+      case "FITTED_CS":
+      // the followings are the crs defined in
+      // https://github.com/proj4js/proj4js/blob/1da4ed0b865d0fcb51c136090569210cdcc9019e/lib/parseCode.js#L11
+      case "PROJECTEDCRS":
+      case "PROJCRS":
+      case "GEOGCS":
+      case "GEOCCS":
+      case "PROJCS":
+      case "LOCAL_CS":
+      case "GEODCRS":
+      case "GEODETICCRS":
+      case "GEODETICDATUM":
+      case "ENGCRS":
+      case "ENGINEERINGCRS":
+        v[0] = ["name", v[0]];
+        mapit(obj, key2, v);
+        obj[key2].type = key2;
+        return;
+      default:
+        i = -1;
+        while (++i < v.length) {
+          if (!Array.isArray(v[i])) {
+            return sExpr(v, obj[key2]);
+          }
+        }
+        return mapit(obj, key2, v);
+    }
+  }
+
+  // node_modules/wkt-parser/util.js
+  var D2R2 = 0.017453292519943295;
+  function d2r(input) {
+    return input * D2R2;
+  }
+  function applyProjectionDefaults(wkt) {
+    const normalizedProjName = (wkt.projName || "").toLowerCase().replace(/_/g, " ");
+    if (wkt.long0 === void 0 && wkt.longc !== void 0) {
+      wkt.long0 = wkt.longc;
+    }
+    if (!wkt.lat_ts && wkt.lat1 && (normalizedProjName === "stereographic south pole" || normalizedProjName === "polar stereographic (variant b)")) {
+      wkt.lat0 = d2r(wkt.lat1 > 0 ? 90 : -90);
+      wkt.lat_ts = wkt.lat1;
+      delete wkt.lat1;
+    } else if (!wkt.lat_ts && wkt.lat0 && (normalizedProjName === "polar stereographic" || normalizedProjName === "polar stereographic (variant a)")) {
+      wkt.lat_ts = wkt.lat0;
+      wkt.lat0 = d2r(wkt.lat0 > 0 ? 90 : -90);
+      delete wkt.lat1;
+    }
+  }
+
+  // node_modules/wkt-parser/transformPROJJSON.js
+  function processUnit(unit) {
+    let result = { units: null, to_meter: void 0 };
+    if (typeof unit === "string") {
+      result.units = unit.toLowerCase();
+      if (result.units === "metre") {
+        result.units = "meter";
+      }
+      if (result.units === "meter") {
+        result.to_meter = 1;
+      }
+    } else if (unit && unit.name) {
+      result.units = unit.name.toLowerCase();
+      if (result.units === "metre") {
+        result.units = "meter";
+      }
+      result.to_meter = unit.conversion_factor;
+    }
+    return result;
+  }
+  function toValue(valueOrObject) {
+    if (typeof valueOrObject === "object") {
+      return valueOrObject.value * valueOrObject.unit.conversion_factor;
+    }
+    return valueOrObject;
+  }
+  function calculateEllipsoid(value, result) {
+    if (value.ellipsoid.radius) {
+      result.a = value.ellipsoid.radius;
+      result.rf = 0;
+    } else {
+      result.a = toValue(value.ellipsoid.semi_major_axis);
+      if (value.ellipsoid.inverse_flattening !== void 0) {
+        result.rf = value.ellipsoid.inverse_flattening;
+      } else if (value.ellipsoid.semi_major_axis !== void 0 && value.ellipsoid.semi_minor_axis !== void 0) {
+        result.rf = result.a / (result.a - toValue(value.ellipsoid.semi_minor_axis));
+      }
+    }
+  }
+  function transformPROJJSON(projjson, result = {}) {
+    if (!projjson || typeof projjson !== "object") {
+      return projjson;
+    }
+    if (projjson.type === "BoundCRS") {
+      transformPROJJSON(projjson.source_crs, result);
+      if (projjson.transformation) {
+        if (projjson.transformation.method && projjson.transformation.method.name === "NTv2") {
+          result.nadgrids = projjson.transformation.parameters[0].value;
+        } else {
+          result.datum_params = projjson.transformation.parameters.map((param) => param.value);
+        }
+      }
+      return result;
+    }
+    Object.keys(projjson).forEach((key2) => {
+      const value = projjson[key2];
+      if (value === null) {
+        return;
+      }
+      switch (key2) {
+        case "name":
+          if (result.srsCode) {
+            break;
+          }
+          result.name = value;
+          result.srsCode = value;
+          break;
+        case "type":
+          if (value === "GeographicCRS") {
+            result.projName = "longlat";
+          } else if (value === "GeodeticCRS") {
+            if (projjson.coordinate_system && projjson.coordinate_system.subtype === "Cartesian") {
+              result.projName = "geocent";
+            } else {
+              result.projName = "longlat";
+            }
+          } else if (value === "ProjectedCRS" && projjson.conversion && projjson.conversion.method) {
+            result.projName = projjson.conversion.method.name;
+          }
+          break;
+        case "datum":
+        case "datum_ensemble":
+          if (value.ellipsoid) {
+            result.ellps = value.ellipsoid.name;
+            calculateEllipsoid(value, result);
+          }
+          if (value.prime_meridian) {
+            result.from_greenwich = value.prime_meridian.longitude * Math.PI / 180;
+          }
+          break;
+        case "ellipsoid":
+          result.ellps = value.name;
+          calculateEllipsoid(value, result);
+          break;
+        case "prime_meridian":
+          result.long0 = (value.longitude || 0) * Math.PI / 180;
+          break;
+        case "coordinate_system":
+          if (value.axis) {
+            const directionMap = {
+              "east": "e",
+              "north": "n",
+              "west": "w",
+              "south": "s",
+              "up": "u",
+              "down": "d",
+              "geocentricx": "e",
+              "geocentricy": "n",
+              "geocentricz": "u"
+            };
+            const mapped = value.axis.map((axis) => directionMap[axis.direction.toLowerCase()]);
+            if (mapped.every(Boolean)) {
+              result.axis = mapped.join("");
+              if (result.axis.length === 2) {
+                result.axis += "u";
+              }
+            }
+            if (value.unit) {
+              const { units, to_meter } = processUnit(value.unit);
+              result.units = units;
+              result.to_meter = to_meter;
+            } else if (value.axis[0] && value.axis[0].unit) {
+              const { units, to_meter } = processUnit(value.axis[0].unit);
+              result.units = units;
+              result.to_meter = to_meter;
+            }
+          }
+          break;
+        case "id":
+          if (value.authority && value.code) {
+            result.title = value.authority + ":" + value.code;
+          }
+          break;
+        case "conversion":
+          if (value.method && value.method.name) {
+            result.projName = value.method.name;
+          }
+          if (value.parameters) {
+            value.parameters.forEach((param) => {
+              const paramName = param.name.toLowerCase().replace(/\s+/g, "_");
+              const paramValue = param.value;
+              if (param.unit && param.unit.conversion_factor) {
+                result[paramName] = paramValue * param.unit.conversion_factor;
+              } else if (param.unit === "degree") {
+                result[paramName] = paramValue * Math.PI / 180;
+              } else {
+                result[paramName] = paramValue;
+              }
+            });
+          }
+          break;
+        case "unit":
+          if (value.name) {
+            result.units = value.name.toLowerCase();
+            if (result.units === "metre") {
+              result.units = "meter";
+            }
+          }
+          if (value.conversion_factor) {
+            result.to_meter = value.conversion_factor;
+          }
+          break;
+        case "base_crs":
+          transformPROJJSON(value, result);
+          result.datumCode = value.id ? value.id.authority + "_" + value.id.code : value.name;
+          break;
+        default:
+          break;
+      }
+    });
+    if (result.latitude_of_false_origin !== void 0) {
+      result.lat0 = result.latitude_of_false_origin;
+    }
+    if (result.longitude_of_false_origin !== void 0) {
+      result.long0 = result.longitude_of_false_origin;
+    }
+    if (result.latitude_of_standard_parallel !== void 0) {
+      result.lat0 = result.latitude_of_standard_parallel;
+      result.lat1 = result.latitude_of_standard_parallel;
+    }
+    if (result.latitude_of_1st_standard_parallel !== void 0) {
+      result.lat1 = result.latitude_of_1st_standard_parallel;
+    }
+    if (result.latitude_of_2nd_standard_parallel !== void 0) {
+      result.lat2 = result.latitude_of_2nd_standard_parallel;
+    }
+    if (result.latitude_of_projection_centre !== void 0) {
+      result.lat0 = result.latitude_of_projection_centre;
+    }
+    if (result.longitude_of_projection_centre !== void 0) {
+      result.longc = result.longitude_of_projection_centre;
+    }
+    if (result.easting_at_false_origin !== void 0) {
+      result.x0 = result.easting_at_false_origin;
+    }
+    if (result.northing_at_false_origin !== void 0) {
+      result.y0 = result.northing_at_false_origin;
+    }
+    if (result.latitude_of_natural_origin !== void 0) {
+      result.lat0 = result.latitude_of_natural_origin;
+    }
+    if (result.longitude_of_natural_origin !== void 0) {
+      result.long0 = result.longitude_of_natural_origin;
+    }
+    if (result.longitude_of_origin !== void 0) {
+      result.long0 = result.longitude_of_origin;
+    }
+    if (result.false_easting !== void 0) {
+      result.x0 = result.false_easting;
+    }
+    if (result.easting_at_projection_centre) {
+      result.x0 = result.easting_at_projection_centre;
+    }
+    if (result.false_northing !== void 0) {
+      result.y0 = result.false_northing;
+    }
+    if (result.northing_at_projection_centre) {
+      result.y0 = result.northing_at_projection_centre;
+    }
+    if (result.standard_parallel_1 !== void 0) {
+      result.lat1 = result.standard_parallel_1;
+    }
+    if (result.standard_parallel_2 !== void 0) {
+      result.lat2 = result.standard_parallel_2;
+    }
+    if (result.scale_factor_at_natural_origin !== void 0) {
+      result.k0 = result.scale_factor_at_natural_origin;
+    }
+    if (result.scale_factor_at_projection_centre !== void 0) {
+      result.k0 = result.scale_factor_at_projection_centre;
+    }
+    if (result.scale_factor_on_pseudo_standard_parallel !== void 0) {
+      result.k0 = result.scale_factor_on_pseudo_standard_parallel;
+    }
+    if (result.azimuth !== void 0) {
+      result.alpha = result.azimuth;
+    }
+    if (result.azimuth_at_projection_centre !== void 0) {
+      result.alpha = result.azimuth_at_projection_centre;
+    }
+    if (result.angle_from_rectified_to_skew_grid) {
+      result.rectified_grid_angle = result.angle_from_rectified_to_skew_grid;
+    }
+    applyProjectionDefaults(result);
+    return result;
+  }
+
+  // node_modules/wkt-parser/index.js
+  var knownTypes = [
+    "PROJECTEDCRS",
+    "PROJCRS",
+    "GEOGCS",
+    "GEOCCS",
+    "PROJCS",
+    "LOCAL_CS",
+    "GEODCRS",
+    "GEODETICCRS",
+    "GEODETICDATUM",
+    "ENGCRS",
+    "ENGINEERINGCRS"
+  ];
+  function rename(obj, params2) {
+    var outName = params2[0];
+    var inName = params2[1];
+    if (!(outName in obj) && inName in obj) {
+      obj[outName] = obj[inName];
+      if (params2.length === 3) {
+        obj[outName] = params2[2](obj[outName]);
+      }
+    }
+  }
+  function cleanWKT(wkt) {
+    var keys = Object.keys(wkt);
+    for (var i = 0, ii = keys.length; i < ii; ++i) {
+      var key2 = keys[i];
+      if (knownTypes.indexOf(key2) !== -1) {
+        setPropertiesFromWkt(wkt[key2]);
+      }
+      if (typeof wkt[key2] === "object") {
+        cleanWKT(wkt[key2]);
+      }
+    }
+  }
+  function setPropertiesFromWkt(wkt) {
+    if (wkt.AUTHORITY) {
+      var authority = Object.keys(wkt.AUTHORITY)[0];
+      if (authority && authority in wkt.AUTHORITY) {
+        wkt.title = authority + ":" + wkt.AUTHORITY[authority];
+      }
+    }
+    if (wkt.type === "GEOGCS") {
+      wkt.projName = "longlat";
+    } else if (wkt.type === "LOCAL_CS") {
+      wkt.projName = "identity";
+      wkt.local = true;
+    } else {
+      if (typeof wkt.PROJECTION === "object") {
+        wkt.projName = Object.keys(wkt.PROJECTION)[0];
+      } else {
+        wkt.projName = wkt.PROJECTION;
+      }
+    }
+    if (wkt.AXIS) {
+      var axisOrder = "";
+      for (var i = 0, ii = wkt.AXIS.length; i < ii; ++i) {
+        var axis = [wkt.AXIS[i][0].toLowerCase(), wkt.AXIS[i][1].toLowerCase()];
+        if (axis[0].indexOf("north") !== -1 || (axis[0] === "y" || axis[0] === "lat") && axis[1] === "north") {
+          axisOrder += "n";
+        } else if (axis[0].indexOf("south") !== -1 || (axis[0] === "y" || axis[0] === "lat") && axis[1] === "south") {
+          axisOrder += "s";
+        } else if (axis[0].indexOf("east") !== -1 || (axis[0] === "x" || axis[0] === "lon") && axis[1] === "east") {
+          axisOrder += "e";
+        } else if (axis[0].indexOf("west") !== -1 || (axis[0] === "x" || axis[0] === "lon") && axis[1] === "west") {
+          axisOrder += "w";
+        }
+      }
+      if (axisOrder.length === 2) {
+        axisOrder += "u";
+      }
+      if (axisOrder.length === 3) {
+        wkt.axis = axisOrder;
+      }
+    }
+    if (wkt.UNIT) {
+      wkt.units = wkt.UNIT.name.toLowerCase();
+      if (wkt.units === "metre") {
+        wkt.units = "meter";
+      }
+      if (wkt.UNIT.convert) {
+        if (wkt.type === "GEOGCS") {
+          if (wkt.DATUM && wkt.DATUM.SPHEROID) {
+            wkt.to_meter = wkt.UNIT.convert * wkt.DATUM.SPHEROID.a;
+          }
+        } else {
+          wkt.to_meter = wkt.UNIT.convert;
+        }
+      }
+    }
+    var geogcs = wkt.GEOGCS;
+    if (wkt.type === "GEOGCS") {
+      geogcs = wkt;
+    }
+    if (geogcs) {
+      if (geogcs.PRIMEM && geogcs.PRIMEM.convert) {
+        wkt.from_greenwich = d2r(geogcs.PRIMEM.convert);
+      }
+      if (geogcs.DATUM) {
+        wkt.datumCode = geogcs.DATUM.name.toLowerCase();
+      } else {
+        wkt.datumCode = geogcs.name.toLowerCase();
+      }
+      if (wkt.datumCode.slice(0, 2) === "d_") {
+        wkt.datumCode = wkt.datumCode.slice(2);
+      }
+      if (wkt.datumCode === "new_zealand_1949") {
+        wkt.datumCode = "nzgd49";
+      }
+      if (wkt.datumCode === "wgs_1984" || wkt.datumCode === "world_geodetic_system_1984") {
+        if (wkt.PROJECTION === "Mercator_Auxiliary_Sphere") {
+          wkt.sphere = true;
+        }
+        wkt.datumCode = "wgs84";
+      }
+      if (wkt.datumCode === "belge_1972") {
+        wkt.datumCode = "rnb72";
+      }
+      if (geogcs.DATUM && geogcs.DATUM.SPHEROID) {
+        wkt.ellps = geogcs.DATUM.SPHEROID.name.replace("_19", "").replace(/[Cc]larke\_18/, "clrk");
+        if (wkt.ellps.toLowerCase().slice(0, 13) === "international") {
+          wkt.ellps = "intl";
+        }
+        wkt.a = geogcs.DATUM.SPHEROID.a;
+        wkt.rf = parseFloat(geogcs.DATUM.SPHEROID.rf);
+      }
+      if (geogcs.DATUM && geogcs.DATUM.TOWGS84) {
+        wkt.datum_params = geogcs.DATUM.TOWGS84;
+      }
+      if (~wkt.datumCode.indexOf("osgb_1936")) {
+        wkt.datumCode = "osgb36";
+      }
+      if (~wkt.datumCode.indexOf("osni_1952")) {
+        wkt.datumCode = "osni52";
+      }
+      if (~wkt.datumCode.indexOf("tm65") || ~wkt.datumCode.indexOf("geodetic_datum_of_1965")) {
+        wkt.datumCode = "ire65";
+      }
+      if (wkt.datumCode === "ch1903+") {
+        wkt.datumCode = "ch1903";
+      }
+      if (~wkt.datumCode.indexOf("israel")) {
+        wkt.datumCode = "isr93";
+      }
+    }
+    if (wkt.b && !isFinite(wkt.b)) {
+      wkt.b = wkt.a;
+    }
+    if (wkt.rectified_grid_angle) {
+      wkt.rectified_grid_angle = d2r(wkt.rectified_grid_angle);
+    }
+    function toMeter(input) {
+      var ratio = wkt.to_meter || 1;
+      return input * ratio;
+    }
+    var renamer = function(a) {
+      return rename(wkt, a);
+    };
+    var list = [
+      ["standard_parallel_1", "Standard_Parallel_1"],
+      ["standard_parallel_1", "Latitude of 1st standard parallel"],
+      ["standard_parallel_2", "Standard_Parallel_2"],
+      ["standard_parallel_2", "Latitude of 2nd standard parallel"],
+      ["false_easting", "False_Easting"],
+      ["false_easting", "False easting"],
+      ["false-easting", "Easting at false origin"],
+      ["false_northing", "False_Northing"],
+      ["false_northing", "False northing"],
+      ["false_northing", "Northing at false origin"],
+      ["central_meridian", "Central_Meridian"],
+      ["central_meridian", "Longitude of natural origin"],
+      ["central_meridian", "Longitude of false origin"],
+      ["latitude_of_origin", "Latitude_Of_Origin"],
+      ["latitude_of_origin", "Central_Parallel"],
+      ["latitude_of_origin", "Latitude of natural origin"],
+      ["latitude_of_origin", "Latitude of false origin"],
+      ["scale_factor", "Scale_Factor"],
+      ["k0", "scale_factor"],
+      ["latitude_of_center", "Latitude_Of_Center"],
+      ["latitude_of_center", "Latitude_of_center"],
+      ["lat0", "latitude_of_center", d2r],
+      ["longitude_of_center", "Longitude_Of_Center"],
+      ["longitude_of_center", "Longitude_of_center"],
+      ["longc", "longitude_of_center", d2r],
+      ["x0", "false_easting", toMeter],
+      ["y0", "false_northing", toMeter],
+      ["long0", "central_meridian", d2r],
+      ["lat0", "latitude_of_origin", d2r],
+      ["lat0", "standard_parallel_1", d2r],
+      ["lat1", "standard_parallel_1", d2r],
+      ["lat2", "standard_parallel_2", d2r],
+      ["azimuth", "Azimuth"],
+      ["alpha", "azimuth", d2r],
+      ["srsCode", "name"]
+    ];
+    list.forEach(renamer);
+    applyProjectionDefaults(wkt);
+  }
+  function wkt_parser_default(wkt) {
+    if (typeof wkt === "object") {
+      return transformPROJJSON(wkt);
+    }
+    const version = detectWKTVersion(wkt);
+    var lisp = parser_default(wkt);
+    if (version === "WKT2") {
+      const projjson = buildPROJJSON(lisp);
+      return transformPROJJSON(projjson);
+    }
+    var type = lisp[0];
+    var obj = {};
+    sExpr(lisp, obj);
+    cleanWKT(obj);
+    return obj[type];
+  }
+
+  // node_modules/proj4/lib/defs.js
+  function defs(name) {
+    var that = this;
+    if (arguments.length === 2) {
+      var def = arguments[1];
+      if (typeof def === "string") {
+        if (def.charAt(0) === "+") {
+          defs[
+            /** @type {string} */
+            name
+          ] = projString_default(arguments[1]);
+        } else {
+          defs[
+            /** @type {string} */
+            name
+          ] = wkt_parser_default(arguments[1]);
+        }
+      } else if (def && typeof def === "object" && !("projName" in def)) {
+        defs[
+          /** @type {string} */
+          name
+        ] = wkt_parser_default(arguments[1]);
+      } else {
+        defs[
+          /** @type {string} */
+          name
+        ] = def;
+        if (!def) {
+          delete defs[
+            /** @type {string} */
+            name
+          ];
+        }
+      }
+    } else if (arguments.length === 1) {
+      if (Array.isArray(name)) {
+        return name.map(function(v) {
+          if (Array.isArray(v)) {
+            return defs.apply(that, v);
+          } else {
+            return defs(v);
+          }
+        });
+      } else if (typeof name === "string") {
+        if (name in defs) {
+          return defs[name];
+        }
+      } else if ("EPSG" in name) {
+        defs["EPSG:" + name.EPSG] = name;
+      } else if ("ESRI" in name) {
+        defs["ESRI:" + name.ESRI] = name;
+      } else if ("IAU2000" in name) {
+        defs["IAU2000:" + name.IAU2000] = name;
+      } else {
+        console.log(name);
+      }
+      return;
+    }
+  }
+  global_default(defs);
+  var defs_default = defs;
+
+  // node_modules/proj4/lib/parseCode.js
+  function testObj(code) {
+    return typeof code === "string";
+  }
+  function testDef(code) {
+    return code in defs_default;
+  }
+  function testWKT(code) {
+    return code.indexOf("+") !== 0 && code.indexOf("[") !== -1 || typeof code === "object" && !("srsCode" in code);
+  }
+  var codes = ["3857", "900913", "3785", "102113"];
+  function checkMercator(item) {
+    if (item.title) {
+      return item.title.toLowerCase().indexOf("epsg:") === 0 && codes.indexOf(item.title.substr(5)) > -1;
+    }
+    var auth = match(item, "authority");
+    if (!auth) {
+      return;
+    }
+    var code = match(auth, "epsg");
+    return code && codes.indexOf(code) > -1;
+  }
+  function checkProjStr(item) {
+    var ext = match(item, "extension");
+    if (!ext) {
+      return;
+    }
+    return match(ext, "proj4");
+  }
+  function testProj(code) {
+    return code[0] === "+";
+  }
+  function parse2(code) {
+    let out;
+    if (testObj(code)) {
+      if (testDef(code)) {
+        out = defs_default[code];
+      } else if (testWKT(code)) {
+        out = wkt_parser_default(code);
+        var maybeProjStr = checkProjStr(out);
+        if (maybeProjStr) {
+          out = projString_default(maybeProjStr);
+        }
+      } else if (testProj(code)) {
+        out = projString_default(code);
+      }
+    } else if (!("projName" in code)) {
+      out = wkt_parser_default(code);
+    } else {
+      out = code;
+    }
+    return out && checkMercator(out) ? defs_default["EPSG:3857"] : out;
+  }
+  var parseCode_default = parse2;
+
+  // node_modules/proj4/lib/extend.js
+  function extend_default(destination, source) {
+    destination = destination || {};
+    var value, property;
+    if (!source) {
+      return destination;
+    }
+    for (property in source) {
+      value = source[property];
+      if (value !== void 0) {
+        destination[property] = value;
+      }
+    }
+    return destination;
+  }
+
+  // node_modules/proj4/lib/common/msfnz.js
+  function msfnz_default(eccent, sinphi, cosphi) {
+    var con = eccent * sinphi;
+    return cosphi / Math.sqrt(1 - con * con);
+  }
+
+  // node_modules/proj4/lib/common/sign.js
+  function sign_default(x) {
+    return x < 0 ? -1 : 1;
+  }
+
+  // node_modules/proj4/lib/common/adjust_lon.js
+  function adjust_lon_default(x, skipAdjust) {
+    if (skipAdjust) {
+      return x;
+    }
+    return Math.abs(x) <= SPI ? x : x - sign_default(x) * TWO_PI;
+  }
+
+  // node_modules/proj4/lib/common/tsfnz.js
+  function tsfnz_default(eccent, phi, sinphi) {
+    var con = eccent * sinphi;
+    var com = 0.5 * eccent;
+    con = Math.pow((1 - con) / (1 + con), com);
+    return Math.tan(0.5 * (HALF_PI - phi)) / con;
+  }
+
+  // node_modules/proj4/lib/common/phi2z.js
+  function phi2z_default(eccent, ts) {
+    var eccnth = 0.5 * eccent;
+    var con, dphi;
+    var phi = HALF_PI - 2 * Math.atan(ts);
+    for (var i = 0; i <= 15; i++) {
+      con = eccent * Math.sin(phi);
+      dphi = HALF_PI - 2 * Math.atan(ts * Math.pow((1 - con) / (1 + con), eccnth)) - phi;
+      phi += dphi;
+      if (Math.abs(dphi) <= 1e-10) {
+        return phi;
+      }
+    }
+    return -9999;
+  }
+
+  // node_modules/proj4/lib/projections/merc.js
+  function init3() {
+    var con = this.b / this.a;
+    this.es = 1 - con * con;
+    if (!("x0" in this)) {
+      this.x0 = 0;
+    }
+    if (!("y0" in this)) {
+      this.y0 = 0;
+    }
+    this.e = Math.sqrt(this.es);
+    if (this.lat_ts) {
+      if (this.sphere) {
+        this.k0 = Math.cos(this.lat_ts);
+      } else {
+        this.k0 = msfnz_default(this.e, Math.sin(this.lat_ts), Math.cos(this.lat_ts));
+      }
+    } else {
+      if (!this.k0) {
+        if (this.k) {
+          this.k0 = this.k;
+        } else {
+          this.k0 = 1;
+        }
+      }
+    }
+  }
+  function forward(p) {
+    var lon = p.x;
+    var lat = p.y;
+    if (lat * R2D > 90 && lat * R2D < -90 && lon * R2D > 180 && lon * R2D < -180) {
+      return null;
+    }
+    var x, y;
+    if (Math.abs(Math.abs(lat) - HALF_PI) <= EPSLN) {
+      return null;
+    } else {
+      if (this.sphere) {
+        x = this.x0 + this.a * this.k0 * adjust_lon_default(lon - this.long0, this.over);
+        y = this.y0 + this.a * this.k0 * Math.log(Math.tan(FORTPI + 0.5 * lat));
+      } else {
+        var sinphi = Math.sin(lat);
+        var ts = tsfnz_default(this.e, lat, sinphi);
+        x = this.x0 + this.a * this.k0 * adjust_lon_default(lon - this.long0, this.over);
+        y = this.y0 - this.a * this.k0 * Math.log(ts);
+      }
+      p.x = x;
+      p.y = y;
+      return p;
+    }
+  }
+  function inverse(p) {
+    var x = p.x - this.x0;
+    var y = p.y - this.y0;
+    var lon, lat;
+    if (this.sphere) {
+      lat = HALF_PI - 2 * Math.atan(Math.exp(-y / (this.a * this.k0)));
+    } else {
+      var ts = Math.exp(-y / (this.a * this.k0));
+      lat = phi2z_default(this.e, ts);
+      if (lat === -9999) {
+        return null;
+      }
+    }
+    lon = adjust_lon_default(this.long0 + x / (this.a * this.k0), this.over);
+    p.x = lon;
+    p.y = lat;
+    return p;
+  }
+  var names = ["Mercator", "Popular Visualisation Pseudo Mercator", "Mercator_1SP", "Mercator_Auxiliary_Sphere", "Mercator_Variant_A", "merc"];
+  var merc_default = {
+    init: init3,
+    forward,
+    inverse,
+    names
+  };
+
+  // node_modules/proj4/lib/projections/longlat.js
+  function init4() {
+  }
+  function identity(pt) {
+    return pt;
+  }
+  var names2 = ["longlat", "identity"];
+  var longlat_default = {
+    init: init4,
+    forward: identity,
+    inverse: identity,
+    names: names2
+  };
+
+  // node_modules/proj4/lib/projections.js
+  var projs = [merc_default, longlat_default];
+  var names3 = {};
+  var projStore = [];
+  function add4(proj, i) {
+    var len = projStore.length;
+    if (!proj.names) {
+      console.log(i);
+      return true;
+    }
+    projStore[len] = proj;
+    proj.names.forEach(function(n) {
+      names3[n.toLowerCase()] = len;
+    });
+    return this;
+  }
+  function getNormalizedProjName(n) {
+    return n.replace(/[-\(\)\s]+/g, " ").trim().replace(/ /g, "_");
+  }
+  function get5(name) {
+    if (!name) {
+      return false;
+    }
+    var n = name.toLowerCase();
+    if (typeof names3[n] !== "undefined" && projStore[names3[n]]) {
+      return projStore[names3[n]];
+    }
+    n = getNormalizedProjName(n);
+    if (n in names3 && projStore[names3[n]]) {
+      return projStore[names3[n]];
+    }
+  }
+  function start() {
+    projs.forEach(add4);
+  }
+  var projections_default = {
+    start,
+    add: add4,
+    get: get5
+  };
+
+  // node_modules/proj4/lib/constants/Ellipsoid.js
+  var ellipsoids = {
+    MERIT: {
+      a: 6378137,
+      rf: 298.257,
+      ellipseName: "MERIT 1983"
+    },
+    SGS85: {
+      a: 6378136,
+      rf: 298.257,
+      ellipseName: "Soviet Geodetic System 85"
+    },
+    GRS80: {
+      a: 6378137,
+      rf: 298.257222101,
+      ellipseName: "GRS 1980(IUGG, 1980)"
+    },
+    IAU76: {
+      a: 6378140,
+      rf: 298.257,
+      ellipseName: "IAU 1976"
+    },
+    airy: {
+      a: 6377563396e-3,
+      b: 635625691e-2,
+      ellipseName: "Airy 1830"
+    },
+    APL4: {
+      a: 6378137,
+      rf: 298.25,
+      ellipseName: "Appl. Physics. 1965"
+    },
+    NWL9D: {
+      a: 6378145,
+      rf: 298.25,
+      ellipseName: "Naval Weapons Lab., 1965"
+    },
+    mod_airy: {
+      a: 6377340189e-3,
+      b: 6356034446e-3,
+      ellipseName: "Modified Airy"
+    },
+    andrae: {
+      a: 637710443e-2,
+      rf: 300,
+      ellipseName: "Andrae 1876 (Den., Iclnd.)"
+    },
+    aust_SA: {
+      a: 6378160,
+      rf: 298.25,
+      ellipseName: "Australian Natl & S. Amer. 1969"
+    },
+    GRS67: {
+      a: 6378160,
+      rf: 298.247167427,
+      ellipseName: "GRS 67(IUGG 1967)"
+    },
+    bessel: {
+      a: 6377397155e-3,
+      rf: 299.1528128,
+      ellipseName: "Bessel 1841"
+    },
+    bess_nam: {
+      a: 6377483865e-3,
+      rf: 299.1528128,
+      ellipseName: "Bessel 1841 (Namibia)"
+    },
+    clrk66: {
+      a: 63782064e-1,
+      b: 63565838e-1,
+      ellipseName: "Clarke 1866"
+    },
+    clrk80: {
+      a: 6378249145e-3,
+      rf: 293.4663,
+      ellipseName: "Clarke 1880 mod."
+    },
+    clrk80ign: {
+      a: 63782492e-1,
+      b: 6356515,
+      rf: 293.4660213,
+      ellipseName: "Clarke 1880 (IGN)"
+    },
+    clrk58: {
+      a: 6378293645208759e-9,
+      rf: 294.2606763692654,
+      ellipseName: "Clarke 1858"
+    },
+    CPM: {
+      a: 63757387e-1,
+      rf: 334.29,
+      ellipseName: "Comm. des Poids et Mesures 1799"
+    },
+    delmbr: {
+      a: 6376428,
+      rf: 311.5,
+      ellipseName: "Delambre 1810 (Belgium)"
+    },
+    engelis: {
+      a: 637813605e-2,
+      rf: 298.2566,
+      ellipseName: "Engelis 1985"
+    },
+    evrst30: {
+      a: 6377276345e-3,
+      rf: 300.8017,
+      ellipseName: "Everest 1830"
+    },
+    evrst48: {
+      a: 6377304063e-3,
+      rf: 300.8017,
+      ellipseName: "Everest 1948"
+    },
+    evrst56: {
+      a: 6377301243e-3,
+      rf: 300.8017,
+      ellipseName: "Everest 1956"
+    },
+    evrst69: {
+      a: 6377295664e-3,
+      rf: 300.8017,
+      ellipseName: "Everest 1969"
+    },
+    evrstSS: {
+      a: 6377298556e-3,
+      rf: 300.8017,
+      ellipseName: "Everest (Sabah & Sarawak)"
+    },
+    fschr60: {
+      a: 6378166,
+      rf: 298.3,
+      ellipseName: "Fischer (Mercury Datum) 1960"
+    },
+    fschr60m: {
+      a: 6378155,
+      rf: 298.3,
+      ellipseName: "Fischer 1960"
+    },
+    fschr68: {
+      a: 6378150,
+      rf: 298.3,
+      ellipseName: "Fischer 1968"
+    },
+    helmert: {
+      a: 6378200,
+      rf: 298.3,
+      ellipseName: "Helmert 1906"
+    },
+    hough: {
+      a: 6378270,
+      rf: 297,
+      ellipseName: "Hough"
+    },
+    intl: {
+      a: 6378388,
+      rf: 297,
+      ellipseName: "International 1909 (Hayford)"
+    },
+    kaula: {
+      a: 6378163,
+      rf: 298.24,
+      ellipseName: "Kaula 1961"
+    },
+    lerch: {
+      a: 6378139,
+      rf: 298.257,
+      ellipseName: "Lerch 1979"
+    },
+    mprts: {
+      a: 6397300,
+      rf: 191,
+      ellipseName: "Maupertius 1738"
+    },
+    new_intl: {
+      a: 63781575e-1,
+      b: 63567722e-1,
+      ellipseName: "New International 1967"
+    },
+    plessis: {
+      a: 6376523,
+      rf: 6355863,
+      ellipseName: "Plessis 1817 (France)"
+    },
+    krass: {
+      a: 6378245,
+      rf: 298.3,
+      ellipseName: "Krassovsky, 1942"
+    },
+    SEasia: {
+      a: 6378155,
+      b: 63567733205e-4,
+      ellipseName: "Southeast Asia"
+    },
+    walbeck: {
+      a: 6376896,
+      b: 63558348467e-4,
+      ellipseName: "Walbeck"
+    },
+    WGS60: {
+      a: 6378165,
+      rf: 298.3,
+      ellipseName: "WGS 60"
+    },
+    WGS66: {
+      a: 6378145,
+      rf: 298.25,
+      ellipseName: "WGS 66"
+    },
+    WGS7: {
+      a: 6378135,
+      rf: 298.26,
+      ellipseName: "WGS 72"
+    },
+    WGS84: {
+      a: 6378137,
+      rf: 298.257223563,
+      ellipseName: "WGS 84"
+    },
+    sphere: {
+      a: 6370997,
+      b: 6370997,
+      ellipseName: "Normal Sphere (r=6370997)"
+    }
+  };
+  var Ellipsoid_default = ellipsoids;
+
+  // node_modules/proj4/lib/deriveConstants.js
+  var WGS84 = Ellipsoid_default.WGS84;
+  function eccentricity(a, b, rf, R_A) {
+    var a22 = a * a;
+    var b22 = b * b;
+    var es = (a22 - b22) / a22;
+    var e = 0;
+    if (R_A) {
+      a *= 1 - es * (SIXTH + es * (RA4 + es * RA6));
+      a22 = a * a;
+      es = 0;
+    } else {
+      e = Math.sqrt(es);
+    }
+    var ep2 = (a22 - b22) / b22;
     return {
-      geoTransform: [0, 1, 0, 0, 0, 1],
-      crs: "Local",
-      modelPixelScale: [1, 1, 0],
-      modelTiepoint: [0, 0, 0, 0, 0, 0],
-      yFlipped: false,
-      source: "identity"
+      es,
+      e,
+      ep2
     };
   }
-  async function decodeImage(url) {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.src = url;
-    await img.decode();
-    const c = document.createElement("canvas");
-    c.width = img.naturalWidth;
-    c.height = img.naturalHeight;
-    const ctx = c.getContext("2d", { willReadFrequently: true });
-    ctx.drawImage(img, 0, 0);
-    const { data, width, height } = ctx.getImageData(0, 0, c.width, c.height);
-    return { data, width, height };
-  }
-  function rgbPlanes(rgba, w, h) {
-    const n = w * h;
-    const r = new Float64Array(n);
-    const g = new Float64Array(n);
-    const b = new Float64Array(n);
-    for (let i = 0, p = 0; i < n; i++, p += 4) {
-      r[i] = rgba[p];
-      g[i] = rgba[p + 1];
-      b[i] = rgba[p + 2];
-    }
-    return [r, g, b];
-  }
-  function maskPlane(rgbaOrGray, w, h, isGrayPng) {
-    const n = w * h;
-    const plane = new Float64Array(n);
-    if (isGrayPng) {
-      for (let i = 0, p = 0; i < n; i++, p += 4) plane[i] = rgbaOrGray[p];
-    } else {
-      for (let i = 0, p = 0; i < n; i++, p += 4) plane[i] = rgbaOrGray[p];
-    }
-    return [plane];
-  }
-  function sampleCanvas(mapEl, points) {
-    const canvas = mapEl.querySelector("canvas");
-    if (!canvas) return { error: "no canvas", samples: [] };
-    const gl = canvas.getContext("webgl2") || canvas.getContext("webgl");
-    const w = canvas.width;
-    const h = canvas.height;
-    const samples = [];
-    for (const [nx, ny, label] of points) {
-      const x = Math.min(w - 1, Math.max(0, Math.round(nx * (w - 1))));
-      const yTop = Math.min(h - 1, Math.max(0, Math.round(ny * (h - 1))));
-      const y = h - 1 - yTop;
-      let rgba;
-      if (gl) {
-        const buf = new Uint8Array(4);
-        gl.readPixels(x, y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, buf);
-        rgba = [buf[0], buf[1], buf[2], buf[3]];
-      } else {
-        const ctx = canvas.getContext("2d");
-        const d = ctx.getImageData(x, yTop, 1, 1).data;
-        rgba = [d[0], d[1], d[2], d[3]];
+  function sphere(a, b, rf, ellps, sphere2) {
+    if (!a) {
+      var ellipse = match(Ellipsoid_default, ellps);
+      if (!ellipse) {
+        ellipse = WGS84;
       }
-      samples.push({ label, x, yTop, rgba, lum: (rgba[0] + rgba[1] + rgba[2]) / 3 });
+      a = ellipse.a;
+      b = ellipse.b;
+      rf = ellipse.rf;
     }
-    return { w, h, samples };
+    if (rf && !b) {
+      b = (1 - 1 / rf) * a;
+    }
+    if (rf === 0 || Math.abs(a - b) < EPSLN) {
+      sphere2 = true;
+      b = a;
+    }
+    return {
+      a,
+      b,
+      rf,
+      sphere: sphere2
+    };
   }
-  function refreshAll(layers) {
-    for (const { layer, styleState } of layers) {
-      applyStyle(layer, styleState);
-      layer.setVisible(true);
-      if (typeof layer.setOpacity === "function") layer.setOpacity(1);
+
+  // node_modules/proj4/lib/constants/Datum.js
+  var datums = {
+    wgs84: {
+      towgs84: "0,0,0",
+      ellipse: "WGS84",
+      datumName: "WGS84"
+    },
+    ch1903: {
+      towgs84: "674.374,15.056,405.346",
+      ellipse: "bessel",
+      datumName: "swiss"
+    },
+    ggrs87: {
+      towgs84: "-199.87,74.79,246.62",
+      ellipse: "GRS80",
+      datumName: "Greek_Geodetic_Reference_System_1987"
+    },
+    nad83: {
+      towgs84: "0,0,0",
+      ellipse: "GRS80",
+      datumName: "North_American_Datum_1983"
+    },
+    nad27: {
+      nadgrids: "@conus,@alaska,@ntv2_0.gsb,@ntv1_can.dat",
+      ellipse: "clrk66",
+      datumName: "North_American_Datum_1927"
+    },
+    potsdam: {
+      towgs84: "598.1,73.7,418.2,0.202,0.045,-2.455,6.7",
+      ellipse: "bessel",
+      datumName: "Potsdam Rauenberg 1950 DHDN"
+    },
+    carthage: {
+      towgs84: "-263.0,6.0,431.0",
+      ellipse: "clark80",
+      datumName: "Carthage 1934 Tunisia"
+    },
+    hermannskogel: {
+      towgs84: "577.326,90.129,463.919,5.137,1.474,5.297,2.4232",
+      ellipse: "bessel",
+      datumName: "Hermannskogel"
+    },
+    mgi: {
+      towgs84: "577.326,90.129,463.919,5.137,1.474,5.297,2.4232",
+      ellipse: "bessel",
+      datumName: "Militar-Geographische Institut"
+    },
+    osni52: {
+      towgs84: "482.530,-130.596,564.557,-1.042,-0.214,-0.631,8.15",
+      ellipse: "airy",
+      datumName: "Irish National"
+    },
+    ire65: {
+      towgs84: "482.530,-130.596,564.557,-1.042,-0.214,-0.631,8.15",
+      ellipse: "mod_airy",
+      datumName: "Ireland 1965"
+    },
+    rassadiran: {
+      towgs84: "-133.63,-157.5,-158.62",
+      ellipse: "intl",
+      datumName: "Rassadiran"
+    },
+    nzgd49: {
+      towgs84: "59.47,-5.04,187.44,0.47,-0.1,1.024,-4.5993",
+      ellipse: "intl",
+      datumName: "New Zealand Geodetic Datum 1949"
+    },
+    osgb36: {
+      towgs84: "446.448,-125.157,542.060,0.1502,0.2470,0.8421,-20.4894",
+      ellipse: "airy",
+      datumName: "Ordnance Survey of Great Britain 1936"
+    },
+    s_jtsk: {
+      towgs84: "589,76,480",
+      ellipse: "bessel",
+      datumName: "S-JTSK (Ferro)"
+    },
+    beduaram: {
+      towgs84: "-106,-87,188",
+      ellipse: "clrk80",
+      datumName: "Beduaram"
+    },
+    gunung_segara: {
+      towgs84: "-403,684,41",
+      ellipse: "bessel",
+      datumName: "Gunung Segara Jakarta"
+    },
+    rnb72: {
+      towgs84: "106.869,-52.2978,103.724,-0.33657,0.456955,-1.84218,1",
+      ellipse: "intl",
+      datumName: "Reseau National Belge 1972"
+    },
+    EPSG_5451: {
+      towgs84: "6.41,-49.05,-11.28,1.5657,0.5242,6.9718,-5.7649"
+    },
+    IGNF_LURESG: {
+      towgs84: "-192.986,13.673,-39.309,-0.4099,-2.9332,2.6881,0.43"
+    },
+    EPSG_4614: {
+      towgs84: "-119.4248,-303.65872,-11.00061,1.164298,0.174458,1.096259,3.657065"
+    },
+    EPSG_4615: {
+      towgs84: "-494.088,-312.129,279.877,-1.423,-1.013,1.59,-0.748"
+    },
+    ESRI_37241: {
+      towgs84: "-76.822,257.457,-12.817,2.136,-0.033,-2.392,-0.031"
+    },
+    ESRI_37249: {
+      towgs84: "-440.296,58.548,296.265,1.128,10.202,4.559,-0.438"
+    },
+    ESRI_37245: {
+      towgs84: "-511.151,-181.269,139.609,1.05,2.703,1.798,3.071"
+    },
+    EPSG_4178: {
+      towgs84: "24.9,-126.4,-93.2,-0.063,-0.247,-0.041,1.01"
+    },
+    EPSG_4622: {
+      towgs84: "-472.29,-5.63,-304.12,0.4362,-0.8374,0.2563,1.8984"
+    },
+    EPSG_4625: {
+      towgs84: "126.93,547.94,130.41,-2.7867,5.1612,-0.8584,13.8227"
+    },
+    EPSG_5252: {
+      towgs84: "0.023,0.036,-0.068,0.00176,0.00912,-0.01136,0.00439"
+    },
+    EPSG_4314: {
+      towgs84: "597.1,71.4,412.1,0.894,0.068,-1.563,7.58"
+    },
+    EPSG_4282: {
+      towgs84: "-178.3,-316.7,-131.5,5.278,6.077,10.979,19.166"
+    },
+    EPSG_4231: {
+      towgs84: "-83.11,-97.38,-117.22,0.005693,-0.044698,0.044285,0.1218"
+    },
+    EPSG_4274: {
+      towgs84: "-230.994,102.591,25.199,0.633,-0.239,0.9,1.95"
+    },
+    EPSG_4134: {
+      towgs84: "-180.624,-225.516,173.919,-0.81,-1.898,8.336,16.71006"
+    },
+    EPSG_4254: {
+      towgs84: "18.38,192.45,96.82,0.056,-0.142,-0.2,-0.0013"
+    },
+    EPSG_4159: {
+      towgs84: "-194.513,-63.978,-25.759,-3.4027,3.756,-3.352,-0.9175"
+    },
+    EPSG_4687: {
+      towgs84: "0.072,-0.507,-0.245,0.0183,-0.0003,0.007,-0.0093"
+    },
+    EPSG_4227: {
+      towgs84: "-83.58,-397.54,458.78,-17.595,-2.847,4.256,3.225"
+    },
+    EPSG_4746: {
+      towgs84: "599.4,72.4,419.2,-0.062,-0.022,-2.723,6.46"
+    },
+    EPSG_4745: {
+      towgs84: "612.4,77,440.2,-0.054,0.057,-2.797,2.55"
+    },
+    EPSG_6311: {
+      towgs84: "8.846,-4.394,-1.122,-0.00237,-0.146528,0.130428,0.783926"
+    },
+    EPSG_4289: {
+      towgs84: "565.7381,50.4018,465.2904,-0.395026,0.330772,-1.876073,4.07244"
+    },
+    EPSG_4230: {
+      towgs84: "-68.863,-134.888,-111.49,-0.53,-0.14,0.57,-3.4"
+    },
+    EPSG_4154: {
+      towgs84: "-123.02,-158.95,-168.47"
+    },
+    EPSG_4156: {
+      towgs84: "570.8,85.7,462.8,4.998,1.587,5.261,3.56"
+    },
+    EPSG_4299: {
+      towgs84: "482.5,-130.6,564.6,-1.042,-0.214,-0.631,8.15"
+    },
+    EPSG_4179: {
+      towgs84: "33.4,-146.6,-76.3,-0.359,-0.053,0.844,-0.84"
+    },
+    EPSG_4313: {
+      towgs84: "-106.8686,52.2978,-103.7239,0.3366,-0.457,1.8422,-1.2747"
+    },
+    EPSG_4194: {
+      towgs84: "163.511,127.533,-159.789"
+    },
+    EPSG_4195: {
+      towgs84: "105,326,-102.5"
+    },
+    EPSG_4196: {
+      towgs84: "-45,417,-3.5"
+    },
+    EPSG_4611: {
+      towgs84: "-162.619,-276.959,-161.764,0.067753,-2.243648,-1.158828,-1.094246"
+    },
+    EPSG_4633: {
+      towgs84: "137.092,131.66,91.475,-1.9436,-11.5993,-4.3321,-7.4824"
+    },
+    EPSG_4641: {
+      towgs84: "-408.809,366.856,-412.987,1.8842,-0.5308,2.1655,-121.0993"
+    },
+    EPSG_4643: {
+      towgs84: "-480.26,-438.32,-643.429,16.3119,20.1721,-4.0349,-111.7002"
+    },
+    EPSG_4300: {
+      towgs84: "482.5,-130.6,564.6,-1.042,-0.214,-0.631,8.15"
+    },
+    EPSG_4188: {
+      towgs84: "482.5,-130.6,564.6,-1.042,-0.214,-0.631,8.15"
+    },
+    EPSG_4660: {
+      towgs84: "982.6087,552.753,-540.873,6.681627,-31.611492,-19.848161,16.805"
+    },
+    EPSG_4662: {
+      towgs84: "97.295,-263.247,310.882,-1.5999,0.8386,3.1409,13.3259"
+    },
+    EPSG_3906: {
+      towgs84: "577.88891,165.22205,391.18289,4.9145,-0.94729,-13.05098,7.78664"
+    },
+    EPSG_4307: {
+      towgs84: "-209.3622,-87.8162,404.6198,0.0046,3.4784,0.5805,-1.4547"
+    },
+    EPSG_6892: {
+      towgs84: "-76.269,-16.683,68.562,-6.275,10.536,-4.286,-13.686"
+    },
+    EPSG_4690: {
+      towgs84: "221.597,152.441,176.523,2.403,1.3893,0.884,11.4648"
+    },
+    EPSG_4691: {
+      towgs84: "218.769,150.75,176.75,3.5231,2.0037,1.288,10.9817"
+    },
+    EPSG_4629: {
+      towgs84: "72.51,345.411,79.241,-1.5862,-0.8826,-0.5495,1.3653"
+    },
+    EPSG_4630: {
+      towgs84: "165.804,216.213,180.26,-0.6251,-0.4515,-0.0721,7.4111"
+    },
+    EPSG_4692: {
+      towgs84: "217.109,86.452,23.711,0.0183,-0.0003,0.007,-0.0093"
+    },
+    EPSG_9333: {
+      towgs84: "0,0,0,-0.008393,0.000749,-0.010276,0"
+    },
+    EPSG_9059: {
+      towgs84: "0,0,0"
+    },
+    EPSG_4312: {
+      towgs84: "601.705,84.263,485.227,4.7354,1.3145,5.393,-2.3887"
+    },
+    EPSG_4123: {
+      towgs84: "-96.062,-82.428,-121.753,4.801,0.345,-1.376,1.496"
+    },
+    EPSG_4309: {
+      towgs84: "-124.45,183.74,44.64,-0.4384,0.5446,-0.9706,-2.1365"
+    },
+    ESRI_104106: {
+      towgs84: "-283.088,-70.693,117.445,-1.157,0.059,-0.652,-4.058"
+    },
+    EPSG_4281: {
+      towgs84: "-219.247,-73.802,269.529"
+    },
+    EPSG_4322: {
+      towgs84: "0,0,4.5"
+    },
+    EPSG_4324: {
+      towgs84: "0,0,1.9"
+    },
+    EPSG_4284: {
+      towgs84: "43.822,-108.842,-119.585,1.455,-0.761,0.737,0.549"
+    },
+    EPSG_4277: {
+      towgs84: "446.448,-125.157,542.06,0.15,0.247,0.842,-20.489"
+    },
+    EPSG_4207: {
+      towgs84: "-282.1,-72.2,120,-1.529,0.145,-0.89,-4.46"
+    },
+    EPSG_4688: {
+      towgs84: "347.175,1077.618,2623.677,33.9058,-70.6776,9.4013,186.0647"
+    },
+    EPSG_4689: {
+      towgs84: "410.793,54.542,80.501,-2.5596,-2.3517,-0.6594,17.3218"
+    },
+    EPSG_4720: {
+      towgs84: "0,0,4.5"
+    },
+    EPSG_4273: {
+      towgs84: "278.3,93,474.5,7.889,0.05,-6.61,6.21"
+    },
+    EPSG_4240: {
+      towgs84: "204.64,834.74,293.8"
+    },
+    EPSG_4817: {
+      towgs84: "278.3,93,474.5,7.889,0.05,-6.61,6.21"
+    },
+    ESRI_104131: {
+      towgs84: "426.62,142.62,460.09,4.98,4.49,-12.42,-17.1"
+    },
+    EPSG_4265: {
+      towgs84: "-104.1,-49.1,-9.9,0.971,-2.917,0.714,-11.68"
+    },
+    EPSG_4263: {
+      towgs84: "-111.92,-87.85,114.5,1.875,0.202,0.219,0.032"
+    },
+    EPSG_4298: {
+      towgs84: "-689.5937,623.84046,-65.93566,-0.02331,1.17094,-0.80054,5.88536"
+    },
+    EPSG_4270: {
+      towgs84: "-253.4392,-148.452,386.5267,0.15605,0.43,-0.1013,-0.0424"
+    },
+    EPSG_4229: {
+      towgs84: "-121.8,98.1,-10.7"
+    },
+    EPSG_4220: {
+      towgs84: "-55.5,-348,-229.2"
+    },
+    EPSG_4214: {
+      towgs84: "12.646,-155.176,-80.863"
+    },
+    EPSG_4232: {
+      towgs84: "-345,3,223"
+    },
+    EPSG_4238: {
+      towgs84: "-1.977,-13.06,-9.993,0.364,0.254,0.689,-1.037"
+    },
+    EPSG_4168: {
+      towgs84: "-170,33,326"
+    },
+    EPSG_4131: {
+      towgs84: "199,931,318.9"
+    },
+    EPSG_4152: {
+      towgs84: "-0.9102,2.0141,0.5602,0.029039,0.010065,0.010101,0"
+    },
+    EPSG_5228: {
+      towgs84: "572.213,85.334,461.94,4.9732,1.529,5.2484,3.5378"
+    },
+    EPSG_8351: {
+      towgs84: "485.021,169.465,483.839,7.786342,4.397554,4.102655,0"
+    },
+    EPSG_4683: {
+      towgs84: "-127.62,-67.24,-47.04,-3.068,4.903,1.578,-1.06"
+    },
+    EPSG_4133: {
+      towgs84: "0,0,0"
+    },
+    EPSG_7373: {
+      towgs84: "0.819,-0.5762,-1.6446,-0.00378,-0.03317,0.00318,0.0693"
+    },
+    EPSG_9075: {
+      towgs84: "-0.9102,2.0141,0.5602,0.029039,0.010065,0.010101,0"
+    },
+    EPSG_9072: {
+      towgs84: "-0.9102,2.0141,0.5602,0.029039,0.010065,0.010101,0"
+    },
+    EPSG_9294: {
+      towgs84: "1.16835,-1.42001,-2.24431,-0.00822,-0.05508,0.01818,0.23388"
+    },
+    EPSG_4212: {
+      towgs84: "-267.434,173.496,181.814,-13.4704,8.7154,7.3926,14.7492"
+    },
+    EPSG_4191: {
+      towgs84: "-44.183,-0.58,-38.489,2.3867,2.7072,-3.5196,-8.2703"
+    },
+    EPSG_4237: {
+      towgs84: "52.684,-71.194,-13.975,-0.312,-0.1063,-0.3729,1.0191"
+    },
+    EPSG_4740: {
+      towgs84: "-1.08,-0.27,-0.9"
+    },
+    EPSG_4124: {
+      towgs84: "419.3836,99.3335,591.3451,0.850389,1.817277,-7.862238,-0.99496"
+    },
+    EPSG_5681: {
+      towgs84: "584.9636,107.7175,413.8067,1.1155,0.2824,-3.1384,7.9922"
+    },
+    EPSG_4141: {
+      towgs84: "23.772,17.49,17.859,-0.3132,-1.85274,1.67299,-5.4262"
+    },
+    EPSG_4204: {
+      towgs84: "-85.645,-273.077,-79.708,2.289,-1.421,2.532,3.194"
+    },
+    EPSG_4319: {
+      towgs84: "226.702,-193.337,-35.371,-2.229,-4.391,9.238,0.9798"
+    },
+    EPSG_4200: {
+      towgs84: "24.82,-131.21,-82.66"
+    },
+    EPSG_4130: {
+      towgs84: "0,0,0"
+    },
+    EPSG_4127: {
+      towgs84: "-82.875,-57.097,-156.768,-2.158,1.524,-0.982,-0.359"
+    },
+    EPSG_4149: {
+      towgs84: "674.374,15.056,405.346"
+    },
+    EPSG_4617: {
+      towgs84: "-0.991,1.9072,0.5129,0.02579,0.00965,0.01166,0"
+    },
+    EPSG_4663: {
+      towgs84: "-210.502,-66.902,-48.476,2.094,-15.067,-5.817,0.485"
+    },
+    EPSG_4664: {
+      towgs84: "-211.939,137.626,58.3,-0.089,0.251,0.079,0.384"
+    },
+    EPSG_4665: {
+      towgs84: "-105.854,165.589,-38.312,-0.003,-0.026,0.024,-0.048"
+    },
+    EPSG_4666: {
+      towgs84: "631.392,-66.551,481.442,1.09,-4.445,-4.487,-4.43"
+    },
+    EPSG_4756: {
+      towgs84: "-192.873,-39.382,-111.202,-0.00205,-0.0005,0.00335,0.0188"
+    },
+    EPSG_4723: {
+      towgs84: "-179.483,-69.379,-27.584,-7.862,8.163,6.042,-13.925"
+    },
+    EPSG_4726: {
+      towgs84: "8.853,-52.644,180.304,-0.393,-2.323,2.96,-24.081"
+    },
+    EPSG_4267: {
+      towgs84: "-8.0,160.0,176.0"
+    },
+    EPSG_5365: {
+      towgs84: "-0.16959,0.35312,0.51846,0.03385,-0.16325,0.03446,0.03693"
+    },
+    EPSG_4218: {
+      towgs84: "304.5,306.5,-318.1"
+    },
+    EPSG_4242: {
+      towgs84: "-33.722,153.789,94.959,-8.581,-4.478,4.54,8.95"
+    },
+    EPSG_4216: {
+      towgs84: "-292.295,248.758,429.447,4.9971,2.99,6.6906,1.0289"
+    },
+    ESRI_104105: {
+      towgs84: "631.392,-66.551,481.442,1.09,-4.445,-4.487,-4.43"
+    },
+    ESRI_104129: {
+      towgs84: "0,0,0"
+    },
+    EPSG_4673: {
+      towgs84: "174.05,-25.49,112.57"
+    },
+    EPSG_4202: {
+      towgs84: "-124,-60,154"
+    },
+    EPSG_4203: {
+      towgs84: "-117.763,-51.51,139.061,0.292,0.443,0.277,-0.191"
+    },
+    EPSG_3819: {
+      towgs84: "595.48,121.69,515.35,4.115,-2.9383,0.853,-3.408"
+    },
+    EPSG_8694: {
+      towgs84: "-93.799,-132.737,-219.073,-1.844,0.648,-6.37,-0.169"
+    },
+    EPSG_4145: {
+      towgs84: "275.57,676.78,229.6"
+    },
+    EPSG_4283: {
+      towgs84: "0.06155,-0.01087,-0.04019,0.039492,0.032722,0.032898,-0.009994"
+    },
+    EPSG_4317: {
+      towgs84: "2.3287,-147.0425,-92.0802,-0.309248,0.324822,0.497299,5.689063"
+    },
+    EPSG_4272: {
+      towgs84: "59.47,-5.04,187.44,0.47,-0.1,1.024,-4.5993"
+    },
+    EPSG_4248: {
+      towgs84: "-307.7,265.3,-363.5"
+    },
+    EPSG_5561: {
+      towgs84: "24,-121,-76"
+    },
+    EPSG_5233: {
+      towgs84: "-0.293,766.95,87.713,0.195704,1.695068,3.473016,-0.039338"
+    },
+    ESRI_104130: {
+      towgs84: "-86,-98,-119"
+    },
+    ESRI_104102: {
+      towgs84: "682,-203,480"
+    },
+    ESRI_37207: {
+      towgs84: "7,-10,-26"
+    },
+    EPSG_4675: {
+      towgs84: "59.935,118.4,-10.871"
+    },
+    ESRI_104109: {
+      towgs84: "-89.121,-348.182,260.871"
+    },
+    ESRI_104112: {
+      towgs84: "-185.583,-230.096,281.361"
+    },
+    ESRI_104113: {
+      towgs84: "25.1,-275.6,222.6"
+    },
+    IGNF_WGS72G: {
+      towgs84: "0,12,6"
+    },
+    IGNF_NTFG: {
+      towgs84: "-168,-60,320"
+    },
+    IGNF_EFATE57G: {
+      towgs84: "-127,-769,472"
+    },
+    IGNF_PGP50G: {
+      towgs84: "324.8,153.6,172.1"
+    },
+    IGNF_REUN47G: {
+      towgs84: "94,-948,-1262"
+    },
+    IGNF_CSG67G: {
+      towgs84: "-186,230,110"
+    },
+    IGNF_GUAD48G: {
+      towgs84: "-467,-16,-300"
+    },
+    IGNF_TAHI51G: {
+      towgs84: "162,117,154"
+    },
+    IGNF_TAHAAG: {
+      towgs84: "65,342,77"
+    },
+    IGNF_NUKU72G: {
+      towgs84: "84,274,65"
+    },
+    IGNF_PETRELS72G: {
+      towgs84: "365,194,166"
+    },
+    IGNF_WALL78G: {
+      towgs84: "253,-133,-127"
+    },
+    IGNF_MAYO50G: {
+      towgs84: "-382,-59,-262"
+    },
+    IGNF_TANNAG: {
+      towgs84: "-139,-967,436"
+    },
+    IGNF_IGN72G: {
+      towgs84: "-13,-348,292"
+    },
+    IGNF_ATIGG: {
+      towgs84: "1118,23,66"
+    },
+    IGNF_FANGA84G: {
+      towgs84: "150.57,158.33,118.32"
+    },
+    IGNF_RUSAT84G: {
+      towgs84: "202.13,174.6,-15.74"
+    },
+    IGNF_KAUE70G: {
+      towgs84: "126.74,300.1,-75.49"
+    },
+    IGNF_MOP90G: {
+      towgs84: "-10.8,-1.8,12.77"
+    },
+    IGNF_MHPF67G: {
+      towgs84: "338.08,212.58,-296.17"
+    },
+    IGNF_TAHI79G: {
+      towgs84: "160.61,116.05,153.69"
+    },
+    IGNF_ANAA92G: {
+      towgs84: "1.5,3.84,4.81"
+    },
+    IGNF_MARQUI72G: {
+      towgs84: "330.91,-13.92,58.56"
+    },
+    IGNF_APAT86G: {
+      towgs84: "143.6,197.82,74.05"
+    },
+    IGNF_TUBU69G: {
+      towgs84: "237.17,171.61,-77.84"
+    },
+    IGNF_STPM50G: {
+      towgs84: "11.363,424.148,373.13"
+    },
+    EPSG_4150: {
+      towgs84: "674.374,15.056,405.346"
+    },
+    EPSG_4754: {
+      towgs84: "-208.4058,-109.8777,-2.5764"
+    },
+    ESRI_104101: {
+      towgs84: "372.87,149.23,585.29"
+    },
+    EPSG_4693: {
+      towgs84: "0,-0.15,0.68"
+    },
+    EPSG_6207: {
+      towgs84: "293.17,726.18,245.36"
+    },
+    EPSG_4153: {
+      towgs84: "-133.63,-157.5,-158.62"
+    },
+    EPSG_4132: {
+      towgs84: "-241.54,-163.64,396.06"
+    },
+    EPSG_4221: {
+      towgs84: "-154.5,150.7,100.4"
+    },
+    EPSG_4266: {
+      towgs84: "-80.7,-132.5,41.1"
+    },
+    EPSG_4193: {
+      towgs84: "-70.9,-151.8,-41.4"
+    },
+    EPSG_5340: {
+      towgs84: "-0.41,0.46,-0.35"
+    },
+    EPSG_4246: {
+      towgs84: "-294.7,-200.1,525.5"
+    },
+    EPSG_4318: {
+      towgs84: "-3.2,-5.7,2.8"
+    },
+    EPSG_4121: {
+      towgs84: "-199.87,74.79,246.62"
+    },
+    EPSG_4223: {
+      towgs84: "-260.1,5.5,432.2"
+    },
+    EPSG_4158: {
+      towgs84: "-0.465,372.095,171.736"
+    },
+    EPSG_4285: {
+      towgs84: "-128.16,-282.42,21.93"
+    },
+    EPSG_4613: {
+      towgs84: "-404.78,685.68,45.47"
+    },
+    EPSG_4607: {
+      towgs84: "195.671,332.517,274.607"
+    },
+    EPSG_4475: {
+      towgs84: "-381.788,-57.501,-256.673"
+    },
+    EPSG_4208: {
+      towgs84: "-157.84,308.54,-146.6"
+    },
+    EPSG_4743: {
+      towgs84: "70.995,-335.916,262.898"
+    },
+    EPSG_4710: {
+      towgs84: "-323.65,551.39,-491.22"
+    },
+    EPSG_7881: {
+      towgs84: "-0.077,0.079,0.086"
+    },
+    EPSG_4682: {
+      towgs84: "283.729,735.942,261.143"
+    },
+    EPSG_4739: {
+      towgs84: "-156,-271,-189"
+    },
+    EPSG_4679: {
+      towgs84: "-80.01,253.26,291.19"
+    },
+    EPSG_4750: {
+      towgs84: "-56.263,16.136,-22.856"
+    },
+    EPSG_4644: {
+      towgs84: "-10.18,-350.43,291.37"
+    },
+    EPSG_4695: {
+      towgs84: "-103.746,-9.614,-255.95"
+    },
+    EPSG_4292: {
+      towgs84: "-355,21,72"
+    },
+    EPSG_4302: {
+      towgs84: "-61.702,284.488,472.052"
+    },
+    EPSG_4143: {
+      towgs84: "-124.76,53,466.79"
+    },
+    EPSG_4606: {
+      towgs84: "-153,153,307"
+    },
+    EPSG_4699: {
+      towgs84: "-770.1,158.4,-498.2"
+    },
+    EPSG_4247: {
+      towgs84: "-273.5,110.6,-357.9"
+    },
+    EPSG_4160: {
+      towgs84: "8.88,184.86,106.69"
+    },
+    EPSG_4161: {
+      towgs84: "-233.43,6.65,173.64"
+    },
+    EPSG_9251: {
+      towgs84: "-9.5,122.9,138.2"
+    },
+    EPSG_9253: {
+      towgs84: "-78.1,101.6,133.3"
+    },
+    EPSG_4297: {
+      towgs84: "-198.383,-240.517,-107.909"
+    },
+    EPSG_4269: {
+      towgs84: "0,0,0"
+    },
+    EPSG_4301: {
+      towgs84: "-147,506,687"
+    },
+    EPSG_4618: {
+      towgs84: "-59,-11,-52"
+    },
+    EPSG_4612: {
+      towgs84: "0,0,0"
+    },
+    EPSG_4678: {
+      towgs84: "44.585,-131.212,-39.544"
+    },
+    EPSG_4250: {
+      towgs84: "-130,29,364"
+    },
+    EPSG_4144: {
+      towgs84: "214,804,268"
+    },
+    EPSG_4147: {
+      towgs84: "-17.51,-108.32,-62.39"
+    },
+    EPSG_4259: {
+      towgs84: "-254.1,-5.36,-100.29"
+    },
+    EPSG_4164: {
+      towgs84: "-76,-138,67"
+    },
+    EPSG_4211: {
+      towgs84: "-378.873,676.002,-46.255"
+    },
+    EPSG_4182: {
+      towgs84: "-422.651,-172.995,84.02"
+    },
+    EPSG_4224: {
+      towgs84: "-143.87,243.37,-33.52"
+    },
+    EPSG_4225: {
+      towgs84: "-205.57,168.77,-4.12"
+    },
+    EPSG_5527: {
+      towgs84: "-67.35,3.88,-38.22"
+    },
+    EPSG_4752: {
+      towgs84: "98,390,-22"
+    },
+    EPSG_4310: {
+      towgs84: "-30,190,89"
+    },
+    EPSG_9248: {
+      towgs84: "-192.26,65.72,132.08"
+    },
+    EPSG_4680: {
+      towgs84: "124.5,-63.5,-281"
+    },
+    EPSG_4701: {
+      towgs84: "-79.9,-158,-168.9"
+    },
+    EPSG_4706: {
+      towgs84: "-146.21,112.63,4.05"
+    },
+    EPSG_4805: {
+      towgs84: "682,-203,480"
+    },
+    EPSG_4201: {
+      towgs84: "-165,-11,206"
+    },
+    EPSG_4210: {
+      towgs84: "-157,-2,-299"
+    },
+    EPSG_4183: {
+      towgs84: "-104,167,-38"
+    },
+    EPSG_4139: {
+      towgs84: "11,72,-101"
+    },
+    EPSG_4668: {
+      towgs84: "-86,-98,-119"
+    },
+    EPSG_4717: {
+      towgs84: "-2,151,181"
+    },
+    EPSG_4732: {
+      towgs84: "102,52,-38"
+    },
+    EPSG_4280: {
+      towgs84: "-377,681,-50"
+    },
+    EPSG_4209: {
+      towgs84: "-138,-105,-289"
+    },
+    EPSG_4261: {
+      towgs84: "31,146,47"
+    },
+    EPSG_4658: {
+      towgs84: "-73,46,-86"
+    },
+    EPSG_4721: {
+      towgs84: "265.025,384.929,-194.046"
+    },
+    EPSG_4222: {
+      towgs84: "-136,-108,-292"
+    },
+    EPSG_4601: {
+      towgs84: "-255,-15,71"
+    },
+    EPSG_4602: {
+      towgs84: "725,685,536"
+    },
+    EPSG_4603: {
+      towgs84: "72,213.7,93"
+    },
+    EPSG_4605: {
+      towgs84: "9,183,236"
+    },
+    EPSG_4621: {
+      towgs84: "137,248,-430"
+    },
+    EPSG_4657: {
+      towgs84: "-28,199,5"
+    },
+    EPSG_4316: {
+      towgs84: "103.25,-100.4,-307.19"
+    },
+    EPSG_4642: {
+      towgs84: "-13,-348,292"
+    },
+    EPSG_4698: {
+      towgs84: "145,-187,103"
+    },
+    EPSG_4192: {
+      towgs84: "-206.1,-174.7,-87.7"
+    },
+    EPSG_4311: {
+      towgs84: "-265,120,-358"
+    },
+    EPSG_4135: {
+      towgs84: "58,-283,-182"
+    },
+    ESRI_104138: {
+      towgs84: "198,-226,-347"
+    },
+    EPSG_4245: {
+      towgs84: "-11,851,5"
+    },
+    EPSG_4142: {
+      towgs84: "-125,53,467"
+    },
+    EPSG_4213: {
+      towgs84: "-106,-87,188"
+    },
+    EPSG_4253: {
+      towgs84: "-133,-77,-51"
+    },
+    EPSG_4129: {
+      towgs84: "-132,-110,-335"
+    },
+    EPSG_4713: {
+      towgs84: "-77,-128,142"
+    },
+    EPSG_4239: {
+      towgs84: "217,823,299"
+    },
+    EPSG_4146: {
+      towgs84: "295,736,257"
+    },
+    EPSG_4155: {
+      towgs84: "-83,37,124"
+    },
+    EPSG_4165: {
+      towgs84: "-173,253,27"
+    },
+    EPSG_4672: {
+      towgs84: "175,-38,113"
+    },
+    EPSG_4236: {
+      towgs84: "-637,-549,-203"
+    },
+    EPSG_4251: {
+      towgs84: "-90,40,88"
+    },
+    EPSG_4271: {
+      towgs84: "-2,374,172"
+    },
+    EPSG_4175: {
+      towgs84: "-88,4,101"
+    },
+    EPSG_4716: {
+      towgs84: "298,-304,-375"
+    },
+    EPSG_4315: {
+      towgs84: "-23,259,-9"
+    },
+    EPSG_4744: {
+      towgs84: "-242.2,-144.9,370.3"
+    },
+    EPSG_4244: {
+      towgs84: "-97,787,86"
+    },
+    EPSG_4293: {
+      towgs84: "616,97,-251"
+    },
+    EPSG_4714: {
+      towgs84: "-127,-769,472"
+    },
+    EPSG_4736: {
+      towgs84: "260,12,-147"
+    },
+    EPSG_6883: {
+      towgs84: "-235,-110,393"
+    },
+    EPSG_6894: {
+      towgs84: "-63,176,185"
+    },
+    EPSG_4205: {
+      towgs84: "-43,-163,45"
+    },
+    EPSG_4256: {
+      towgs84: "41,-220,-134"
+    },
+    EPSG_4262: {
+      towgs84: "639,405,60"
+    },
+    EPSG_4604: {
+      towgs84: "174,359,365"
+    },
+    EPSG_4169: {
+      towgs84: "-115,118,426"
+    },
+    EPSG_4620: {
+      towgs84: "-106,-129,165"
+    },
+    EPSG_4184: {
+      towgs84: "-203,141,53"
+    },
+    EPSG_4616: {
+      towgs84: "-289,-124,60"
+    },
+    EPSG_9403: {
+      towgs84: "-307,-92,127"
+    },
+    EPSG_4684: {
+      towgs84: "-133,-321,50"
+    },
+    EPSG_4708: {
+      towgs84: "-491,-22,435"
+    },
+    EPSG_4707: {
+      towgs84: "114,-116,-333"
+    },
+    EPSG_4709: {
+      towgs84: "145,75,-272"
+    },
+    EPSG_4712: {
+      towgs84: "-205,107,53"
+    },
+    EPSG_4711: {
+      towgs84: "124,-234,-25"
+    },
+    EPSG_4718: {
+      towgs84: "230,-199,-752"
+    },
+    EPSG_4719: {
+      towgs84: "211,147,111"
+    },
+    EPSG_4724: {
+      towgs84: "208,-435,-229"
+    },
+    EPSG_4725: {
+      towgs84: "189,-79,-202"
+    },
+    EPSG_4735: {
+      towgs84: "647,1777,-1124"
+    },
+    EPSG_4722: {
+      towgs84: "-794,119,-298"
+    },
+    EPSG_4728: {
+      towgs84: "-307,-92,127"
+    },
+    EPSG_4734: {
+      towgs84: "-632,438,-609"
+    },
+    EPSG_4727: {
+      towgs84: "912,-58,1227"
+    },
+    EPSG_4729: {
+      towgs84: "185,165,42"
+    },
+    EPSG_4730: {
+      towgs84: "170,42,84"
+    },
+    EPSG_4733: {
+      towgs84: "276,-57,149"
+    },
+    ESRI_37218: {
+      towgs84: "230,-199,-752"
+    },
+    ESRI_37240: {
+      towgs84: "-7,215,225"
+    },
+    ESRI_37221: {
+      towgs84: "252,-209,-751"
+    },
+    ESRI_4305: {
+      towgs84: "-123,-206,219"
+    },
+    ESRI_104139: {
+      towgs84: "-73,-247,227"
+    },
+    EPSG_4748: {
+      towgs84: "51,391,-36"
+    },
+    EPSG_4219: {
+      towgs84: "-384,664,-48"
+    },
+    EPSG_4255: {
+      towgs84: "-333,-222,114"
+    },
+    EPSG_4257: {
+      towgs84: "-587.8,519.75,145.76"
+    },
+    EPSG_4646: {
+      towgs84: "-963,510,-359"
+    },
+    EPSG_6881: {
+      towgs84: "-24,-203,268"
+    },
+    EPSG_6882: {
+      towgs84: "-183,-15,273"
+    },
+    EPSG_4715: {
+      towgs84: "-104,-129,239"
+    },
+    IGNF_RGF93GDD: {
+      towgs84: "0,0,0"
+    },
+    IGNF_RGM04GDD: {
+      towgs84: "0,0,0"
+    },
+    IGNF_RGSPM06GDD: {
+      towgs84: "0,0,0"
+    },
+    IGNF_RGTAAF07GDD: {
+      towgs84: "0,0,0"
+    },
+    IGNF_RGFG95GDD: {
+      towgs84: "0,0,0"
+    },
+    IGNF_RGNCG: {
+      towgs84: "0,0,0"
+    },
+    IGNF_RGPFGDD: {
+      towgs84: "0,0,0"
+    },
+    IGNF_ETRS89G: {
+      towgs84: "0,0,0"
+    },
+    IGNF_RGR92GDD: {
+      towgs84: "0,0,0"
+    },
+    EPSG_4173: {
+      towgs84: "0,0,0"
+    },
+    EPSG_4180: {
+      towgs84: "0,0,0"
+    },
+    EPSG_4619: {
+      towgs84: "0,0,0"
+    },
+    EPSG_4667: {
+      towgs84: "0,0,0"
+    },
+    EPSG_4075: {
+      towgs84: "0,0,0"
+    },
+    EPSG_6706: {
+      towgs84: "0,0,0"
+    },
+    EPSG_7798: {
+      towgs84: "0,0,0"
+    },
+    EPSG_4661: {
+      towgs84: "0,0,0"
+    },
+    EPSG_4669: {
+      towgs84: "0,0,0"
+    },
+    EPSG_8685: {
+      towgs84: "0,0,0"
+    },
+    EPSG_4151: {
+      towgs84: "0,0,0"
+    },
+    EPSG_9702: {
+      towgs84: "0,0,0"
+    },
+    EPSG_4758: {
+      towgs84: "0,0,0"
+    },
+    EPSG_4761: {
+      towgs84: "0,0,0"
+    },
+    EPSG_4765: {
+      towgs84: "0,0,0"
+    },
+    EPSG_8997: {
+      towgs84: "0,0,0"
+    },
+    EPSG_4023: {
+      towgs84: "0,0,0"
+    },
+    EPSG_4670: {
+      towgs84: "0,0,0"
+    },
+    EPSG_4694: {
+      towgs84: "0,0,0"
+    },
+    EPSG_4148: {
+      towgs84: "0,0,0"
+    },
+    EPSG_4163: {
+      towgs84: "0,0,0"
+    },
+    EPSG_4167: {
+      towgs84: "0,0,0"
+    },
+    EPSG_4189: {
+      towgs84: "0,0,0"
+    },
+    EPSG_4190: {
+      towgs84: "0,0,0"
+    },
+    EPSG_4176: {
+      towgs84: "0,0,0"
+    },
+    EPSG_4659: {
+      towgs84: "0,0,0"
+    },
+    EPSG_3824: {
+      towgs84: "0,0,0"
+    },
+    EPSG_3889: {
+      towgs84: "0,0,0"
+    },
+    EPSG_4046: {
+      towgs84: "0,0,0"
+    },
+    EPSG_4081: {
+      towgs84: "0,0,0"
+    },
+    EPSG_4558: {
+      towgs84: "0,0,0"
+    },
+    EPSG_4483: {
+      towgs84: "0,0,0"
+    },
+    EPSG_5013: {
+      towgs84: "0,0,0"
+    },
+    EPSG_5264: {
+      towgs84: "0,0,0"
+    },
+    EPSG_5324: {
+      towgs84: "0,0,0"
+    },
+    EPSG_5354: {
+      towgs84: "0,0,0"
+    },
+    EPSG_5371: {
+      towgs84: "0,0,0"
+    },
+    EPSG_5373: {
+      towgs84: "0,0,0"
+    },
+    EPSG_5381: {
+      towgs84: "0,0,0"
+    },
+    EPSG_5393: {
+      towgs84: "0,0,0"
+    },
+    EPSG_5489: {
+      towgs84: "0,0,0"
+    },
+    EPSG_5593: {
+      towgs84: "0,0,0"
+    },
+    EPSG_6135: {
+      towgs84: "0,0,0"
+    },
+    EPSG_6365: {
+      towgs84: "0,0,0"
+    },
+    EPSG_5246: {
+      towgs84: "0,0,0"
+    },
+    EPSG_7886: {
+      towgs84: "0,0,0"
+    },
+    EPSG_8431: {
+      towgs84: "0,0,0"
+    },
+    EPSG_8427: {
+      towgs84: "0,0,0"
+    },
+    EPSG_8699: {
+      towgs84: "0,0,0"
+    },
+    EPSG_8818: {
+      towgs84: "0,0,0"
+    },
+    EPSG_4757: {
+      towgs84: "0,0,0"
+    },
+    EPSG_9140: {
+      towgs84: "0,0,0"
+    },
+    EPSG_8086: {
+      towgs84: "0,0,0"
+    },
+    EPSG_4686: {
+      towgs84: "0,0,0"
+    },
+    EPSG_4737: {
+      towgs84: "0,0,0"
+    },
+    EPSG_4702: {
+      towgs84: "0,0,0"
+    },
+    EPSG_4747: {
+      towgs84: "0,0,0"
+    },
+    EPSG_4749: {
+      towgs84: "0,0,0"
+    },
+    EPSG_4674: {
+      towgs84: "0,0,0"
+    },
+    EPSG_4755: {
+      towgs84: "0,0,0"
+    },
+    EPSG_4759: {
+      towgs84: "0,0,0"
+    },
+    EPSG_4762: {
+      towgs84: "0,0,0"
+    },
+    EPSG_4763: {
+      towgs84: "0,0,0"
+    },
+    EPSG_4764: {
+      towgs84: "0,0,0"
+    },
+    EPSG_4166: {
+      towgs84: "0,0,0"
+    },
+    EPSG_4170: {
+      towgs84: "0,0,0"
+    },
+    EPSG_5546: {
+      towgs84: "0,0,0"
+    },
+    EPSG_7844: {
+      towgs84: "0,0,0"
+    },
+    EPSG_4818: {
+      towgs84: "589,76,480"
+    },
+    EPSG_10328: {
+      towgs84: "0,0,0"
+    },
+    EPSG_9782: {
+      towgs84: "0,0,0"
+    },
+    EPSG_9777: {
+      towgs84: "0,0,0"
+    },
+    EPSG_10690: {
+      towgs84: "0,0,0"
+    },
+    EPSG_10639: {
+      towgs84: "0,0,0"
+    },
+    EPSG_10739: {
+      towgs84: "0,0,0"
+    },
+    EPSG_7686: {
+      towgs84: "0,0,0"
+    },
+    EPSG_8900: {
+      towgs84: "0,0,0"
+    },
+    EPSG_5886: {
+      towgs84: "0,0,0"
+    },
+    EPSG_7683: {
+      towgs84: "0,0,0"
+    },
+    EPSG_6668: {
+      towgs84: "0,0,0"
+    },
+    EPSG_20046: {
+      towgs84: "0,0,0"
+    },
+    EPSG_10299: {
+      towgs84: "0,0,0"
+    },
+    EPSG_10310: {
+      towgs84: "0,0,0"
+    },
+    EPSG_10475: {
+      towgs84: "0,0,0"
+    },
+    EPSG_4742: {
+      towgs84: "0,0,0"
+    },
+    EPSG_10671: {
+      towgs84: "0,0,0"
+    },
+    EPSG_10762: {
+      towgs84: "0,0,0"
+    },
+    EPSG_10725: {
+      towgs84: "0,0,0"
+    },
+    EPSG_10791: {
+      towgs84: "0,0,0"
+    },
+    EPSG_10800: {
+      towgs84: "0,0,0"
+    },
+    EPSG_10305: {
+      towgs84: "0,0,0"
+    },
+    EPSG_10941: {
+      towgs84: "0,0,0"
+    },
+    EPSG_10968: {
+      towgs84: "0,0,0"
+    },
+    EPSG_10875: {
+      towgs84: "0,0,0"
+    },
+    EPSG_6318: {
+      towgs84: "0,0,0"
+    },
+    EPSG_10910: {
+      towgs84: "0,0,0"
+    }
+  };
+  for (key in datums) {
+    datum = datums[key];
+    if (!datum.datumName) {
+      continue;
+    }
+    datums[datum.datumName] = datum;
+  }
+  var datum;
+  var key;
+  var Datum_default = datums;
+
+  // node_modules/proj4/lib/datum.js
+  function datum2(datumCode, datum_params, a, b, es, ep2, nadgrids) {
+    var out = {};
+    out.datum_type = PJD_NODATUM;
+    if (datum_params) {
+      out.datum_type = PJD_WGS84;
+      out.datum_params = datum_params.map(parseFloat);
+      if (out.datum_params[0] !== 0 || out.datum_params[1] !== 0 || out.datum_params[2] !== 0) {
+        out.datum_type = PJD_3PARAM;
+      }
+      if (out.datum_params.length > 3) {
+        if (out.datum_params[3] !== 0 || out.datum_params[4] !== 0 || out.datum_params[5] !== 0 || out.datum_params[6] !== 0) {
+          out.datum_type = PJD_7PARAM;
+          out.datum_params[3] *= SEC_TO_RAD;
+          out.datum_params[4] *= SEC_TO_RAD;
+          out.datum_params[5] *= SEC_TO_RAD;
+          out.datum_params[6] = out.datum_params[6] / 1e6 + 1;
+        }
+      }
+    }
+    if (nadgrids) {
+      out.datum_type = PJD_GRIDSHIFT;
+      out.grids = nadgrids;
+    }
+    out.a = a;
+    out.b = b;
+    out.es = es;
+    out.ep2 = ep2;
+    return out;
+  }
+  var datum_default = datum2;
+
+  // node_modules/proj4/lib/nadgrid.js
+  var loadedNadgrids = {};
+  function nadgrid(key2, data, options) {
+    if (data instanceof ArrayBuffer) {
+      return readNTV2Grid(key2, data, options);
+    }
+    return { ready: readGeotiffGrid(key2, data) };
+  }
+  function readNTV2Grid(key2, data, options) {
+    var includeErrorFields = true;
+    if (options !== void 0 && options.includeErrorFields === false) {
+      includeErrorFields = false;
+    }
+    var view = new DataView(data);
+    var isLittleEndian = detectLittleEndian(view);
+    var header = readHeader(view, isLittleEndian);
+    var subgrids = readSubgrids(view, header, isLittleEndian, includeErrorFields);
+    var nadgrid2 = { header, subgrids };
+    loadedNadgrids[key2] = nadgrid2;
+    return nadgrid2;
+  }
+  async function readGeotiffGrid(key2, tiff) {
+    var subgrids = [];
+    var subGridCount = await tiff.getImageCount();
+    for (var subgridIndex = subGridCount - 1; subgridIndex >= 0; subgridIndex--) {
+      var image = await tiff.getImage(subgridIndex);
+      var rasters = await image.readRasters();
+      var data = rasters;
+      var lim = [image.getWidth(), image.getHeight()];
+      var imageBBoxRadians = image.getBoundingBox().map(degreesToRadians);
+      var modelPixelScale = typeof image.fileDirectory.getValue === "function" ? image.fileDirectory.getValue("ModelPixelScale") : (
+        /** @type {any} */
+        image.fileDirectory.ModelPixelScale
+      );
+      var del = [modelPixelScale[0], modelPixelScale[1]].map(degreesToRadians);
+      var maxX = imageBBoxRadians[0] + (lim[0] - 1) * del[0];
+      var minY = imageBBoxRadians[3] - (lim[1] - 1) * del[1];
+      var latitudeOffsetBand = data[0];
+      var longitudeOffsetBand = data[1];
+      var nodes = [];
+      for (let i = lim[1] - 1; i >= 0; i--) {
+        for (let j = lim[0] - 1; j >= 0; j--) {
+          var index = i * lim[0] + j;
+          nodes.push([-secondsToRadians(longitudeOffsetBand[index]), secondsToRadians(latitudeOffsetBand[index])]);
+        }
+      }
+      subgrids.push({
+        del,
+        lim,
+        ll: [-maxX, minY],
+        cvs: nodes
+      });
+    }
+    var tifGrid = {
+      header: {
+        nSubgrids: subGridCount
+      },
+      subgrids
+    };
+    loadedNadgrids[key2] = tifGrid;
+    return tifGrid;
+  }
+  function getNadgrids(nadgrids) {
+    if (nadgrids === void 0) {
+      return null;
+    }
+    var grids = nadgrids.split(",");
+    return grids.map(parseNadgridString);
+  }
+  function parseNadgridString(value) {
+    if (value.length === 0) {
+      return null;
+    }
+    var optional = value[0] === "@";
+    if (optional) {
+      value = value.slice(1);
+    }
+    if (value === "null") {
+      return { name: "null", mandatory: !optional, grid: null, isNull: true };
+    }
+    return {
+      name: value,
+      mandatory: !optional,
+      grid: loadedNadgrids[value] || null,
+      isNull: false
+    };
+  }
+  function degreesToRadians(degrees) {
+    return degrees * Math.PI / 180;
+  }
+  function secondsToRadians(seconds) {
+    return seconds / 3600 * Math.PI / 180;
+  }
+  function detectLittleEndian(view) {
+    var nFields = view.getInt32(8, false);
+    if (nFields === 11) {
+      return false;
+    }
+    nFields = view.getInt32(8, true);
+    if (nFields !== 11) {
+      console.warn("Failed to detect nadgrid endian-ness, defaulting to little-endian");
+    }
+    return true;
+  }
+  function readHeader(view, isLittleEndian) {
+    return {
+      nFields: view.getInt32(8, isLittleEndian),
+      nSubgridFields: view.getInt32(24, isLittleEndian),
+      nSubgrids: view.getInt32(40, isLittleEndian),
+      shiftType: decodeString(view, 56, 56 + 8).trim(),
+      fromSemiMajorAxis: view.getFloat64(120, isLittleEndian),
+      fromSemiMinorAxis: view.getFloat64(136, isLittleEndian),
+      toSemiMajorAxis: view.getFloat64(152, isLittleEndian),
+      toSemiMinorAxis: view.getFloat64(168, isLittleEndian)
+    };
+  }
+  function decodeString(view, start2, end) {
+    return String.fromCharCode.apply(null, new Uint8Array(view.buffer.slice(start2, end)));
+  }
+  function readSubgrids(view, header, isLittleEndian, includeErrorFields) {
+    var gridOffset = 176;
+    var grids = [];
+    for (var i = 0; i < header.nSubgrids; i++) {
+      var subHeader = readGridHeader(view, gridOffset, isLittleEndian);
+      var nodes = readGridNodes(view, gridOffset, subHeader, isLittleEndian, includeErrorFields);
+      var lngColumnCount = Math.round(
+        1 + (subHeader.upperLongitude - subHeader.lowerLongitude) / subHeader.longitudeInterval
+      );
+      var latColumnCount = Math.round(
+        1 + (subHeader.upperLatitude - subHeader.lowerLatitude) / subHeader.latitudeInterval
+      );
+      grids.push({
+        ll: [secondsToRadians(subHeader.lowerLongitude), secondsToRadians(subHeader.lowerLatitude)],
+        del: [secondsToRadians(subHeader.longitudeInterval), secondsToRadians(subHeader.latitudeInterval)],
+        lim: [lngColumnCount, latColumnCount],
+        count: subHeader.gridNodeCount,
+        cvs: mapNodes(nodes)
+      });
+      var rowSize = 16;
+      if (includeErrorFields === false) {
+        rowSize = 8;
+      }
+      gridOffset += 176 + subHeader.gridNodeCount * rowSize;
+    }
+    return grids;
+  }
+  function mapNodes(nodes) {
+    return nodes.map(function(r) {
+      return [secondsToRadians(r.longitudeShift), secondsToRadians(r.latitudeShift)];
+    });
+  }
+  function readGridHeader(view, offset, isLittleEndian) {
+    return {
+      name: decodeString(view, offset + 8, offset + 16).trim(),
+      parent: decodeString(view, offset + 24, offset + 24 + 8).trim(),
+      lowerLatitude: view.getFloat64(offset + 72, isLittleEndian),
+      upperLatitude: view.getFloat64(offset + 88, isLittleEndian),
+      lowerLongitude: view.getFloat64(offset + 104, isLittleEndian),
+      upperLongitude: view.getFloat64(offset + 120, isLittleEndian),
+      latitudeInterval: view.getFloat64(offset + 136, isLittleEndian),
+      longitudeInterval: view.getFloat64(offset + 152, isLittleEndian),
+      gridNodeCount: view.getInt32(offset + 168, isLittleEndian)
+    };
+  }
+  function readGridNodes(view, offset, gridHeader, isLittleEndian, includeErrorFields) {
+    var nodesOffset = offset + 176;
+    var gridRecordLength = 16;
+    if (includeErrorFields === false) {
+      gridRecordLength = 8;
+    }
+    var gridShiftRecords = [];
+    for (var i = 0; i < gridHeader.gridNodeCount; i++) {
+      var record = {
+        latitudeShift: view.getFloat32(nodesOffset + i * gridRecordLength, isLittleEndian),
+        longitudeShift: view.getFloat32(nodesOffset + i * gridRecordLength + 4, isLittleEndian)
+      };
+      if (includeErrorFields !== false) {
+        record.latitudeAccuracy = view.getFloat32(nodesOffset + i * gridRecordLength + 8, isLittleEndian);
+        record.longitudeAccuracy = view.getFloat32(nodesOffset + i * gridRecordLength + 12, isLittleEndian);
+      }
+      gridShiftRecords.push(record);
+    }
+    return gridShiftRecords;
+  }
+
+  // node_modules/proj4/lib/Proj.js
+  function Projection2(srsCode, callback) {
+    if (!(this instanceof Projection2)) {
+      return new Projection2(srsCode);
+    }
+    this.forward = null;
+    this.inverse = null;
+    this.init = null;
+    this.name;
+    this.axis;
+    this.names = null;
+    this.title;
+    callback = callback || function(error2) {
+      if (error2) {
+        throw error2;
+      }
+    };
+    var json = parseCode_default(srsCode);
+    if (typeof json !== "object") {
+      callback("Could not parse to valid json: " + srsCode);
+      return;
+    }
+    var ourProj = Projection2.projections.get(json.projName);
+    if (!ourProj) {
+      callback("Could not get projection name from: " + srsCode);
+      return;
+    }
+    if (json.datumCode && json.datumCode !== "none") {
+      var datumDef = match(Datum_default, json.datumCode);
+      if (datumDef) {
+        json.datum_params = json.datum_params || (datumDef.towgs84 ? datumDef.towgs84.split(",") : null);
+        json.ellps = datumDef.ellipse;
+        json.datumName = datumDef.datumName ? datumDef.datumName : json.datumCode;
+      }
+    }
+    json.k0 = json.k0 || 1;
+    json.axis = json.axis || "enu";
+    json.ellps = json.ellps || "wgs84";
+    json.lat1 = json.lat1 || json.lat0;
+    var sphere_ = sphere(json.a, json.b, json.rf, json.ellps, json.sphere);
+    var ecc = eccentricity(sphere_.a, sphere_.b, sphere_.rf, json.R_A);
+    var nadgrids = getNadgrids(json.nadgrids);
+    var datumObj = json.datum || datum_default(
+      json.datumCode,
+      json.datum_params,
+      sphere_.a,
+      sphere_.b,
+      ecc.es,
+      ecc.ep2,
+      nadgrids
+    );
+    extend_default(this, json);
+    extend_default(this, ourProj);
+    this.a = sphere_.a;
+    this.b = sphere_.b;
+    this.rf = sphere_.rf;
+    this.sphere = sphere_.sphere;
+    this.es = ecc.es;
+    this.e = ecc.e;
+    this.ep2 = ecc.ep2;
+    this.datum = datumObj;
+    if ("init" in this && typeof this.init === "function") {
+      this.init();
+    }
+    callback(null, this);
+  }
+  Projection2.projections = projections_default;
+  Projection2.projections.start();
+  var Proj_default = Projection2;
+
+  // node_modules/proj4/lib/datumUtils.js
+  function compareDatums(source, dest) {
+    if (source.datum_type !== dest.datum_type) {
+      return false;
+    } else if (source.a !== dest.a || Math.abs(source.es - dest.es) > 5e-11) {
+      return false;
+    } else if (source.datum_type === PJD_3PARAM) {
+      return source.datum_params[0] === dest.datum_params[0] && source.datum_params[1] === dest.datum_params[1] && source.datum_params[2] === dest.datum_params[2];
+    } else if (source.datum_type === PJD_7PARAM) {
+      return source.datum_params[0] === dest.datum_params[0] && source.datum_params[1] === dest.datum_params[1] && source.datum_params[2] === dest.datum_params[2] && source.datum_params[3] === dest.datum_params[3] && source.datum_params[4] === dest.datum_params[4] && source.datum_params[5] === dest.datum_params[5] && source.datum_params[6] === dest.datum_params[6];
+    } else {
+      return true;
     }
   }
+  function geodeticToGeocentric(p, es, a) {
+    var Longitude = p.x;
+    var Latitude = p.y;
+    var Height = p.z ? p.z : 0;
+    var Rn;
+    var Sin_Lat;
+    var Sin2_Lat;
+    var Cos_Lat;
+    if (Latitude < -HALF_PI && Latitude > -1.001 * HALF_PI) {
+      Latitude = -HALF_PI;
+    } else if (Latitude > HALF_PI && Latitude < 1.001 * HALF_PI) {
+      Latitude = HALF_PI;
+    } else if (Latitude < -HALF_PI) {
+      return { x: -Infinity, y: -Infinity, z: p.z };
+    } else if (Latitude > HALF_PI) {
+      return { x: Infinity, y: Infinity, z: p.z };
+    }
+    if (Longitude > Math.PI) {
+      Longitude -= 2 * Math.PI;
+    }
+    Sin_Lat = Math.sin(Latitude);
+    Cos_Lat = Math.cos(Latitude);
+    Sin2_Lat = Sin_Lat * Sin_Lat;
+    Rn = a / Math.sqrt(1 - es * Sin2_Lat);
+    return {
+      x: (Rn + Height) * Cos_Lat * Math.cos(Longitude),
+      y: (Rn + Height) * Cos_Lat * Math.sin(Longitude),
+      z: (Rn * (1 - es) + Height) * Sin_Lat
+    };
+  }
+  function geocentricToGeodetic(p, es, a, b) {
+    var genau = 1e-12;
+    var genau2 = genau * genau;
+    var maxiter = 30;
+    var P;
+    var RR;
+    var CT;
+    var ST;
+    var RX;
+    var RK;
+    var RN;
+    var CPHI0;
+    var SPHI0;
+    var CPHI;
+    var SPHI;
+    var SDPHI;
+    var iter;
+    var X = p.x;
+    var Y = p.y;
+    var Z2 = p.z ? p.z : 0;
+    var Longitude;
+    var Latitude;
+    var Height;
+    P = Math.sqrt(X * X + Y * Y);
+    RR = Math.sqrt(X * X + Y * Y + Z2 * Z2);
+    if (P / a < genau) {
+      Longitude = 0;
+      if (RR / a < genau) {
+        Latitude = HALF_PI;
+        Height = -b;
+        return {
+          x: p.x,
+          y: p.y,
+          z: p.z
+        };
+      }
+    } else {
+      Longitude = Math.atan2(Y, X);
+    }
+    CT = Z2 / RR;
+    ST = P / RR;
+    RX = 1 / Math.sqrt(1 - es * (2 - es) * ST * ST);
+    CPHI0 = ST * (1 - es) * RX;
+    SPHI0 = CT * RX;
+    iter = 0;
+    do {
+      iter++;
+      RN = a / Math.sqrt(1 - es * SPHI0 * SPHI0);
+      Height = P * CPHI0 + Z2 * SPHI0 - RN * (1 - es * SPHI0 * SPHI0);
+      RK = es * RN / (RN + Height);
+      RX = 1 / Math.sqrt(1 - RK * (2 - RK) * ST * ST);
+      CPHI = ST * (1 - RK) * RX;
+      SPHI = CT * RX;
+      SDPHI = SPHI * CPHI0 - CPHI * SPHI0;
+      CPHI0 = CPHI;
+      SPHI0 = SPHI;
+    } while (SDPHI * SDPHI > genau2 && iter < maxiter);
+    Latitude = Math.atan(SPHI / Math.abs(CPHI));
+    return {
+      x: Longitude,
+      y: Latitude,
+      z: Height
+    };
+  }
+  function geocentricToWgs84(p, datum_type, datum_params) {
+    if (datum_type === PJD_3PARAM) {
+      return {
+        x: p.x + datum_params[0],
+        y: p.y + datum_params[1],
+        z: p.z + datum_params[2]
+      };
+    } else if (datum_type === PJD_7PARAM) {
+      var Dx_BF = datum_params[0];
+      var Dy_BF = datum_params[1];
+      var Dz_BF = datum_params[2];
+      var Rx_BF = datum_params[3];
+      var Ry_BF = datum_params[4];
+      var Rz_BF = datum_params[5];
+      var M_BF = datum_params[6];
+      return {
+        x: M_BF * (p.x - Rz_BF * p.y + Ry_BF * p.z) + Dx_BF,
+        y: M_BF * (Rz_BF * p.x + p.y - Rx_BF * p.z) + Dy_BF,
+        z: M_BF * (-Ry_BF * p.x + Rx_BF * p.y + p.z) + Dz_BF
+      };
+    }
+  }
+  function geocentricFromWgs84(p, datum_type, datum_params) {
+    if (datum_type === PJD_3PARAM) {
+      return {
+        x: p.x - datum_params[0],
+        y: p.y - datum_params[1],
+        z: p.z - datum_params[2]
+      };
+    } else if (datum_type === PJD_7PARAM) {
+      var Dx_BF = datum_params[0];
+      var Dy_BF = datum_params[1];
+      var Dz_BF = datum_params[2];
+      var Rx_BF = datum_params[3];
+      var Ry_BF = datum_params[4];
+      var Rz_BF = datum_params[5];
+      var M_BF = datum_params[6];
+      var x_tmp = (p.x - Dx_BF) / M_BF;
+      var y_tmp = (p.y - Dy_BF) / M_BF;
+      var z_tmp = (p.z - Dz_BF) / M_BF;
+      return {
+        x: x_tmp + Rz_BF * y_tmp - Ry_BF * z_tmp,
+        y: -Rz_BF * x_tmp + y_tmp + Rx_BF * z_tmp,
+        z: Ry_BF * x_tmp - Rx_BF * y_tmp + z_tmp
+      };
+    }
+  }
+
+  // node_modules/proj4/lib/datum_transform.js
+  function checkParams(type) {
+    return type === PJD_3PARAM || type === PJD_7PARAM;
+  }
+  function datum_transform_default(source, dest, point) {
+    if (compareDatums(source, dest)) {
+      return point;
+    }
+    if (source.datum_type === PJD_NODATUM || dest.datum_type === PJD_NODATUM) {
+      return point;
+    }
+    var source_a = source.a;
+    var source_es = source.es;
+    if (source.datum_type === PJD_GRIDSHIFT) {
+      var gridShiftCode = applyGridShift(source, false, point);
+      if (gridShiftCode !== 0) {
+        return void 0;
+      }
+      source_a = SRS_WGS84_SEMIMAJOR;
+      source_es = SRS_WGS84_ESQUARED;
+    }
+    var dest_a = dest.a;
+    var dest_b = dest.b;
+    var dest_es = dest.es;
+    if (dest.datum_type === PJD_GRIDSHIFT) {
+      dest_a = SRS_WGS84_SEMIMAJOR;
+      dest_b = SRS_WGS84_SEMIMINOR;
+      dest_es = SRS_WGS84_ESQUARED;
+    }
+    if (source_es === dest_es && source_a === dest_a && !checkParams(source.datum_type) && !checkParams(dest.datum_type)) {
+      return point;
+    }
+    point = geodeticToGeocentric(point, source_es, source_a);
+    if (checkParams(source.datum_type)) {
+      point = geocentricToWgs84(point, source.datum_type, source.datum_params);
+    }
+    if (checkParams(dest.datum_type)) {
+      point = geocentricFromWgs84(point, dest.datum_type, dest.datum_params);
+    }
+    point = geocentricToGeodetic(point, dest_es, dest_a, dest_b);
+    if (dest.datum_type === PJD_GRIDSHIFT) {
+      var destGridShiftResult = applyGridShift(dest, true, point);
+      if (destGridShiftResult !== 0) {
+        return void 0;
+      }
+    }
+    return point;
+  }
+  function applyGridShift(source, inverse35, point) {
+    if (source.grids === null || source.grids.length === 0) {
+      console.log("Grid shift grids not found");
+      return -1;
+    }
+    var input = { x: -point.x, y: point.y };
+    var output = { x: Number.NaN, y: Number.NaN };
+    var attemptedGrids = [];
+    outer:
+      for (var i = 0; i < source.grids.length; i++) {
+        var grid = source.grids[i];
+        attemptedGrids.push(grid.name);
+        if (grid.isNull) {
+          output = input;
+          break;
+        }
+        if (grid.grid === null) {
+          if (grid.mandatory) {
+            console.log("Unable to find mandatory grid '" + grid.name + "'");
+            return -1;
+          }
+          continue;
+        }
+        var subgrids = grid.grid.subgrids;
+        for (var j = 0, jj = subgrids.length; j < jj; j++) {
+          var subgrid = subgrids[j];
+          var epsilon = (Math.abs(subgrid.del[1]) + Math.abs(subgrid.del[0])) / 1e4;
+          var minX = subgrid.ll[0] - epsilon;
+          var minY = subgrid.ll[1] - epsilon;
+          var maxX = subgrid.ll[0] + (subgrid.lim[0] - 1) * subgrid.del[0] + epsilon;
+          var maxY = subgrid.ll[1] + (subgrid.lim[1] - 1) * subgrid.del[1] + epsilon;
+          if (minY > input.y || minX > input.x || maxY < input.y || maxX < input.x) {
+            continue;
+          }
+          output = applySubgridShift(input, inverse35, subgrid);
+          if (!isNaN(output.x)) {
+            break outer;
+          }
+        }
+      }
+    if (isNaN(output.x)) {
+      console.log("Failed to find a grid shift table for location '" + -input.x * R2D + " " + input.y * R2D + " tried: '" + attemptedGrids + "'");
+      return -1;
+    }
+    point.x = -output.x;
+    point.y = output.y;
+    return 0;
+  }
+  function applySubgridShift(pin, inverse35, ct) {
+    var val = { x: Number.NaN, y: Number.NaN };
+    if (isNaN(pin.x)) {
+      return val;
+    }
+    var tb = { x: pin.x, y: pin.y };
+    tb.x -= ct.ll[0];
+    tb.y -= ct.ll[1];
+    tb.x = adjust_lon_default(tb.x - Math.PI) + Math.PI;
+    var t = nadInterpolate(tb, ct);
+    if (inverse35) {
+      if (isNaN(t.x)) {
+        return val;
+      }
+      t.x = tb.x - t.x;
+      t.y = tb.y - t.y;
+      var i = 9, tol = 1e-12;
+      var dif, del;
+      do {
+        del = nadInterpolate(t, ct);
+        if (isNaN(del.x)) {
+          console.log("Inverse grid shift iteration failed, presumably at grid edge.  Using first approximation.");
+          break;
+        }
+        dif = { x: tb.x - (del.x + t.x), y: tb.y - (del.y + t.y) };
+        t.x += dif.x;
+        t.y += dif.y;
+      } while (i-- && Math.abs(dif.x) > tol && Math.abs(dif.y) > tol);
+      if (i < 0) {
+        console.log("Inverse grid shift iterator failed to converge.");
+        return val;
+      }
+      val.x = adjust_lon_default(t.x + ct.ll[0]);
+      val.y = t.y + ct.ll[1];
+    } else {
+      if (!isNaN(t.x)) {
+        val.x = pin.x + t.x;
+        val.y = pin.y + t.y;
+      }
+    }
+    return val;
+  }
+  function nadInterpolate(pin, ct) {
+    var t = { x: pin.x / ct.del[0], y: pin.y / ct.del[1] };
+    var indx = { x: Math.floor(t.x), y: Math.floor(t.y) };
+    var frct = { x: t.x - 1 * indx.x, y: t.y - 1 * indx.y };
+    var val = { x: Number.NaN, y: Number.NaN };
+    var inx;
+    if (indx.x < 0 || indx.x >= ct.lim[0]) {
+      return val;
+    }
+    if (indx.y < 0 || indx.y >= ct.lim[1]) {
+      return val;
+    }
+    inx = indx.y * ct.lim[0] + indx.x;
+    var f00 = { x: ct.cvs[inx][0], y: ct.cvs[inx][1] };
+    inx++;
+    var f10 = { x: ct.cvs[inx][0], y: ct.cvs[inx][1] };
+    inx += ct.lim[0];
+    var f11 = { x: ct.cvs[inx][0], y: ct.cvs[inx][1] };
+    inx--;
+    var f01 = { x: ct.cvs[inx][0], y: ct.cvs[inx][1] };
+    var m11 = frct.x * frct.y, m10 = frct.x * (1 - frct.y), m00 = (1 - frct.x) * (1 - frct.y), m01 = (1 - frct.x) * frct.y;
+    val.x = m00 * f00.x + m10 * f10.x + m01 * f01.x + m11 * f11.x;
+    val.y = m00 * f00.y + m10 * f10.y + m01 * f01.y + m11 * f11.y;
+    return val;
+  }
+
+  // node_modules/proj4/lib/adjust_axis.js
+  var order = ["x", "y", "z"];
+  function adjustAxisToEnu(crs, point) {
+    const out = {};
+    for (let i = 0, ii = crs.axis.length; i < ii; i++) {
+      if (i === 2 && point.z === void 0) {
+        continue;
+      }
+      let v = point[order[i]];
+      switch (crs.axis[i]) {
+        case "e":
+          out.x = v;
+          break;
+        case "w":
+          out.x = -v;
+          break;
+        case "n":
+          out.y = v;
+          break;
+        case "s":
+          out.y = -v;
+          break;
+        case "u":
+          out.z = v;
+          break;
+        case "d":
+          out.z = -v;
+          break;
+        default:
+          return null;
+      }
+    }
+    return out;
+  }
+  function adjustAxisFromEnu(crs, point) {
+    const out = (
+      /** @type {import("./core").InterfaceCoordinates} */
+      {}
+    );
+    for (let i = 0, ii = crs.axis.length; i < ii; i++) {
+      if (i === 2 && point.z === void 0) {
+        continue;
+      }
+      switch (crs.axis[i]) {
+        case "e":
+          out[order[i]] = point.x;
+          break;
+        case "w":
+          out[order[i]] = -point.x;
+          break;
+        case "n":
+          out[order[i]] = point.y;
+          break;
+        case "s":
+          out[order[i]] = -point.y;
+          break;
+        case "u":
+          out[order[i]] = point.z;
+          break;
+        case "d":
+          out[order[i]] = -point.z;
+          break;
+        default:
+          return null;
+      }
+    }
+    return out;
+  }
+
+  // node_modules/proj4/lib/common/toPoint.js
+  function toPoint_default(array) {
+    var out = {
+      x: array[0],
+      y: array[1]
+    };
+    if (array.length > 2) {
+      out.z = array[2];
+    }
+    if (array.length > 3) {
+      out.m = array[3];
+    }
+    return out;
+  }
+
+  // node_modules/proj4/lib/checkSanity.js
+  function checkSanity_default(point) {
+    checkCoord(point.x);
+    checkCoord(point.y);
+  }
+  function checkCoord(num) {
+    if (typeof Number.isFinite === "function") {
+      if (Number.isFinite(num)) {
+        return;
+      }
+      throw new TypeError("coordinates must be finite numbers");
+    }
+    if (typeof num !== "number" || num !== num || !isFinite(num)) {
+      throw new TypeError("coordinates must be finite numbers");
+    }
+  }
+
+  // node_modules/proj4/lib/transform.js
+  function checkNotWGS(source, dest) {
+    return (source.datum.datum_type === PJD_3PARAM || source.datum.datum_type === PJD_7PARAM || source.datum.datum_type === PJD_GRIDSHIFT) && dest.datumCode !== "WGS84" || (dest.datum.datum_type === PJD_3PARAM || dest.datum.datum_type === PJD_7PARAM || dest.datum.datum_type === PJD_GRIDSHIFT) && source.datumCode !== "WGS84";
+  }
+  function transformInternal(source, dest, point, enforceAxis) {
+    var wgs842;
+    var hasZ = point.z !== void 0;
+    checkSanity_default(point);
+    if (source.datum && dest.datum && checkNotWGS(source, dest)) {
+      wgs842 = new Proj_default("WGS84");
+      point = transformInternal(source, wgs842, point, enforceAxis);
+      source = wgs842;
+    }
+    if (enforceAxis && source.axis !== "enu") {
+      point = adjustAxisToEnu(source, point);
+    }
+    if (source.projName === "longlat") {
+      point = {
+        x: point.x * D2R,
+        y: point.y * D2R,
+        z: point.z || 0
+      };
+    } else {
+      if (source.to_meter) {
+        point = {
+          x: point.x * source.to_meter,
+          y: point.y * source.to_meter,
+          z: point.z || 0
+        };
+      }
+      point = source.inverse(point);
+      if (!point) {
+        return;
+      }
+    }
+    if (source.from_greenwich) {
+      point.x += source.from_greenwich;
+    }
+    point = datum_transform_default(source.datum, dest.datum, point);
+    if (!point) {
+      return;
+    }
+    point = /** @type {import('./core').InterfaceCoordinates} */
+    point;
+    if (dest.from_greenwich) {
+      point = {
+        x: point.x - dest.from_greenwich,
+        y: point.y,
+        z: point.z || 0
+      };
+    }
+    if (dest.projName === "longlat") {
+      point = {
+        x: point.x * R2D,
+        y: point.y * R2D,
+        z: point.z || 0
+      };
+    } else {
+      point = dest.forward(point);
+      if (dest.to_meter) {
+        point = {
+          x: point.x / dest.to_meter,
+          y: point.y / dest.to_meter,
+          z: point.z || 0
+        };
+      }
+    }
+    if (enforceAxis && dest.axis !== "enu") {
+      return adjustAxisFromEnu(dest, point);
+    }
+    if (point && !hasZ && dest.projName !== "geocent") {
+      delete point.z;
+    }
+    return point;
+  }
+  function transform2(source, dest, point, enforceAxis) {
+    var pt;
+    if (Array.isArray(point)) {
+      pt = toPoint_default(point);
+    } else {
+      pt = { x: point.x, y: point.y, z: point.z, m: point.m };
+    }
+    return transformInternal(source, dest, pt, enforceAxis);
+  }
+
+  // node_modules/proj4/lib/core.js
+  var wgs84 = Proj_default("WGS84");
+  function transformer(from, to, coords, enforceAxis) {
+    var out, geocent, keys;
+    if (Array.isArray(coords)) {
+      out = transformInternal(from, to, toPoint_default(coords), enforceAxis) || { x: NaN, y: NaN };
+      if (coords.length > 2) {
+        geocent = typeof from.name !== "undefined" && from.name === "geocent" || typeof to.name !== "undefined" && to.name === "geocent";
+        if (geocent) {
+          if (typeof out.z === "number") {
+            return (
+              /** @type {T} */
+              [out.x, out.y, out.z].concat(coords.slice(3))
+            );
+          }
+          return (
+            /** @type {T} */
+            [out.x, out.y, coords[2]].concat(coords.slice(3))
+          );
+        }
+        if (enforceAxis && typeof out.z === "number") {
+          return (
+            /** @type {T} */
+            [out.x, out.y, out.z].concat(coords.slice(3))
+          );
+        }
+        return (
+          /** @type {T} */
+          [out.x, out.y].concat(coords.slice(2))
+        );
+      }
+      return (
+        /** @type {T} */
+        [out.x, out.y]
+      );
+    } else {
+      out = transformInternal(from, to, { x: coords.x, y: coords.y, z: coords.z, m: coords.m }, enforceAxis) || { x: NaN, y: NaN };
+      keys = Object.keys(coords);
+      if (keys.length === 2) {
+        return (
+          /** @type {T} */
+          out
+        );
+      }
+      geocent = typeof from.name !== "undefined" && from.name === "geocent" || typeof to.name !== "undefined" && to.name === "geocent";
+      keys.forEach(function(key2) {
+        if (key2 === "x" || key2 === "y") {
+          return;
+        }
+        if (key2 === "z" && (geocent || enforceAxis)) {
+          return;
+        }
+        out[key2] = coords[key2];
+      });
+      return (
+        /** @type {T} */
+        out
+      );
+    }
+  }
+  function checkProj(item) {
+    if (item instanceof Proj_default) {
+      return item;
+    }
+    if (typeof item === "object" && "oProj" in item) {
+      return item.oProj;
+    }
+    return Proj_default(
+      /** @type {string | PROJJSONDefinition} */
+      item
+    );
+  }
+  function proj4(fromProjOrToProj, toProjOrCoord, coord) {
+    var fromProj;
+    var toProj;
+    var single = false;
+    var obj;
+    if (typeof toProjOrCoord === "undefined") {
+      toProj = checkProj(fromProjOrToProj);
+      fromProj = wgs84;
+      single = true;
+    } else if (typeof /** @type {?} */
+    toProjOrCoord.x !== "undefined" || Array.isArray(toProjOrCoord)) {
+      coord = /** @type {T} */
+      /** @type {?} */
+      toProjOrCoord;
+      toProj = checkProj(fromProjOrToProj);
+      fromProj = wgs84;
+      single = true;
+    }
+    if (!fromProj) {
+      fromProj = checkProj(fromProjOrToProj);
+    }
+    if (!toProj) {
+      toProj = checkProj(
+        /** @type {string | PROJJSONDefinition | proj } */
+        toProjOrCoord
+      );
+    }
+    if (coord) {
+      return transformer(fromProj, toProj, coord);
+    } else {
+      obj = {
+        /**
+         * @template {TemplateCoordinates} T
+         * @param {T} coords
+         * @param {boolean=} enforceAxis
+         * @returns {T}
+         */
+        forward: function(coords, enforceAxis) {
+          return transformer(fromProj, toProj, coords, enforceAxis);
+        },
+        /**
+         * @template {TemplateCoordinates} T
+         * @param {T} coords
+         * @param {boolean=} enforceAxis
+         * @returns {T}
+         */
+        inverse: function(coords, enforceAxis) {
+          return transformer(toProj, fromProj, coords, enforceAxis);
+        }
+      };
+      if (single) {
+        obj.oProj = toProj;
+      }
+      return obj;
+    }
+  }
+  var core_default = proj4;
+
+  // node_modules/mgrs/mgrs.js
+  var NUM_100K_SETS = 6;
+  var SET_ORIGIN_COLUMN_LETTERS = "AJSAJS";
+  var SET_ORIGIN_ROW_LETTERS = "AFAFAF";
+  var A = 65;
+  var I = 73;
+  var O = 79;
+  var V = 86;
+  var Z = 90;
+  var mgrs_default = {
+    forward: forward2,
+    inverse: inverse2,
+    toPoint
+  };
+  function forward2(ll, accuracy) {
+    accuracy = accuracy || 5;
+    return encode(LLtoUTM({
+      lat: ll[1],
+      lon: ll[0]
+    }), accuracy);
+  }
+  function inverse2(mgrs) {
+    var bbox = UTMtoLL(decode(mgrs.toUpperCase()));
+    if (bbox.lat && bbox.lon) {
+      return [bbox.lon, bbox.lat, bbox.lon, bbox.lat];
+    }
+    return [bbox.left, bbox.bottom, bbox.right, bbox.top];
+  }
+  function toPoint(mgrs) {
+    var bbox = UTMtoLL(decode(mgrs.toUpperCase()));
+    if (bbox.lat && bbox.lon) {
+      return [bbox.lon, bbox.lat];
+    }
+    return [(bbox.left + bbox.right) / 2, (bbox.top + bbox.bottom) / 2];
+  }
+  function degToRad(deg) {
+    return deg * (Math.PI / 180);
+  }
+  function radToDeg(rad) {
+    return 180 * (rad / Math.PI);
+  }
+  function LLtoUTM(ll) {
+    var Lat = ll.lat;
+    var Long = ll.lon;
+    var a = 6378137;
+    var eccSquared = 669438e-8;
+    var k0 = 0.9996;
+    var LongOrigin;
+    var eccPrimeSquared;
+    var N, T, C, A5, M5;
+    var LatRad = degToRad(Lat);
+    var LongRad = degToRad(Long);
+    var LongOriginRad;
+    var ZoneNumber;
+    ZoneNumber = Math.floor((Long + 180) / 6) + 1;
+    if (Long === 180) {
+      ZoneNumber = 60;
+    }
+    if (Lat >= 56 && Lat < 64 && Long >= 3 && Long < 12) {
+      ZoneNumber = 32;
+    }
+    if (Lat >= 72 && Lat < 84) {
+      if (Long >= 0 && Long < 9) {
+        ZoneNumber = 31;
+      } else if (Long >= 9 && Long < 21) {
+        ZoneNumber = 33;
+      } else if (Long >= 21 && Long < 33) {
+        ZoneNumber = 35;
+      } else if (Long >= 33 && Long < 42) {
+        ZoneNumber = 37;
+      }
+    }
+    LongOrigin = (ZoneNumber - 1) * 6 - 180 + 3;
+    LongOriginRad = degToRad(LongOrigin);
+    eccPrimeSquared = eccSquared / (1 - eccSquared);
+    N = a / Math.sqrt(1 - eccSquared * Math.sin(LatRad) * Math.sin(LatRad));
+    T = Math.tan(LatRad) * Math.tan(LatRad);
+    C = eccPrimeSquared * Math.cos(LatRad) * Math.cos(LatRad);
+    A5 = Math.cos(LatRad) * (LongRad - LongOriginRad);
+    M5 = a * ((1 - eccSquared / 4 - 3 * eccSquared * eccSquared / 64 - 5 * eccSquared * eccSquared * eccSquared / 256) * LatRad - (3 * eccSquared / 8 + 3 * eccSquared * eccSquared / 32 + 45 * eccSquared * eccSquared * eccSquared / 1024) * Math.sin(2 * LatRad) + (15 * eccSquared * eccSquared / 256 + 45 * eccSquared * eccSquared * eccSquared / 1024) * Math.sin(4 * LatRad) - 35 * eccSquared * eccSquared * eccSquared / 3072 * Math.sin(6 * LatRad));
+    var UTMEasting = k0 * N * (A5 + (1 - T + C) * A5 * A5 * A5 / 6 + (5 - 18 * T + T * T + 72 * C - 58 * eccPrimeSquared) * A5 * A5 * A5 * A5 * A5 / 120) + 5e5;
+    var UTMNorthing = k0 * (M5 + N * Math.tan(LatRad) * (A5 * A5 / 2 + (5 - T + 9 * C + 4 * C * C) * A5 * A5 * A5 * A5 / 24 + (61 - 58 * T + T * T + 600 * C - 330 * eccPrimeSquared) * A5 * A5 * A5 * A5 * A5 * A5 / 720));
+    if (Lat < 0) {
+      UTMNorthing += 1e7;
+    }
+    return {
+      northing: Math.round(UTMNorthing),
+      easting: Math.round(UTMEasting),
+      zoneNumber: ZoneNumber,
+      zoneLetter: getLetterDesignator(Lat)
+    };
+  }
+  function UTMtoLL(utm) {
+    var UTMNorthing = utm.northing;
+    var UTMEasting = utm.easting;
+    var zoneLetter = utm.zoneLetter;
+    var zoneNumber = utm.zoneNumber;
+    if (zoneNumber < 0 || zoneNumber > 60) {
+      return null;
+    }
+    var k0 = 0.9996;
+    var a = 6378137;
+    var eccSquared = 669438e-8;
+    var eccPrimeSquared;
+    var e1 = (1 - Math.sqrt(1 - eccSquared)) / (1 + Math.sqrt(1 - eccSquared));
+    var N1, T1, C12, R1, D, M5;
+    var LongOrigin;
+    var mu, phi1Rad;
+    var x = UTMEasting - 5e5;
+    var y = UTMNorthing;
+    if (zoneLetter < "N") {
+      y -= 1e7;
+    }
+    LongOrigin = (zoneNumber - 1) * 6 - 180 + 3;
+    eccPrimeSquared = eccSquared / (1 - eccSquared);
+    M5 = y / k0;
+    mu = M5 / (a * (1 - eccSquared / 4 - 3 * eccSquared * eccSquared / 64 - 5 * eccSquared * eccSquared * eccSquared / 256));
+    phi1Rad = mu + (3 * e1 / 2 - 27 * e1 * e1 * e1 / 32) * Math.sin(2 * mu) + (21 * e1 * e1 / 16 - 55 * e1 * e1 * e1 * e1 / 32) * Math.sin(4 * mu) + 151 * e1 * e1 * e1 / 96 * Math.sin(6 * mu);
+    N1 = a / Math.sqrt(1 - eccSquared * Math.sin(phi1Rad) * Math.sin(phi1Rad));
+    T1 = Math.tan(phi1Rad) * Math.tan(phi1Rad);
+    C12 = eccPrimeSquared * Math.cos(phi1Rad) * Math.cos(phi1Rad);
+    R1 = a * (1 - eccSquared) / Math.pow(1 - eccSquared * Math.sin(phi1Rad) * Math.sin(phi1Rad), 1.5);
+    D = x / (N1 * k0);
+    var lat = phi1Rad - N1 * Math.tan(phi1Rad) / R1 * (D * D / 2 - (5 + 3 * T1 + 10 * C12 - 4 * C12 * C12 - 9 * eccPrimeSquared) * D * D * D * D / 24 + (61 + 90 * T1 + 298 * C12 + 45 * T1 * T1 - 252 * eccPrimeSquared - 3 * C12 * C12) * D * D * D * D * D * D / 720);
+    lat = radToDeg(lat);
+    var lon = (D - (1 + 2 * T1 + C12) * D * D * D / 6 + (5 - 2 * C12 + 28 * T1 - 3 * C12 * C12 + 8 * eccPrimeSquared + 24 * T1 * T1) * D * D * D * D * D / 120) / Math.cos(phi1Rad);
+    lon = LongOrigin + radToDeg(lon);
+    var result;
+    if (utm.accuracy) {
+      var topRight = UTMtoLL({
+        northing: utm.northing + utm.accuracy,
+        easting: utm.easting + utm.accuracy,
+        zoneLetter: utm.zoneLetter,
+        zoneNumber: utm.zoneNumber
+      });
+      result = {
+        top: topRight.lat,
+        right: topRight.lon,
+        bottom: lat,
+        left: lon
+      };
+    } else {
+      result = {
+        lat,
+        lon
+      };
+    }
+    return result;
+  }
+  function getLetterDesignator(lat) {
+    var LetterDesignator = "Z";
+    if (84 >= lat && lat >= 72) {
+      LetterDesignator = "X";
+    } else if (72 > lat && lat >= 64) {
+      LetterDesignator = "W";
+    } else if (64 > lat && lat >= 56) {
+      LetterDesignator = "V";
+    } else if (56 > lat && lat >= 48) {
+      LetterDesignator = "U";
+    } else if (48 > lat && lat >= 40) {
+      LetterDesignator = "T";
+    } else if (40 > lat && lat >= 32) {
+      LetterDesignator = "S";
+    } else if (32 > lat && lat >= 24) {
+      LetterDesignator = "R";
+    } else if (24 > lat && lat >= 16) {
+      LetterDesignator = "Q";
+    } else if (16 > lat && lat >= 8) {
+      LetterDesignator = "P";
+    } else if (8 > lat && lat >= 0) {
+      LetterDesignator = "N";
+    } else if (0 > lat && lat >= -8) {
+      LetterDesignator = "M";
+    } else if (-8 > lat && lat >= -16) {
+      LetterDesignator = "L";
+    } else if (-16 > lat && lat >= -24) {
+      LetterDesignator = "K";
+    } else if (-24 > lat && lat >= -32) {
+      LetterDesignator = "J";
+    } else if (-32 > lat && lat >= -40) {
+      LetterDesignator = "H";
+    } else if (-40 > lat && lat >= -48) {
+      LetterDesignator = "G";
+    } else if (-48 > lat && lat >= -56) {
+      LetterDesignator = "F";
+    } else if (-56 > lat && lat >= -64) {
+      LetterDesignator = "E";
+    } else if (-64 > lat && lat >= -72) {
+      LetterDesignator = "D";
+    } else if (-72 > lat && lat >= -80) {
+      LetterDesignator = "C";
+    }
+    return LetterDesignator;
+  }
+  function encode(utm, accuracy) {
+    var seasting = "00000" + utm.easting, snorthing = "00000" + utm.northing;
+    return utm.zoneNumber + utm.zoneLetter + get100kID(utm.easting, utm.northing, utm.zoneNumber) + seasting.substr(seasting.length - 5, accuracy) + snorthing.substr(snorthing.length - 5, accuracy);
+  }
+  function get100kID(easting, northing, zoneNumber) {
+    var setParm = get100kSetForZone(zoneNumber);
+    var setColumn = Math.floor(easting / 1e5);
+    var setRow = Math.floor(northing / 1e5) % 20;
+    return getLetter100kID(setColumn, setRow, setParm);
+  }
+  function get100kSetForZone(i) {
+    var setParm = i % NUM_100K_SETS;
+    if (setParm === 0) {
+      setParm = NUM_100K_SETS;
+    }
+    return setParm;
+  }
+  function getLetter100kID(column, row, parm) {
+    var index = parm - 1;
+    var colOrigin = SET_ORIGIN_COLUMN_LETTERS.charCodeAt(index);
+    var rowOrigin = SET_ORIGIN_ROW_LETTERS.charCodeAt(index);
+    var colInt = colOrigin + column - 1;
+    var rowInt = rowOrigin + row;
+    var rollover = false;
+    if (colInt > Z) {
+      colInt = colInt - Z + A - 1;
+      rollover = true;
+    }
+    if (colInt === I || colOrigin < I && colInt > I || (colInt > I || colOrigin < I) && rollover) {
+      colInt++;
+    }
+    if (colInt === O || colOrigin < O && colInt > O || (colInt > O || colOrigin < O) && rollover) {
+      colInt++;
+      if (colInt === I) {
+        colInt++;
+      }
+    }
+    if (colInt > Z) {
+      colInt = colInt - Z + A - 1;
+    }
+    if (rowInt > V) {
+      rowInt = rowInt - V + A - 1;
+      rollover = true;
+    } else {
+      rollover = false;
+    }
+    if (rowInt === I || rowOrigin < I && rowInt > I || (rowInt > I || rowOrigin < I) && rollover) {
+      rowInt++;
+    }
+    if (rowInt === O || rowOrigin < O && rowInt > O || (rowInt > O || rowOrigin < O) && rollover) {
+      rowInt++;
+      if (rowInt === I) {
+        rowInt++;
+      }
+    }
+    if (rowInt > V) {
+      rowInt = rowInt - V + A - 1;
+    }
+    var twoLetter = String.fromCharCode(colInt) + String.fromCharCode(rowInt);
+    return twoLetter;
+  }
+  function decode(mgrsString) {
+    if (mgrsString && mgrsString.length === 0) {
+      throw "MGRSPoint coverting from nothing";
+    }
+    var length = mgrsString.length;
+    var hunK = null;
+    var sb = "";
+    var testChar;
+    var i = 0;
+    while (!/[A-Z]/.test(testChar = mgrsString.charAt(i))) {
+      if (i >= 2) {
+        throw "MGRSPoint bad conversion from: " + mgrsString;
+      }
+      sb += testChar;
+      i++;
+    }
+    var zoneNumber = parseInt(sb, 10);
+    if (i === 0 || i + 3 > length) {
+      throw "MGRSPoint bad conversion from: " + mgrsString;
+    }
+    var zoneLetter = mgrsString.charAt(i++);
+    if (zoneLetter <= "A" || zoneLetter === "B" || zoneLetter === "Y" || zoneLetter >= "Z" || zoneLetter === "I" || zoneLetter === "O") {
+      throw "MGRSPoint zone letter " + zoneLetter + " not handled: " + mgrsString;
+    }
+    hunK = mgrsString.substring(i, i += 2);
+    var set2 = get100kSetForZone(zoneNumber);
+    var east100k = getEastingFromChar(hunK.charAt(0), set2);
+    var north100k = getNorthingFromChar(hunK.charAt(1), set2);
+    while (north100k < getMinNorthing(zoneLetter)) {
+      north100k += 2e6;
+    }
+    var remainder = length - i;
+    if (remainder % 2 !== 0) {
+      throw "MGRSPoint has to have an even number \nof digits after the zone letter and two 100km letters - front \nhalf for easting meters, second half for \nnorthing meters" + mgrsString;
+    }
+    var sep = remainder / 2;
+    var sepEasting = 0;
+    var sepNorthing = 0;
+    var accuracyBonus, sepEastingString, sepNorthingString, easting, northing;
+    if (sep > 0) {
+      accuracyBonus = 1e5 / Math.pow(10, sep);
+      sepEastingString = mgrsString.substring(i, i + sep);
+      sepEasting = parseFloat(sepEastingString) * accuracyBonus;
+      sepNorthingString = mgrsString.substring(i + sep);
+      sepNorthing = parseFloat(sepNorthingString) * accuracyBonus;
+    }
+    easting = sepEasting + east100k;
+    northing = sepNorthing + north100k;
+    return {
+      easting,
+      northing,
+      zoneLetter,
+      zoneNumber,
+      accuracy: accuracyBonus
+    };
+  }
+  function getEastingFromChar(e, set2) {
+    var curCol = SET_ORIGIN_COLUMN_LETTERS.charCodeAt(set2 - 1);
+    var eastingValue = 1e5;
+    var rewindMarker = false;
+    while (curCol !== e.charCodeAt(0)) {
+      curCol++;
+      if (curCol === I) {
+        curCol++;
+      }
+      if (curCol === O) {
+        curCol++;
+      }
+      if (curCol > Z) {
+        if (rewindMarker) {
+          throw "Bad character: " + e;
+        }
+        curCol = A;
+        rewindMarker = true;
+      }
+      eastingValue += 1e5;
+    }
+    return eastingValue;
+  }
+  function getNorthingFromChar(n, set2) {
+    if (n > "V") {
+      throw "MGRSPoint given invalid Northing " + n;
+    }
+    var curRow = SET_ORIGIN_ROW_LETTERS.charCodeAt(set2 - 1);
+    var northingValue = 0;
+    var rewindMarker = false;
+    while (curRow !== n.charCodeAt(0)) {
+      curRow++;
+      if (curRow === I) {
+        curRow++;
+      }
+      if (curRow === O) {
+        curRow++;
+      }
+      if (curRow > V) {
+        if (rewindMarker) {
+          throw "Bad character: " + n;
+        }
+        curRow = A;
+        rewindMarker = true;
+      }
+      northingValue += 1e5;
+    }
+    return northingValue;
+  }
+  function getMinNorthing(zoneLetter) {
+    var northing;
+    switch (zoneLetter) {
+      case "C":
+        northing = 11e5;
+        break;
+      case "D":
+        northing = 2e6;
+        break;
+      case "E":
+        northing = 28e5;
+        break;
+      case "F":
+        northing = 37e5;
+        break;
+      case "G":
+        northing = 46e5;
+        break;
+      case "H":
+        northing = 55e5;
+        break;
+      case "J":
+        northing = 64e5;
+        break;
+      case "K":
+        northing = 73e5;
+        break;
+      case "L":
+        northing = 82e5;
+        break;
+      case "M":
+        northing = 91e5;
+        break;
+      case "N":
+        northing = 0;
+        break;
+      case "P":
+        northing = 8e5;
+        break;
+      case "Q":
+        northing = 17e5;
+        break;
+      case "R":
+        northing = 26e5;
+        break;
+      case "S":
+        northing = 35e5;
+        break;
+      case "T":
+        northing = 44e5;
+        break;
+      case "U":
+        northing = 53e5;
+        break;
+      case "V":
+        northing = 62e5;
+        break;
+      case "W":
+        northing = 7e6;
+        break;
+      case "X":
+        northing = 79e5;
+        break;
+      default:
+        northing = -1;
+    }
+    if (northing >= 0) {
+      return northing;
+    } else {
+      throw "Invalid zone letter: " + zoneLetter;
+    }
+  }
+
+  // node_modules/proj4/lib/Point.js
+  function Point2(x, y, z) {
+    if (!(this instanceof Point2)) {
+      return new Point2(x, y, z);
+    }
+    if (Array.isArray(x)) {
+      this.x = x[0];
+      this.y = x[1];
+      this.z = x[2] || 0;
+    } else if (typeof x === "object") {
+      this.x = x.x;
+      this.y = x.y;
+      this.z = x.z || 0;
+    } else if (typeof x === "string" && typeof y === "undefined") {
+      var coords = x.split(",");
+      this.x = parseFloat(coords[0]);
+      this.y = parseFloat(coords[1]);
+      this.z = parseFloat(coords[2]) || 0;
+    } else {
+      this.x = x;
+      this.y = y;
+      this.z = z || 0;
+    }
+    console.warn("proj4.Point will be removed in version 3, use proj4.toPoint");
+  }
+  Point2.fromMGRS = function(mgrsStr) {
+    return new Point2(toPoint(mgrsStr));
+  };
+  Point2.prototype.toMGRS = function(accuracy) {
+    return forward2([this.x, this.y], accuracy);
+  };
+  var Point_default2 = Point2;
+
+  // node_modules/proj4/lib/common/pj_enfn.js
+  var C00 = 1;
+  var C02 = 0.25;
+  var C04 = 0.046875;
+  var C06 = 0.01953125;
+  var C08 = 0.01068115234375;
+  var C22 = 0.75;
+  var C44 = 0.46875;
+  var C46 = 0.013020833333333334;
+  var C48 = 0.007120768229166667;
+  var C66 = 0.3645833333333333;
+  var C68 = 0.005696614583333333;
+  var C88 = 0.3076171875;
+  function pj_enfn_default(es) {
+    var en = [];
+    en[0] = C00 - es * (C02 + es * (C04 + es * (C06 + es * C08)));
+    en[1] = es * (C22 - es * (C04 + es * (C06 + es * C08)));
+    var t = es * es;
+    en[2] = t * (C44 - es * (C46 + es * C48));
+    t *= es;
+    en[3] = t * (C66 - es * C68);
+    en[4] = t * es * C88;
+    return en;
+  }
+
+  // node_modules/proj4/lib/common/pj_mlfn.js
+  function pj_mlfn_default(phi, sphi, cphi, en) {
+    cphi *= sphi;
+    sphi *= sphi;
+    return en[0] * phi - cphi * (en[1] + sphi * (en[2] + sphi * (en[3] + sphi * en[4])));
+  }
+
+  // node_modules/proj4/lib/common/pj_inv_mlfn.js
+  var MAX_ITER = 20;
+  function pj_inv_mlfn_default(arg, es, en) {
+    var k = 1 / (1 - es);
+    var phi = arg;
+    for (var i = MAX_ITER; i; --i) {
+      var s = Math.sin(phi);
+      var t = 1 - es * s * s;
+      t = (pj_mlfn_default(phi, s, Math.cos(phi), en) - arg) * (t * Math.sqrt(t)) * k;
+      phi -= t;
+      if (Math.abs(t) < EPSLN) {
+        return phi;
+      }
+    }
+    return phi;
+  }
+
+  // node_modules/proj4/lib/projections/tmerc.js
+  function init5() {
+    this.x0 = this.x0 !== void 0 ? this.x0 : 0;
+    this.y0 = this.y0 !== void 0 ? this.y0 : 0;
+    this.long0 = this.long0 !== void 0 ? this.long0 : 0;
+    this.lat0 = this.lat0 !== void 0 ? this.lat0 : 0;
+    if (this.es) {
+      this.en = pj_enfn_default(this.es);
+      this.ml0 = pj_mlfn_default(this.lat0, Math.sin(this.lat0), Math.cos(this.lat0), this.en);
+    }
+  }
+  function forward3(p) {
+    var lon = p.x;
+    var lat = p.y;
+    var delta_lon = adjust_lon_default(lon - this.long0, this.over);
+    var con;
+    var x, y;
+    var sin_phi = Math.sin(lat);
+    var cos_phi = Math.cos(lat);
+    if (!this.es) {
+      var b = cos_phi * Math.sin(delta_lon);
+      if (Math.abs(Math.abs(b) - 1) < EPSLN) {
+        return 93;
+      } else {
+        x = 0.5 * this.a * this.k0 * Math.log((1 + b) / (1 - b)) + this.x0;
+        y = cos_phi * Math.cos(delta_lon) / Math.sqrt(1 - Math.pow(b, 2));
+        b = Math.abs(y);
+        if (b >= 1) {
+          if (b - 1 > EPSLN) {
+            return 93;
+          } else {
+            y = 0;
+          }
+        } else {
+          y = Math.acos(y);
+        }
+        if (lat < 0) {
+          y = -y;
+        }
+        y = this.a * this.k0 * (y - this.lat0) + this.y0;
+      }
+    } else {
+      var al = cos_phi * delta_lon;
+      var als = Math.pow(al, 2);
+      var c = this.ep2 * Math.pow(cos_phi, 2);
+      var cs = Math.pow(c, 2);
+      var tq = Math.abs(cos_phi) > EPSLN ? Math.tan(lat) : 0;
+      var t = Math.pow(tq, 2);
+      var ts = Math.pow(t, 2);
+      con = 1 - this.es * Math.pow(sin_phi, 2);
+      al = al / Math.sqrt(con);
+      var ml = pj_mlfn_default(lat, sin_phi, cos_phi, this.en);
+      x = this.a * (this.k0 * al * (1 + als / 6 * (1 - t + c + als / 20 * (5 - 18 * t + ts + 14 * c - 58 * t * c + als / 42 * (61 + 179 * ts - ts * t - 479 * t))))) + this.x0;
+      y = this.a * (this.k0 * (ml - this.ml0 + sin_phi * delta_lon * al / 2 * (1 + als / 12 * (5 - t + 9 * c + 4 * cs + als / 30 * (61 + ts - 58 * t + 270 * c - 330 * t * c + als / 56 * (1385 + 543 * ts - ts * t - 3111 * t)))))) + this.y0;
+    }
+    p.x = x;
+    p.y = y;
+    return p;
+  }
+  function inverse3(p) {
+    var con, phi;
+    var lat, lon;
+    var x = (p.x - this.x0) * (1 / this.a);
+    var y = (p.y - this.y0) * (1 / this.a);
+    if (!this.es) {
+      var f = Math.exp(x / this.k0);
+      var g = 0.5 * (f - 1 / f);
+      var temp = this.lat0 + y / this.k0;
+      var h = Math.cos(temp);
+      con = Math.sqrt((1 - Math.pow(h, 2)) / (1 + Math.pow(g, 2)));
+      lat = Math.asin(con);
+      if (y < 0) {
+        lat = -lat;
+      }
+      if (g === 0 && h === 0) {
+        lon = 0;
+      } else {
+        lon = adjust_lon_default(Math.atan2(g, h) + this.long0, this.over);
+      }
+    } else {
+      con = this.ml0 + y / this.k0;
+      phi = pj_inv_mlfn_default(con, this.es, this.en);
+      if (Math.abs(phi) < HALF_PI) {
+        var sin_phi = Math.sin(phi);
+        var cos_phi = Math.cos(phi);
+        var tan_phi = Math.abs(cos_phi) > EPSLN ? Math.tan(phi) : 0;
+        var c = this.ep2 * Math.pow(cos_phi, 2);
+        var cs = Math.pow(c, 2);
+        var t = Math.pow(tan_phi, 2);
+        var ts = Math.pow(t, 2);
+        con = 1 - this.es * Math.pow(sin_phi, 2);
+        var d = x * Math.sqrt(con) / this.k0;
+        var ds = Math.pow(d, 2);
+        con = con * tan_phi;
+        lat = phi - con * ds / (1 - this.es) * 0.5 * (1 - ds / 12 * (5 + 3 * t - 9 * c * t + c - 4 * cs - ds / 30 * (61 + 90 * t - 252 * c * t + 45 * ts + 46 * c - ds / 56 * (1385 + 3633 * t + 4095 * ts + 1574 * ts * t))));
+        lon = adjust_lon_default(this.long0 + d * (1 - ds / 6 * (1 + 2 * t + c - ds / 20 * (5 + 28 * t + 24 * ts + 8 * c * t + 6 * c - ds / 42 * (61 + 662 * t + 1320 * ts + 720 * ts * t)))) / cos_phi, this.over);
+      } else {
+        lat = HALF_PI * sign_default(y);
+        lon = 0;
+      }
+    }
+    p.x = lon;
+    p.y = lat;
+    return p;
+  }
+  var names4 = ["Fast_Transverse_Mercator", "Fast Transverse Mercator"];
+  var tmerc_default = {
+    init: init5,
+    forward: forward3,
+    inverse: inverse3,
+    names: names4
+  };
+
+  // node_modules/proj4/lib/common/sinh.js
+  function sinh_default(x) {
+    var r = Math.exp(x);
+    r = (r - 1 / r) / 2;
+    return r;
+  }
+
+  // node_modules/proj4/lib/common/hypot.js
+  function hypot_default(x, y) {
+    x = Math.abs(x);
+    y = Math.abs(y);
+    var a = Math.max(x, y);
+    var b = Math.min(x, y) / (a ? a : 1);
+    return a * Math.sqrt(1 + Math.pow(b, 2));
+  }
+
+  // node_modules/proj4/lib/common/log1py.js
+  function log1py_default(x) {
+    var y = 1 + x;
+    var z = y - 1;
+    return z === 0 ? x : x * Math.log(y) / z;
+  }
+
+  // node_modules/proj4/lib/common/asinhy.js
+  function asinhy_default(x) {
+    var y = Math.abs(x);
+    y = log1py_default(y * (1 + y / (hypot_default(1, y) + 1)));
+    return x < 0 ? -y : y;
+  }
+
+  // node_modules/proj4/lib/common/gatg.js
+  function gatg_default(pp, B) {
+    var cos_2B = 2 * Math.cos(2 * B);
+    var i = pp.length - 1;
+    var h1 = pp[i];
+    var h2 = 0;
+    var h;
+    while (--i >= 0) {
+      h = -h2 + cos_2B * h1 + pp[i];
+      h2 = h1;
+      h1 = h;
+    }
+    return B + h * Math.sin(2 * B);
+  }
+
+  // node_modules/proj4/lib/common/clens.js
+  function clens_default(pp, arg_r) {
+    var r = 2 * Math.cos(arg_r);
+    var i = pp.length - 1;
+    var hr1 = pp[i];
+    var hr2 = 0;
+    var hr;
+    while (--i >= 0) {
+      hr = -hr2 + r * hr1 + pp[i];
+      hr2 = hr1;
+      hr1 = hr;
+    }
+    return Math.sin(arg_r) * hr;
+  }
+
+  // node_modules/proj4/lib/common/cosh.js
+  function cosh_default(x) {
+    var r = Math.exp(x);
+    r = (r + 1 / r) / 2;
+    return r;
+  }
+
+  // node_modules/proj4/lib/common/clens_cmplx.js
+  function clens_cmplx_default(pp, arg_r, arg_i) {
+    var sin_arg_r = Math.sin(arg_r);
+    var cos_arg_r = Math.cos(arg_r);
+    var sinh_arg_i = sinh_default(arg_i);
+    var cosh_arg_i = cosh_default(arg_i);
+    var r = 2 * cos_arg_r * cosh_arg_i;
+    var i = -2 * sin_arg_r * sinh_arg_i;
+    var j = pp.length - 1;
+    var hr = pp[j];
+    var hi1 = 0;
+    var hr1 = 0;
+    var hi = 0;
+    var hr2;
+    var hi2;
+    while (--j >= 0) {
+      hr2 = hr1;
+      hi2 = hi1;
+      hr1 = hr;
+      hi1 = hi;
+      hr = -hr2 + r * hr1 - i * hi1 + pp[j];
+      hi = -hi2 + i * hr1 + r * hi1;
+    }
+    r = sin_arg_r * cosh_arg_i;
+    i = cos_arg_r * sinh_arg_i;
+    return [r * hr - i * hi, r * hi + i * hr];
+  }
+
+  // node_modules/proj4/lib/projections/etmerc.js
+  function init6() {
+    if (!this.approx && (isNaN(this.es) || this.es <= 0)) {
+      throw new Error('Incorrect elliptical usage. Try using the +approx option in the proj string, or PROJECTION["Fast_Transverse_Mercator"] in the WKT.');
+    }
+    if (this.approx) {
+      tmerc_default.init.apply(this);
+      this.forward = tmerc_default.forward;
+      this.inverse = tmerc_default.inverse;
+    }
+    this.x0 = this.x0 !== void 0 ? this.x0 : 0;
+    this.y0 = this.y0 !== void 0 ? this.y0 : 0;
+    this.long0 = this.long0 !== void 0 ? this.long0 : 0;
+    this.lat0 = this.lat0 !== void 0 ? this.lat0 : 0;
+    this.cgb = [];
+    this.cbg = [];
+    this.utg = [];
+    this.gtu = [];
+    var f = this.es / (1 + Math.sqrt(1 - this.es));
+    var n = f / (2 - f);
+    var np = n;
+    this.cgb[0] = n * (2 + n * (-2 / 3 + n * (-2 + n * (116 / 45 + n * (26 / 45 + n * (-2854 / 675))))));
+    this.cbg[0] = n * (-2 + n * (2 / 3 + n * (4 / 3 + n * (-82 / 45 + n * (32 / 45 + n * (4642 / 4725))))));
+    np = np * n;
+    this.cgb[1] = np * (7 / 3 + n * (-8 / 5 + n * (-227 / 45 + n * (2704 / 315 + n * (2323 / 945)))));
+    this.cbg[1] = np * (5 / 3 + n * (-16 / 15 + n * (-13 / 9 + n * (904 / 315 + n * (-1522 / 945)))));
+    np = np * n;
+    this.cgb[2] = np * (56 / 15 + n * (-136 / 35 + n * (-1262 / 105 + n * (73814 / 2835))));
+    this.cbg[2] = np * (-26 / 15 + n * (34 / 21 + n * (8 / 5 + n * (-12686 / 2835))));
+    np = np * n;
+    this.cgb[3] = np * (4279 / 630 + n * (-332 / 35 + n * (-399572 / 14175)));
+    this.cbg[3] = np * (1237 / 630 + n * (-12 / 5 + n * (-24832 / 14175)));
+    np = np * n;
+    this.cgb[4] = np * (4174 / 315 + n * (-144838 / 6237));
+    this.cbg[4] = np * (-734 / 315 + n * (109598 / 31185));
+    np = np * n;
+    this.cgb[5] = np * (601676 / 22275);
+    this.cbg[5] = np * (444337 / 155925);
+    np = Math.pow(n, 2);
+    this.Qn = this.k0 / (1 + n) * (1 + np * (1 / 4 + np * (1 / 64 + np / 256)));
+    this.utg[0] = n * (-0.5 + n * (2 / 3 + n * (-37 / 96 + n * (1 / 360 + n * (81 / 512 + n * (-96199 / 604800))))));
+    this.gtu[0] = n * (0.5 + n * (-2 / 3 + n * (5 / 16 + n * (41 / 180 + n * (-127 / 288 + n * (7891 / 37800))))));
+    this.utg[1] = np * (-1 / 48 + n * (-1 / 15 + n * (437 / 1440 + n * (-46 / 105 + n * (1118711 / 3870720)))));
+    this.gtu[1] = np * (13 / 48 + n * (-3 / 5 + n * (557 / 1440 + n * (281 / 630 + n * (-1983433 / 1935360)))));
+    np = np * n;
+    this.utg[2] = np * (-17 / 480 + n * (37 / 840 + n * (209 / 4480 + n * (-5569 / 90720))));
+    this.gtu[2] = np * (61 / 240 + n * (-103 / 140 + n * (15061 / 26880 + n * (167603 / 181440))));
+    np = np * n;
+    this.utg[3] = np * (-4397 / 161280 + n * (11 / 504 + n * (830251 / 7257600)));
+    this.gtu[3] = np * (49561 / 161280 + n * (-179 / 168 + n * (6601661 / 7257600)));
+    np = np * n;
+    this.utg[4] = np * (-4583 / 161280 + n * (108847 / 3991680));
+    this.gtu[4] = np * (34729 / 80640 + n * (-3418889 / 1995840));
+    np = np * n;
+    this.utg[5] = np * (-20648693 / 638668800);
+    this.gtu[5] = np * (212378941 / 319334400);
+    var Z2 = gatg_default(this.cbg, this.lat0);
+    this.Zb = -this.Qn * (Z2 + clens_default(this.gtu, 2 * Z2));
+  }
+  function forward4(p) {
+    var Ce = adjust_lon_default(p.x - this.long0, this.over);
+    var Cn = p.y;
+    Cn = gatg_default(this.cbg, Cn);
+    var sin_Cn = Math.sin(Cn);
+    var cos_Cn = Math.cos(Cn);
+    var sin_Ce = Math.sin(Ce);
+    var cos_Ce = Math.cos(Ce);
+    Cn = Math.atan2(sin_Cn, cos_Ce * cos_Cn);
+    Ce = Math.atan2(sin_Ce * cos_Cn, hypot_default(sin_Cn, cos_Cn * cos_Ce));
+    Ce = asinhy_default(Math.tan(Ce));
+    var tmp = clens_cmplx_default(this.gtu, 2 * Cn, 2 * Ce);
+    Cn = Cn + tmp[0];
+    Ce = Ce + tmp[1];
+    var x;
+    var y;
+    if (Math.abs(Ce) <= 2.623395162778) {
+      x = this.a * (this.Qn * Ce) + this.x0;
+      y = this.a * (this.Qn * Cn + this.Zb) + this.y0;
+    } else {
+      x = Infinity;
+      y = Infinity;
+    }
+    p.x = x;
+    p.y = y;
+    return p;
+  }
+  function inverse4(p) {
+    var Ce = (p.x - this.x0) * (1 / this.a);
+    var Cn = (p.y - this.y0) * (1 / this.a);
+    Cn = (Cn - this.Zb) / this.Qn;
+    Ce = Ce / this.Qn;
+    var lon;
+    var lat;
+    if (Math.abs(Ce) <= 2.623395162778) {
+      var tmp = clens_cmplx_default(this.utg, 2 * Cn, 2 * Ce);
+      Cn = Cn + tmp[0];
+      Ce = Ce + tmp[1];
+      Ce = Math.atan(sinh_default(Ce));
+      var sin_Cn = Math.sin(Cn);
+      var cos_Cn = Math.cos(Cn);
+      var sin_Ce = Math.sin(Ce);
+      var cos_Ce = Math.cos(Ce);
+      Cn = Math.atan2(sin_Cn * cos_Ce, hypot_default(sin_Ce, cos_Ce * cos_Cn));
+      Ce = Math.atan2(sin_Ce, cos_Ce * cos_Cn);
+      lon = adjust_lon_default(Ce + this.long0, this.over);
+      lat = gatg_default(this.cgb, Cn);
+    } else {
+      lon = Infinity;
+      lat = Infinity;
+    }
+    p.x = lon;
+    p.y = lat;
+    return p;
+  }
+  var names5 = ["Extended_Transverse_Mercator", "Extended Transverse Mercator", "etmerc", "Transverse_Mercator", "Transverse Mercator", "Gauss Kruger", "Gauss_Kruger", "tmerc"];
+  var etmerc_default = {
+    init: init6,
+    forward: forward4,
+    inverse: inverse4,
+    names: names5
+  };
+
+  // node_modules/proj4/lib/common/adjust_zone.js
+  function adjust_zone_default(zone, lon) {
+    if (zone === void 0) {
+      zone = Math.floor((adjust_lon_default(lon) + Math.PI) * 30 / Math.PI) + 1;
+      if (zone < 0) {
+        return 0;
+      } else if (zone > 60) {
+        return 60;
+      }
+    }
+    return zone;
+  }
+
+  // node_modules/proj4/lib/projections/utm.js
+  var dependsOn = "etmerc";
+  function init7() {
+    var zone = adjust_zone_default(this.zone, this.long0);
+    if (zone === void 0) {
+      throw new Error("unknown utm zone");
+    }
+    this.lat0 = 0;
+    this.long0 = (6 * Math.abs(zone) - 183) * D2R;
+    this.x0 = 5e5;
+    this.y0 = this.utmSouth ? 1e7 : 0;
+    this.k0 = 0.9996;
+    etmerc_default.init.apply(this);
+    this.forward = etmerc_default.forward;
+    this.inverse = etmerc_default.inverse;
+  }
+  var names6 = ["Universal Transverse Mercator System", "utm"];
+  var utm_default = {
+    init: init7,
+    names: names6,
+    dependsOn
+  };
+
+  // node_modules/proj4/lib/common/srat.js
+  function srat_default(esinp, exp) {
+    return Math.pow((1 - esinp) / (1 + esinp), exp);
+  }
+
+  // node_modules/proj4/lib/projections/gauss.js
+  var MAX_ITER2 = 20;
+  function init8() {
+    var sphi = Math.sin(this.lat0);
+    var cphi = Math.cos(this.lat0);
+    cphi *= cphi;
+    this.rc = Math.sqrt(1 - this.es) / (1 - this.es * sphi * sphi);
+    this.C = Math.sqrt(1 + this.es * cphi * cphi / (1 - this.es));
+    this.phic0 = Math.asin(sphi / this.C);
+    this.ratexp = 0.5 * this.C * this.e;
+    this.K = Math.tan(0.5 * this.phic0 + FORTPI) / (Math.pow(Math.tan(0.5 * this.lat0 + FORTPI), this.C) * srat_default(this.e * sphi, this.ratexp));
+  }
+  function forward5(p) {
+    var lon = p.x;
+    var lat = p.y;
+    p.y = 2 * Math.atan(this.K * Math.pow(Math.tan(0.5 * lat + FORTPI), this.C) * srat_default(this.e * Math.sin(lat), this.ratexp)) - HALF_PI;
+    p.x = this.C * lon;
+    return p;
+  }
+  function inverse5(p) {
+    var DEL_TOL = 1e-14;
+    var lon = p.x / this.C;
+    var lat = p.y;
+    var num = Math.pow(Math.tan(0.5 * lat + FORTPI) / this.K, 1 / this.C);
+    for (var i = MAX_ITER2; i > 0; --i) {
+      lat = 2 * Math.atan(num * srat_default(this.e * Math.sin(p.y), -0.5 * this.e)) - HALF_PI;
+      if (Math.abs(lat - p.y) < DEL_TOL) {
+        break;
+      }
+      p.y = lat;
+    }
+    if (!i) {
+      return null;
+    }
+    p.x = lon;
+    p.y = lat;
+    return p;
+  }
+  var names7 = ["gauss"];
+  var gauss_default = {
+    init: init8,
+    forward: forward5,
+    inverse: inverse5,
+    names: names7
+  };
+
+  // node_modules/proj4/lib/projections/sterea.js
+  function init9() {
+    gauss_default.init.apply(this);
+    if (!this.rc) {
+      return;
+    }
+    this.sinc0 = Math.sin(this.phic0);
+    this.cosc0 = Math.cos(this.phic0);
+    this.R2 = 2 * this.rc;
+    if (!this.title) {
+      this.title = "Oblique Stereographic Alternative";
+    }
+  }
+  function forward6(p) {
+    var sinc, cosc, cosl, k;
+    p.x = adjust_lon_default(p.x - this.long0, this.over);
+    gauss_default.forward.apply(this, [p]);
+    sinc = Math.sin(p.y);
+    cosc = Math.cos(p.y);
+    cosl = Math.cos(p.x);
+    k = this.k0 * this.R2 / (1 + this.sinc0 * sinc + this.cosc0 * cosc * cosl);
+    p.x = k * cosc * Math.sin(p.x);
+    p.y = k * (this.cosc0 * sinc - this.sinc0 * cosc * cosl);
+    p.x = this.a * p.x + this.x0;
+    p.y = this.a * p.y + this.y0;
+    return p;
+  }
+  function inverse6(p) {
+    var sinc, cosc, lon, lat, rho;
+    p.x = (p.x - this.x0) / this.a;
+    p.y = (p.y - this.y0) / this.a;
+    p.x /= this.k0;
+    p.y /= this.k0;
+    if (rho = hypot_default(p.x, p.y)) {
+      var c = 2 * Math.atan2(rho, this.R2);
+      sinc = Math.sin(c);
+      cosc = Math.cos(c);
+      lat = Math.asin(cosc * this.sinc0 + p.y * sinc * this.cosc0 / rho);
+      lon = Math.atan2(p.x * sinc, rho * this.cosc0 * cosc - p.y * this.sinc0 * sinc);
+    } else {
+      lat = this.phic0;
+      lon = 0;
+    }
+    p.x = lon;
+    p.y = lat;
+    gauss_default.inverse.apply(this, [p]);
+    p.x = adjust_lon_default(p.x + this.long0, this.over);
+    return p;
+  }
+  var names8 = ["Stereographic_North_Pole", "Oblique_Stereographic", "sterea", "Oblique Stereographic Alternative", "Double_Stereographic"];
+  var sterea_default = {
+    init: init9,
+    forward: forward6,
+    inverse: inverse6,
+    names: names8
+  };
+
+  // node_modules/proj4/lib/projections/stere.js
+  function ssfn_(phit, sinphi, eccen) {
+    sinphi *= eccen;
+    return Math.tan(0.5 * (HALF_PI + phit)) * Math.pow((1 - sinphi) / (1 + sinphi), 0.5 * eccen);
+  }
+  function init10() {
+    this.x0 = this.x0 || 0;
+    this.y0 = this.y0 || 0;
+    this.lat0 = this.lat0 || 0;
+    this.long0 = this.long0 || 0;
+    this.coslat0 = Math.cos(this.lat0);
+    this.sinlat0 = Math.sin(this.lat0);
+    if (this.sphere) {
+      if (this.k0 === 1 && !isNaN(this.lat_ts) && Math.abs(this.coslat0) <= EPSLN) {
+        this.k0 = 0.5 * (1 + sign_default(this.lat0) * Math.sin(this.lat_ts));
+      }
+    } else {
+      if (Math.abs(this.coslat0) <= EPSLN) {
+        if (this.lat0 > 0) {
+          this.con = 1;
+        } else {
+          this.con = -1;
+        }
+      }
+      this.cons = Math.sqrt(Math.pow(1 + this.e, 1 + this.e) * Math.pow(1 - this.e, 1 - this.e));
+      if (this.k0 === 1 && !isNaN(this.lat_ts) && Math.abs(this.coslat0) <= EPSLN && Math.abs(Math.cos(this.lat_ts)) > EPSLN) {
+        this.k0 = 0.5 * this.cons * msfnz_default(this.e, Math.sin(this.lat_ts), Math.cos(this.lat_ts)) / tsfnz_default(this.e, this.con * this.lat_ts, this.con * Math.sin(this.lat_ts));
+      }
+      this.ms1 = msfnz_default(this.e, this.sinlat0, this.coslat0);
+      this.X0 = 2 * Math.atan(ssfn_(this.lat0, this.sinlat0, this.e)) - HALF_PI;
+      this.cosX0 = Math.cos(this.X0);
+      this.sinX0 = Math.sin(this.X0);
+    }
+  }
+  function forward7(p) {
+    var lon = p.x;
+    var lat = p.y;
+    var sinlat = Math.sin(lat);
+    var coslat = Math.cos(lat);
+    var A5, X, sinX, cosX, ts, rh;
+    var dlon = adjust_lon_default(lon - this.long0, this.over);
+    if (Math.abs(Math.abs(lon - this.long0) - Math.PI) <= EPSLN && Math.abs(lat + this.lat0) <= EPSLN) {
+      p.x = NaN;
+      p.y = NaN;
+      return p;
+    }
+    if (this.sphere) {
+      A5 = 2 * this.k0 / (1 + this.sinlat0 * sinlat + this.coslat0 * coslat * Math.cos(dlon));
+      p.x = this.a * A5 * coslat * Math.sin(dlon) + this.x0;
+      p.y = this.a * A5 * (this.coslat0 * sinlat - this.sinlat0 * coslat * Math.cos(dlon)) + this.y0;
+      return p;
+    } else {
+      X = 2 * Math.atan(ssfn_(lat, sinlat, this.e)) - HALF_PI;
+      cosX = Math.cos(X);
+      sinX = Math.sin(X);
+      if (Math.abs(this.coslat0) <= EPSLN) {
+        ts = tsfnz_default(this.e, lat * this.con, this.con * sinlat);
+        rh = 2 * this.a * this.k0 * ts / this.cons;
+        p.x = this.x0 + rh * Math.sin(lon - this.long0);
+        p.y = this.y0 - this.con * rh * Math.cos(lon - this.long0);
+        return p;
+      } else if (Math.abs(this.sinlat0) < EPSLN) {
+        A5 = 2 * this.a * this.k0 / (1 + cosX * Math.cos(dlon));
+        p.y = A5 * sinX;
+      } else {
+        A5 = 2 * this.a * this.k0 * this.ms1 / (this.cosX0 * (1 + this.sinX0 * sinX + this.cosX0 * cosX * Math.cos(dlon)));
+        p.y = A5 * (this.cosX0 * sinX - this.sinX0 * cosX * Math.cos(dlon)) + this.y0;
+      }
+      p.x = A5 * cosX * Math.sin(dlon) + this.x0;
+    }
+    return p;
+  }
+  function inverse7(p) {
+    p.x -= this.x0;
+    p.y -= this.y0;
+    var lon, lat, ts, ce, Chi;
+    var rh = Math.sqrt(p.x * p.x + p.y * p.y);
+    if (this.sphere) {
+      var c = 2 * Math.atan(rh / (2 * this.a * this.k0));
+      lon = this.long0;
+      lat = this.lat0;
+      if (rh <= EPSLN) {
+        p.x = lon;
+        p.y = lat;
+        return p;
+      }
+      lat = Math.asin(Math.cos(c) * this.sinlat0 + p.y * Math.sin(c) * this.coslat0 / rh);
+      if (Math.abs(this.coslat0) < EPSLN) {
+        if (this.lat0 > 0) {
+          lon = adjust_lon_default(this.long0 + Math.atan2(p.x, -1 * p.y), this.over);
+        } else {
+          lon = adjust_lon_default(this.long0 + Math.atan2(p.x, p.y), this.over);
+        }
+      } else {
+        lon = adjust_lon_default(this.long0 + Math.atan2(p.x * Math.sin(c), rh * this.coslat0 * Math.cos(c) - p.y * this.sinlat0 * Math.sin(c)), this.over);
+      }
+      p.x = lon;
+      p.y = lat;
+      return p;
+    } else {
+      if (Math.abs(this.coslat0) <= EPSLN) {
+        if (rh <= EPSLN) {
+          lat = this.lat0;
+          lon = this.long0;
+          p.x = lon;
+          p.y = lat;
+          return p;
+        }
+        p.x *= this.con;
+        p.y *= this.con;
+        ts = rh * this.cons / (2 * this.a * this.k0);
+        lat = this.con * phi2z_default(this.e, ts);
+        lon = this.con * adjust_lon_default(this.con * this.long0 + Math.atan2(p.x, -1 * p.y), this.over);
+      } else {
+        ce = 2 * Math.atan(rh * this.cosX0 / (2 * this.a * this.k0 * this.ms1));
+        lon = this.long0;
+        if (rh <= EPSLN) {
+          Chi = this.X0;
+        } else {
+          Chi = Math.asin(Math.cos(ce) * this.sinX0 + p.y * Math.sin(ce) * this.cosX0 / rh);
+          lon = adjust_lon_default(this.long0 + Math.atan2(p.x * Math.sin(ce), rh * this.cosX0 * Math.cos(ce) - p.y * this.sinX0 * Math.sin(ce)), this.over);
+        }
+        lat = -1 * phi2z_default(this.e, Math.tan(0.5 * (HALF_PI + Chi)));
+      }
+    }
+    p.x = lon;
+    p.y = lat;
+    return p;
+  }
+  var names9 = ["stere", "Stereographic_South_Pole", "Polar_Stereographic_variant_A", "Polar_Stereographic_variant_B", "Polar_Stereographic"];
+  var stere_default = {
+    init: init10,
+    forward: forward7,
+    inverse: inverse7,
+    names: names9,
+    ssfn_
+  };
+
+  // node_modules/proj4/lib/projections/somerc.js
+  function init11() {
+    var phy0 = this.lat0;
+    this.lambda0 = this.long0;
+    var sinPhy0 = Math.sin(phy0);
+    var semiMajorAxis = this.a;
+    var invF = this.rf;
+    var flattening = 1 / invF;
+    var e2 = 2 * flattening - Math.pow(flattening, 2);
+    var e = this.e = Math.sqrt(e2);
+    this.R = this.k0 * semiMajorAxis * Math.sqrt(1 - e2) / (1 - e2 * Math.pow(sinPhy0, 2));
+    this.alpha = Math.sqrt(1 + e2 / (1 - e2) * Math.pow(Math.cos(phy0), 4));
+    this.b0 = Math.asin(sinPhy0 / this.alpha);
+    var k1 = Math.log(Math.tan(Math.PI / 4 + this.b0 / 2));
+    var k2 = Math.log(Math.tan(Math.PI / 4 + phy0 / 2));
+    var k3 = Math.log((1 + e * sinPhy0) / (1 - e * sinPhy0));
+    this.K = k1 - this.alpha * k2 + this.alpha * e / 2 * k3;
+  }
+  function forward8(p) {
+    var Sa1 = Math.log(Math.tan(Math.PI / 4 - p.y / 2));
+    var Sa2 = this.e / 2 * Math.log((1 + this.e * Math.sin(p.y)) / (1 - this.e * Math.sin(p.y)));
+    var S = -this.alpha * (Sa1 + Sa2) + this.K;
+    var b = 2 * (Math.atan(Math.exp(S)) - Math.PI / 4);
+    var I2 = this.alpha * (p.x - this.lambda0);
+    var rotI = Math.atan(Math.sin(I2) / (Math.sin(this.b0) * Math.tan(b) + Math.cos(this.b0) * Math.cos(I2)));
+    var rotB = Math.asin(Math.cos(this.b0) * Math.sin(b) - Math.sin(this.b0) * Math.cos(b) * Math.cos(I2));
+    p.y = this.R / 2 * Math.log((1 + Math.sin(rotB)) / (1 - Math.sin(rotB))) + this.y0;
+    p.x = this.R * rotI + this.x0;
+    return p;
+  }
+  function inverse8(p) {
+    var Y = p.x - this.x0;
+    var X = p.y - this.y0;
+    var rotI = Y / this.R;
+    var rotB = 2 * (Math.atan(Math.exp(X / this.R)) - Math.PI / 4);
+    var b = Math.asin(Math.cos(this.b0) * Math.sin(rotB) + Math.sin(this.b0) * Math.cos(rotB) * Math.cos(rotI));
+    var I2 = Math.atan(Math.sin(rotI) / (Math.cos(this.b0) * Math.cos(rotI) - Math.sin(this.b0) * Math.tan(rotB)));
+    var lambda = this.lambda0 + I2 / this.alpha;
+    var S = 0;
+    var phy = b;
+    var prevPhy = -1e3;
+    var iteration = 0;
+    while (Math.abs(phy - prevPhy) > 1e-7) {
+      if (++iteration > 20) {
+        return;
+      }
+      S = 1 / this.alpha * (Math.log(Math.tan(Math.PI / 4 + b / 2)) - this.K) + this.e * Math.log(Math.tan(Math.PI / 4 + Math.asin(this.e * Math.sin(phy)) / 2));
+      prevPhy = phy;
+      phy = 2 * Math.atan(Math.exp(S)) - Math.PI / 2;
+    }
+    p.x = lambda;
+    p.y = phy;
+    return p;
+  }
+  var names10 = ["somerc"];
+  var somerc_default = {
+    init: init11,
+    forward: forward8,
+    inverse: inverse8,
+    names: names10
+  };
+
+  // node_modules/proj4/lib/projections/omerc.js
+  var TOL = 1e-7;
+  function isTypeA(P) {
+    var typeAProjections = ["Hotine_Oblique_Mercator", "Hotine_Oblique_Mercator_variant_A", "Hotine_Oblique_Mercator_Azimuth_Natural_Origin"];
+    var projectionName = typeof P.projName === "object" ? Object.keys(P.projName)[0] : P.projName;
+    return "no_uoff" in P || "no_off" in P || typeAProjections.indexOf(projectionName) !== -1 || typeAProjections.indexOf(getNormalizedProjName(projectionName)) !== -1;
+  }
+  function init12() {
+    var con, com, cosph0, D, F, H, L, sinph0, p, J, gamma = 0, gamma0, lamc = 0, lam1 = 0, lam2 = 0, phi1 = 0, phi2 = 0, alpha_c = 0;
+    this.no_off = isTypeA(this);
+    this.no_rot = "no_rot" in this;
+    var alp = false;
+    if ("alpha" in this) {
+      alp = true;
+    }
+    var gam = false;
+    if ("rectified_grid_angle" in this) {
+      gam = true;
+    }
+    if (alp) {
+      alpha_c = this.alpha;
+    }
+    if (gam) {
+      gamma = this.rectified_grid_angle;
+      if (!alp) {
+        alpha_c = 0;
+        alp = true;
+      }
+    }
+    if (alp || gam) {
+      lamc = this.longc;
+    } else {
+      lam1 = this.long1;
+      phi1 = this.lat1;
+      lam2 = this.long2;
+      phi2 = this.lat2;
+      if (Math.abs(phi1 - phi2) <= TOL || (con = Math.abs(phi1)) <= TOL || Math.abs(con - HALF_PI) <= TOL || Math.abs(Math.abs(this.lat0) - HALF_PI) <= TOL || Math.abs(Math.abs(phi2) - HALF_PI) <= TOL) {
+        throw new Error();
+      }
+    }
+    var one_es = 1 - this.es;
+    com = Math.sqrt(one_es);
+    if (Math.abs(this.lat0) > EPSLN) {
+      sinph0 = Math.sin(this.lat0);
+      cosph0 = Math.cos(this.lat0);
+      con = 1 - this.es * sinph0 * sinph0;
+      this.B = cosph0 * cosph0;
+      this.B = Math.sqrt(1 + this.es * this.B * this.B / one_es);
+      this.A = this.B * this.k0 * com / con;
+      D = this.B * com / (cosph0 * Math.sqrt(con));
+      F = D * D - 1;
+      if (F <= 0) {
+        F = 0;
+      } else {
+        F = Math.sqrt(F);
+        if (this.lat0 < 0) {
+          F = -F;
+        }
+      }
+      this.E = F += D;
+      this.E *= Math.pow(tsfnz_default(this.e, this.lat0, sinph0), this.B);
+    } else {
+      this.B = 1 / com;
+      this.A = this.k0;
+      this.E = D = F = 1;
+    }
+    if (alp || gam) {
+      if (alp) {
+        gamma0 = Math.asin(Math.sin(alpha_c) / D);
+        if (!gam) {
+          gamma = alpha_c;
+        }
+      } else {
+        gamma0 = gamma;
+        alpha_c = Math.asin(D * Math.sin(gamma0));
+      }
+      this.lam0 = lamc - Math.asin(0.5 * (F - 1 / F) * Math.tan(gamma0)) / this.B;
+    } else {
+      H = Math.pow(tsfnz_default(this.e, phi1, Math.sin(phi1)), this.B);
+      L = Math.pow(tsfnz_default(this.e, phi2, Math.sin(phi2)), this.B);
+      F = this.E / H;
+      p = (L - H) / (L + H);
+      J = this.E * this.E;
+      J = (J - L * H) / (J + L * H);
+      con = lam1 - lam2;
+      if (con < -Math.PI) {
+        lam2 -= TWO_PI;
+      } else if (con > Math.PI) {
+        lam2 += TWO_PI;
+      }
+      this.lam0 = adjust_lon_default(0.5 * (lam1 + lam2) - Math.atan(J * Math.tan(0.5 * this.B * (lam1 - lam2)) / p) / this.B, this.over);
+      gamma0 = Math.atan(2 * Math.sin(this.B * adjust_lon_default(lam1 - this.lam0, this.over)) / (F - 1 / F));
+      gamma = alpha_c = Math.asin(D * Math.sin(gamma0));
+    }
+    this.singam = Math.sin(gamma0);
+    this.cosgam = Math.cos(gamma0);
+    this.sinrot = Math.sin(gamma);
+    this.cosrot = Math.cos(gamma);
+    this.rB = 1 / this.B;
+    this.ArB = this.A * this.rB;
+    this.BrA = 1 / this.ArB;
+    if (this.no_off) {
+      this.u_0 = 0;
+    } else {
+      this.u_0 = Math.abs(this.ArB * Math.atan(Math.sqrt(D * D - 1) / Math.cos(alpha_c)));
+      if (this.lat0 < 0) {
+        this.u_0 = -this.u_0;
+      }
+    }
+    F = 0.5 * gamma0;
+    this.v_pole_n = this.ArB * Math.log(Math.tan(FORTPI - F));
+    this.v_pole_s = this.ArB * Math.log(Math.tan(FORTPI + F));
+  }
+  function forward9(p) {
+    var coords = {};
+    var S, T, U, V2, W, temp, u, v;
+    p.x = p.x - this.lam0;
+    if (Math.abs(Math.abs(p.y) - HALF_PI) > EPSLN) {
+      W = this.E / Math.pow(tsfnz_default(this.e, p.y, Math.sin(p.y)), this.B);
+      temp = 1 / W;
+      S = 0.5 * (W - temp);
+      T = 0.5 * (W + temp);
+      V2 = Math.sin(this.B * p.x);
+      U = (S * this.singam - V2 * this.cosgam) / T;
+      if (Math.abs(Math.abs(U) - 1) < EPSLN) {
+        throw new Error();
+      }
+      v = 0.5 * this.ArB * Math.log((1 - U) / (1 + U));
+      temp = Math.cos(this.B * p.x);
+      if (Math.abs(temp) < TOL) {
+        u = this.A * p.x;
+      } else {
+        u = this.ArB * Math.atan2(S * this.cosgam + V2 * this.singam, temp);
+      }
+    } else {
+      v = p.y > 0 ? this.v_pole_n : this.v_pole_s;
+      u = this.ArB * p.y;
+    }
+    if (this.no_rot) {
+      coords.x = u;
+      coords.y = v;
+    } else {
+      u -= this.u_0;
+      coords.x = v * this.cosrot + u * this.sinrot;
+      coords.y = u * this.cosrot - v * this.sinrot;
+    }
+    coords.x = this.a * coords.x + this.x0;
+    coords.y = this.a * coords.y + this.y0;
+    return coords;
+  }
+  function inverse9(p) {
+    var u, v, Qp, Sp, Tp, Vp, Up;
+    var coords = {};
+    p.x = (p.x - this.x0) * (1 / this.a);
+    p.y = (p.y - this.y0) * (1 / this.a);
+    if (this.no_rot) {
+      v = p.y;
+      u = p.x;
+    } else {
+      v = p.x * this.cosrot - p.y * this.sinrot;
+      u = p.y * this.cosrot + p.x * this.sinrot + this.u_0;
+    }
+    Qp = Math.exp(-this.BrA * v);
+    Sp = 0.5 * (Qp - 1 / Qp);
+    Tp = 0.5 * (Qp + 1 / Qp);
+    Vp = Math.sin(this.BrA * u);
+    Up = (Vp * this.cosgam + Sp * this.singam) / Tp;
+    if (Math.abs(Math.abs(Up) - 1) < EPSLN) {
+      coords.x = 0;
+      coords.y = Up < 0 ? -HALF_PI : HALF_PI;
+    } else {
+      coords.y = this.E / Math.sqrt((1 + Up) / (1 - Up));
+      coords.y = phi2z_default(this.e, Math.pow(coords.y, 1 / this.B));
+      if (coords.y === Infinity) {
+        throw new Error();
+      }
+      coords.x = -this.rB * Math.atan2(Sp * this.cosgam - Vp * this.singam, Math.cos(this.BrA * u));
+    }
+    coords.x += this.lam0;
+    return coords;
+  }
+  var names11 = ["Hotine_Oblique_Mercator", "Hotine Oblique Mercator", "Hotine_Oblique_Mercator_variant_A", "Hotine_Oblique_Mercator_Variant_B", "Hotine_Oblique_Mercator_Azimuth_Natural_Origin", "Hotine_Oblique_Mercator_Two_Point_Natural_Origin", "Hotine_Oblique_Mercator_Azimuth_Center", "Oblique_Mercator", "omerc"];
+  var omerc_default = {
+    init: init12,
+    forward: forward9,
+    inverse: inverse9,
+    names: names11
+  };
+
+  // node_modules/proj4/lib/projections/lcc.js
+  function init13() {
+    if (!this.lat2) {
+      this.lat2 = this.lat1;
+    }
+    if (!this.k0) {
+      this.k0 = 1;
+    }
+    this.x0 = this.x0 || 0;
+    this.y0 = this.y0 || 0;
+    if (Math.abs(this.lat1 + this.lat2) < EPSLN) {
+      return;
+    }
+    var temp = this.b / this.a;
+    this.e = Math.sqrt(1 - temp * temp);
+    var sin1 = Math.sin(this.lat1);
+    var cos1 = Math.cos(this.lat1);
+    var ms1 = msfnz_default(this.e, sin1, cos1);
+    var ts1 = tsfnz_default(this.e, this.lat1, sin1);
+    var sin2 = Math.sin(this.lat2);
+    var cos2 = Math.cos(this.lat2);
+    var ms2 = msfnz_default(this.e, sin2, cos2);
+    var ts2 = tsfnz_default(this.e, this.lat2, sin2);
+    var ts0 = Math.abs(Math.abs(this.lat0) - HALF_PI) < EPSLN ? 0 : tsfnz_default(this.e, this.lat0, Math.sin(this.lat0));
+    if (Math.abs(this.lat1 - this.lat2) > EPSLN) {
+      this.ns = Math.log(ms1 / ms2) / Math.log(ts1 / ts2);
+    } else {
+      this.ns = sin1;
+    }
+    if (isNaN(this.ns)) {
+      this.ns = sin1;
+    }
+    this.f0 = ms1 / (this.ns * Math.pow(ts1, this.ns));
+    this.rh = this.a * this.f0 * Math.pow(ts0, this.ns);
+    if (!this.title) {
+      this.title = "Lambert Conformal Conic";
+    }
+  }
+  function forward10(p) {
+    var lon = p.x;
+    var lat = p.y;
+    if (Math.abs(2 * Math.abs(lat) - Math.PI) <= EPSLN) {
+      lat = sign_default(lat) * (HALF_PI - 2 * EPSLN);
+    }
+    var con = Math.abs(Math.abs(lat) - HALF_PI);
+    var ts, rh1;
+    if (con > EPSLN) {
+      ts = tsfnz_default(this.e, lat, Math.sin(lat));
+      rh1 = this.a * this.f0 * Math.pow(ts, this.ns);
+    } else {
+      con = lat * this.ns;
+      if (con <= 0) {
+        return null;
+      }
+      rh1 = 0;
+    }
+    var theta = this.ns * adjust_lon_default(lon - this.long0, this.over);
+    p.x = this.k0 * (rh1 * Math.sin(theta)) + this.x0;
+    p.y = this.k0 * (this.rh - rh1 * Math.cos(theta)) + this.y0;
+    return p;
+  }
+  function inverse10(p) {
+    var rh1, con, ts;
+    var lat, lon;
+    var x = (p.x - this.x0) / this.k0;
+    var y = this.rh - (p.y - this.y0) / this.k0;
+    if (this.ns > 0) {
+      rh1 = Math.sqrt(x * x + y * y);
+      con = 1;
+    } else {
+      rh1 = -Math.sqrt(x * x + y * y);
+      con = -1;
+    }
+    var theta = 0;
+    if (rh1 !== 0) {
+      theta = Math.atan2(con * x, con * y);
+    }
+    if (rh1 !== 0 || this.ns > 0) {
+      con = 1 / this.ns;
+      ts = Math.pow(rh1 / (this.a * this.f0), con);
+      lat = phi2z_default(this.e, ts);
+      if (lat === -9999) {
+        return null;
+      }
+    } else {
+      lat = -HALF_PI;
+    }
+    lon = adjust_lon_default(theta / this.ns + this.long0, this.over);
+    p.x = lon;
+    p.y = lat;
+    return p;
+  }
+  var names12 = [
+    "Lambert Tangential Conformal Conic Projection",
+    "Lambert_Conformal_Conic",
+    "Lambert_Conformal_Conic_1SP",
+    "Lambert_Conformal_Conic_2SP",
+    "lcc",
+    "Lambert Conic Conformal (1SP)",
+    "Lambert Conic Conformal (2SP)"
+  ];
+  var lcc_default = {
+    init: init13,
+    forward: forward10,
+    inverse: inverse10,
+    names: names12
+  };
+
+  // node_modules/proj4/lib/projections/krovak.js
+  function init14() {
+    this.a = 6377397155e-3;
+    this.es = 0.006674372230614;
+    this.e = Math.sqrt(this.es);
+    if (!this.lat0) {
+      this.lat0 = 0.863937979737193;
+    }
+    if (!this.long0) {
+      this.long0 = 0.7417649320975901 - 0.308341501185665;
+    }
+    if (!this.k0) {
+      this.k0 = 0.9999;
+    }
+    this.s45 = 0.785398163397448;
+    this.s90 = 2 * this.s45;
+    this.fi0 = this.lat0;
+    this.e2 = this.es;
+    this.e = Math.sqrt(this.e2);
+    this.alfa = Math.sqrt(1 + this.e2 * Math.pow(Math.cos(this.fi0), 4) / (1 - this.e2));
+    this.uq = 1.04216856380474;
+    this.u0 = Math.asin(Math.sin(this.fi0) / this.alfa);
+    this.g = Math.pow((1 + this.e * Math.sin(this.fi0)) / (1 - this.e * Math.sin(this.fi0)), this.alfa * this.e / 2);
+    this.k = Math.tan(this.u0 / 2 + this.s45) / Math.pow(Math.tan(this.fi0 / 2 + this.s45), this.alfa) * this.g;
+    this.k1 = this.k0;
+    this.n0 = this.a * Math.sqrt(1 - this.e2) / (1 - this.e2 * Math.pow(Math.sin(this.fi0), 2));
+    this.s0 = 1.37008346281555;
+    this.n = Math.sin(this.s0);
+    this.ro0 = this.k1 * this.n0 / Math.tan(this.s0);
+    this.ad = this.s90 - this.uq;
+  }
+  function forward11(p) {
+    var gfi, u, deltav, s, d, eps, ro;
+    var lon = p.x;
+    var lat = p.y;
+    var delta_lon = adjust_lon_default(lon - this.long0, this.over);
+    gfi = Math.pow((1 + this.e * Math.sin(lat)) / (1 - this.e * Math.sin(lat)), this.alfa * this.e / 2);
+    u = 2 * (Math.atan(this.k * Math.pow(Math.tan(lat / 2 + this.s45), this.alfa) / gfi) - this.s45);
+    deltav = -delta_lon * this.alfa;
+    s = Math.asin(Math.cos(this.ad) * Math.sin(u) + Math.sin(this.ad) * Math.cos(u) * Math.cos(deltav));
+    d = Math.asin(Math.cos(u) * Math.sin(deltav) / Math.cos(s));
+    eps = this.n * d;
+    ro = this.ro0 * Math.pow(Math.tan(this.s0 / 2 + this.s45), this.n) / Math.pow(Math.tan(s / 2 + this.s45), this.n);
+    p.y = ro * Math.cos(eps) / 1;
+    p.x = ro * Math.sin(eps) / 1;
+    if (!this.czech) {
+      p.y *= -1;
+      p.x *= -1;
+    }
+    return p;
+  }
+  function inverse11(p) {
+    var u, deltav, s, d, eps, ro, fi1;
+    var ok;
+    var tmp = p.x;
+    p.x = p.y;
+    p.y = tmp;
+    if (!this.czech) {
+      p.y *= -1;
+      p.x *= -1;
+    }
+    ro = Math.sqrt(p.x * p.x + p.y * p.y);
+    eps = Math.atan2(p.y, p.x);
+    d = eps / Math.sin(this.s0);
+    s = 2 * (Math.atan(Math.pow(this.ro0 / ro, 1 / this.n) * Math.tan(this.s0 / 2 + this.s45)) - this.s45);
+    u = Math.asin(Math.cos(this.ad) * Math.sin(s) - Math.sin(this.ad) * Math.cos(s) * Math.cos(d));
+    deltav = Math.asin(Math.cos(s) * Math.sin(d) / Math.cos(u));
+    p.x = this.long0 - deltav / this.alfa;
+    fi1 = u;
+    ok = 0;
+    var iter = 0;
+    do {
+      p.y = 2 * (Math.atan(Math.pow(this.k, -1 / this.alfa) * Math.pow(Math.tan(u / 2 + this.s45), 1 / this.alfa) * Math.pow((1 + this.e * Math.sin(fi1)) / (1 - this.e * Math.sin(fi1)), this.e / 2)) - this.s45);
+      if (Math.abs(fi1 - p.y) < 1e-10) {
+        ok = 1;
+      }
+      fi1 = p.y;
+      iter += 1;
+    } while (ok === 0 && iter < 15);
+    if (iter >= 15) {
+      return null;
+    }
+    return p;
+  }
+  var names13 = ["Krovak", "Krovak Modified", "Krovak (North Orientated)", "Krovak Modified (North Orientated)", "krovak"];
+  var krovak_default = {
+    init: init14,
+    forward: forward11,
+    inverse: inverse11,
+    names: names13
+  };
+
+  // node_modules/proj4/lib/common/mlfn.js
+  function mlfn_default(e0, e1, e2, e3, phi) {
+    return e0 * phi - e1 * Math.sin(2 * phi) + e2 * Math.sin(4 * phi) - e3 * Math.sin(6 * phi);
+  }
+
+  // node_modules/proj4/lib/common/e0fn.js
+  function e0fn_default(x) {
+    return 1 - 0.25 * x * (1 + x / 16 * (3 + 1.25 * x));
+  }
+
+  // node_modules/proj4/lib/common/e1fn.js
+  function e1fn_default(x) {
+    return 0.375 * x * (1 + 0.25 * x * (1 + 0.46875 * x));
+  }
+
+  // node_modules/proj4/lib/common/e2fn.js
+  function e2fn_default(x) {
+    return 0.05859375 * x * x * (1 + 0.75 * x);
+  }
+
+  // node_modules/proj4/lib/common/e3fn.js
+  function e3fn_default(x) {
+    return x * x * x * (35 / 3072);
+  }
+
+  // node_modules/proj4/lib/common/gN.js
+  function gN_default(a, e, sinphi) {
+    var temp = e * sinphi;
+    return a / Math.sqrt(1 - temp * temp);
+  }
+
+  // node_modules/proj4/lib/common/adjust_lat.js
+  function adjust_lat_default(x) {
+    return Math.abs(x) < HALF_PI ? x : x - sign_default(x) * Math.PI;
+  }
+
+  // node_modules/proj4/lib/common/imlfn.js
+  function imlfn_default(ml, e0, e1, e2, e3) {
+    var phi;
+    var dphi;
+    phi = ml / e0;
+    for (var i = 0; i < 15; i++) {
+      dphi = (ml - (e0 * phi - e1 * Math.sin(2 * phi) + e2 * Math.sin(4 * phi) - e3 * Math.sin(6 * phi))) / (e0 - 2 * e1 * Math.cos(2 * phi) + 4 * e2 * Math.cos(4 * phi) - 6 * e3 * Math.cos(6 * phi));
+      phi += dphi;
+      if (Math.abs(dphi) <= 1e-10) {
+        return phi;
+      }
+    }
+    return NaN;
+  }
+
+  // node_modules/proj4/lib/projections/cass.js
+  function init15() {
+    if (!this.sphere) {
+      this.e0 = e0fn_default(this.es);
+      this.e1 = e1fn_default(this.es);
+      this.e2 = e2fn_default(this.es);
+      this.e3 = e3fn_default(this.es);
+      this.ml0 = this.a * mlfn_default(this.e0, this.e1, this.e2, this.e3, this.lat0);
+    }
+  }
+  function forward12(p) {
+    var x, y;
+    var lam = p.x;
+    var phi = p.y;
+    lam = adjust_lon_default(lam - this.long0, this.over);
+    if (this.sphere) {
+      x = this.a * Math.asin(Math.cos(phi) * Math.sin(lam));
+      y = this.a * (Math.atan2(Math.tan(phi), Math.cos(lam)) - this.lat0);
+    } else {
+      var sinphi = Math.sin(phi);
+      var cosphi = Math.cos(phi);
+      var nl = gN_default(this.a, this.e, sinphi);
+      var tl = Math.tan(phi) * Math.tan(phi);
+      var al = lam * Math.cos(phi);
+      var asq = al * al;
+      var cl = this.es * cosphi * cosphi / (1 - this.es);
+      var ml = this.a * mlfn_default(this.e0, this.e1, this.e2, this.e3, phi);
+      x = nl * al * (1 - asq * tl * (1 / 6 - (8 - tl + 8 * cl) * asq / 120));
+      y = ml - this.ml0 + nl * sinphi / cosphi * asq * (0.5 + (5 - tl + 6 * cl) * asq / 24);
+    }
+    p.x = x + this.x0;
+    p.y = y + this.y0;
+    return p;
+  }
+  function inverse12(p) {
+    p.x -= this.x0;
+    p.y -= this.y0;
+    var x = p.x / this.a;
+    var y = p.y / this.a;
+    var phi, lam;
+    if (this.sphere) {
+      var dd = y + this.lat0;
+      phi = Math.asin(Math.sin(dd) * Math.cos(x));
+      lam = Math.atan2(Math.tan(x), Math.cos(dd));
+    } else {
+      var ml1 = this.ml0 / this.a + y;
+      var phi1 = imlfn_default(ml1, this.e0, this.e1, this.e2, this.e3);
+      if (Math.abs(Math.abs(phi1) - HALF_PI) <= EPSLN) {
+        p.x = this.long0;
+        p.y = HALF_PI;
+        if (y < 0) {
+          p.y *= -1;
+        }
+        return p;
+      }
+      var nl1 = gN_default(this.a, this.e, Math.sin(phi1));
+      var rl1 = nl1 * nl1 * nl1 / this.a / this.a * (1 - this.es);
+      var tl1 = Math.pow(Math.tan(phi1), 2);
+      var dl = x * this.a / nl1;
+      var dsq = dl * dl;
+      phi = phi1 - nl1 * Math.tan(phi1) / rl1 * dl * dl * (0.5 - (1 + 3 * tl1) * dl * dl / 24);
+      lam = dl * (1 - dsq * (tl1 / 3 + (1 + 3 * tl1) * tl1 * dsq / 15)) / Math.cos(phi1);
+    }
+    p.x = adjust_lon_default(lam + this.long0, this.over);
+    p.y = adjust_lat_default(phi);
+    return p;
+  }
+  var names14 = ["Cassini", "Cassini_Soldner", "cass"];
+  var cass_default = {
+    init: init15,
+    forward: forward12,
+    inverse: inverse12,
+    names: names14
+  };
+
+  // node_modules/proj4/lib/common/qsfnz.js
+  function qsfnz_default(eccent, sinphi) {
+    var con;
+    if (eccent > 1e-7) {
+      con = eccent * sinphi;
+      return (1 - eccent * eccent) * (sinphi / (1 - con * con) - 0.5 / eccent * Math.log((1 - con) / (1 + con)));
+    } else {
+      return 2 * sinphi;
+    }
+  }
+
+  // node_modules/proj4/lib/common/authset.js
+  var P00 = 0.3333333333333333;
+  var P01 = 0.17222222222222222;
+  var P02 = 0.10257936507936508;
+  var P10 = 0.06388888888888888;
+  var P11 = 0.0664021164021164;
+  var P20 = 0.016415012942191543;
+  function authset(es) {
+    var t;
+    var APA = [];
+    APA[0] = es * P00;
+    t = es * es;
+    APA[0] += t * P01;
+    APA[1] = t * P10;
+    t *= es;
+    APA[0] += t * P02;
+    APA[1] += t * P11;
+    APA[2] = t * P20;
+    return APA;
+  }
+
+  // node_modules/proj4/lib/common/authlat.js
+  function authlat(beta, APA) {
+    var t = beta + beta;
+    return beta + APA[0] * Math.sin(t) + APA[1] * Math.sin(t + t) + APA[2] * Math.sin(t + t + t);
+  }
+
+  // node_modules/proj4/lib/projections/laea.js
+  var S_POLE = 1;
+  var N_POLE = 2;
+  var EQUIT = 3;
+  var OBLIQ = 4;
+  function init16() {
+    var t = Math.abs(this.lat0);
+    if (Math.abs(t - HALF_PI) < EPSLN) {
+      this.mode = this.lat0 < 0 ? S_POLE : N_POLE;
+    } else if (Math.abs(t) < EPSLN) {
+      this.mode = EQUIT;
+    } else {
+      this.mode = OBLIQ;
+    }
+    if (this.es > 0) {
+      var sinphi;
+      this.qp = qsfnz_default(this.e, 1);
+      this.mmf = 0.5 / (1 - this.es);
+      this.apa = authset(this.es);
+      switch (this.mode) {
+        case N_POLE:
+          this.dd = 1;
+          break;
+        case S_POLE:
+          this.dd = 1;
+          break;
+        case EQUIT:
+          this.rq = Math.sqrt(0.5 * this.qp);
+          this.dd = 1 / this.rq;
+          this.xmf = 1;
+          this.ymf = 0.5 * this.qp;
+          break;
+        case OBLIQ:
+          this.rq = Math.sqrt(0.5 * this.qp);
+          sinphi = Math.sin(this.lat0);
+          this.sinb1 = qsfnz_default(this.e, sinphi) / this.qp;
+          this.cosb1 = Math.sqrt(1 - this.sinb1 * this.sinb1);
+          this.dd = Math.cos(this.lat0) / (Math.sqrt(1 - this.es * sinphi * sinphi) * this.rq * this.cosb1);
+          this.ymf = (this.xmf = this.rq) / this.dd;
+          this.xmf *= this.dd;
+          break;
+      }
+    } else {
+      if (this.mode === OBLIQ) {
+        this.sinph0 = Math.sin(this.lat0);
+        this.cosph0 = Math.cos(this.lat0);
+      }
+    }
+  }
+  function forward13(p) {
+    var x, y, coslam, sinlam, sinphi, q, sinb, cosb, b, cosphi;
+    var lam = p.x;
+    var phi = p.y;
+    lam = adjust_lon_default(lam - this.long0, this.over);
+    if (this.sphere) {
+      sinphi = Math.sin(phi);
+      cosphi = Math.cos(phi);
+      coslam = Math.cos(lam);
+      if (this.mode === this.OBLIQ || this.mode === this.EQUIT) {
+        y = this.mode === this.EQUIT ? 1 + cosphi * coslam : 1 + this.sinph0 * sinphi + this.cosph0 * cosphi * coslam;
+        if (y <= EPSLN) {
+          return null;
+        }
+        y = Math.sqrt(2 / y);
+        x = y * cosphi * Math.sin(lam);
+        y *= this.mode === this.EQUIT ? sinphi : this.cosph0 * sinphi - this.sinph0 * cosphi * coslam;
+      } else if (this.mode === this.N_POLE || this.mode === this.S_POLE) {
+        if (this.mode === this.N_POLE) {
+          coslam = -coslam;
+        }
+        if (Math.abs(phi + this.lat0) < EPSLN) {
+          return null;
+        }
+        y = FORTPI - phi * 0.5;
+        y = 2 * (this.mode === this.S_POLE ? Math.cos(y) : Math.sin(y));
+        x = y * Math.sin(lam);
+        y *= coslam;
+      }
+    } else {
+      sinb = 0;
+      cosb = 0;
+      b = 0;
+      coslam = Math.cos(lam);
+      sinlam = Math.sin(lam);
+      sinphi = Math.sin(phi);
+      q = qsfnz_default(this.e, sinphi);
+      if (this.mode === this.OBLIQ || this.mode === this.EQUIT) {
+        sinb = q / this.qp;
+        cosb = Math.sqrt(1 - sinb * sinb);
+      }
+      switch (this.mode) {
+        case this.OBLIQ:
+          b = 1 + this.sinb1 * sinb + this.cosb1 * cosb * coslam;
+          break;
+        case this.EQUIT:
+          b = 1 + cosb * coslam;
+          break;
+        case this.N_POLE:
+          b = HALF_PI + phi;
+          q = this.qp - q;
+          break;
+        case this.S_POLE:
+          b = phi - HALF_PI;
+          q = this.qp + q;
+          break;
+      }
+      if (Math.abs(b) < EPSLN) {
+        return null;
+      }
+      switch (this.mode) {
+        case this.OBLIQ:
+        case this.EQUIT:
+          b = Math.sqrt(2 / b);
+          if (this.mode === this.OBLIQ) {
+            y = this.ymf * b * (this.cosb1 * sinb - this.sinb1 * cosb * coslam);
+          } else {
+            y = (b = Math.sqrt(2 / (1 + cosb * coslam))) * sinb * this.ymf;
+          }
+          x = this.xmf * b * cosb * sinlam;
+          break;
+        case this.N_POLE:
+        case this.S_POLE:
+          if (q >= 0) {
+            x = (b = Math.sqrt(q)) * sinlam;
+            y = coslam * (this.mode === this.S_POLE ? b : -b);
+          } else {
+            x = y = 0;
+          }
+          break;
+      }
+    }
+    p.x = this.a * x + this.x0;
+    p.y = this.a * y + this.y0;
+    return p;
+  }
+  function inverse13(p) {
+    p.x -= this.x0;
+    p.y -= this.y0;
+    var x = p.x / this.a;
+    var y = p.y / this.a;
+    var lam, phi, cCe, sCe, q, rho, ab;
+    if (this.sphere) {
+      var cosz = 0, rh, sinz = 0;
+      rh = Math.sqrt(x * x + y * y);
+      phi = rh * 0.5;
+      if (phi > 1) {
+        return null;
+      }
+      phi = 2 * Math.asin(phi);
+      if (this.mode === this.OBLIQ || this.mode === this.EQUIT) {
+        sinz = Math.sin(phi);
+        cosz = Math.cos(phi);
+      }
+      switch (this.mode) {
+        case this.EQUIT:
+          phi = Math.abs(rh) <= EPSLN ? 0 : Math.asin(y * sinz / rh);
+          x *= sinz;
+          y = cosz * rh;
+          break;
+        case this.OBLIQ:
+          phi = Math.abs(rh) <= EPSLN ? this.lat0 : Math.asin(cosz * this.sinph0 + y * sinz * this.cosph0 / rh);
+          x *= sinz * this.cosph0;
+          y = (cosz - Math.sin(phi) * this.sinph0) * rh;
+          break;
+        case this.N_POLE:
+          y = -y;
+          phi = HALF_PI - phi;
+          break;
+        case this.S_POLE:
+          phi -= HALF_PI;
+          break;
+      }
+      lam = y === 0 && (this.mode === this.EQUIT || this.mode === this.OBLIQ) ? 0 : Math.atan2(x, y);
+    } else {
+      ab = 0;
+      if (this.mode === this.OBLIQ || this.mode === this.EQUIT) {
+        x /= this.dd;
+        y *= this.dd;
+        rho = Math.sqrt(x * x + y * y);
+        if (rho < EPSLN) {
+          p.x = this.long0;
+          p.y = this.lat0;
+          return p;
+        }
+        sCe = 2 * Math.asin(0.5 * rho / this.rq);
+        cCe = Math.cos(sCe);
+        x *= sCe = Math.sin(sCe);
+        if (this.mode === this.OBLIQ) {
+          ab = cCe * this.sinb1 + y * sCe * this.cosb1 / rho;
+          q = this.qp * ab;
+          y = rho * this.cosb1 * cCe - y * this.sinb1 * sCe;
+        } else {
+          ab = y * sCe / rho;
+          q = this.qp * ab;
+          y = rho * cCe;
+        }
+      } else if (this.mode === this.N_POLE || this.mode === this.S_POLE) {
+        if (this.mode === this.N_POLE) {
+          y = -y;
+        }
+        q = x * x + y * y;
+        if (!q) {
+          p.x = this.long0;
+          p.y = this.lat0;
+          return p;
+        }
+        ab = 1 - q / this.qp;
+        if (this.mode === this.S_POLE) {
+          ab = -ab;
+        }
+      }
+      lam = Math.atan2(x, y);
+      phi = authlat(Math.asin(ab), this.apa);
+    }
+    p.x = adjust_lon_default(this.long0 + lam, this.over);
+    p.y = phi;
+    return p;
+  }
+  var names15 = ["Lambert Azimuthal Equal Area", "Lambert_Azimuthal_Equal_Area", "laea"];
+  var laea_default = {
+    init: init16,
+    forward: forward13,
+    inverse: inverse13,
+    names: names15,
+    S_POLE,
+    N_POLE,
+    EQUIT,
+    OBLIQ
+  };
+
+  // node_modules/proj4/lib/common/asinz.js
+  function asinz_default(x) {
+    if (Math.abs(x) > 1) {
+      x = x > 1 ? 1 : -1;
+    }
+    return Math.asin(x);
+  }
+
+  // node_modules/proj4/lib/projections/aea.js
+  function init17() {
+    if (Math.abs(this.lat1 + this.lat2) < EPSLN) {
+      return;
+    }
+    this.temp = this.b / this.a;
+    this.es = 1 - Math.pow(this.temp, 2);
+    this.e3 = Math.sqrt(this.es);
+    this.sin_po = Math.sin(this.lat1);
+    this.cos_po = Math.cos(this.lat1);
+    this.t1 = this.sin_po;
+    this.con = this.sin_po;
+    this.ms1 = msfnz_default(this.e3, this.sin_po, this.cos_po);
+    this.qs1 = qsfnz_default(this.e3, this.sin_po);
+    this.sin_po = Math.sin(this.lat2);
+    this.cos_po = Math.cos(this.lat2);
+    this.t2 = this.sin_po;
+    this.ms2 = msfnz_default(this.e3, this.sin_po, this.cos_po);
+    this.qs2 = qsfnz_default(this.e3, this.sin_po);
+    this.sin_po = Math.sin(this.lat0);
+    this.cos_po = Math.cos(this.lat0);
+    this.t3 = this.sin_po;
+    this.qs0 = qsfnz_default(this.e3, this.sin_po);
+    if (Math.abs(this.lat1 - this.lat2) > EPSLN) {
+      this.ns0 = (this.ms1 * this.ms1 - this.ms2 * this.ms2) / (this.qs2 - this.qs1);
+    } else {
+      this.ns0 = this.con;
+    }
+    this.c = this.ms1 * this.ms1 + this.ns0 * this.qs1;
+    this.rh = this.a * Math.sqrt(this.c - this.ns0 * this.qs0) / this.ns0;
+  }
+  function forward14(p) {
+    var lon = p.x;
+    var lat = p.y;
+    this.sin_phi = Math.sin(lat);
+    this.cos_phi = Math.cos(lat);
+    var qs = qsfnz_default(this.e3, this.sin_phi);
+    var rh1 = this.a * Math.sqrt(this.c - this.ns0 * qs) / this.ns0;
+    var theta = this.ns0 * adjust_lon_default(lon - this.long0, this.over);
+    var x = rh1 * Math.sin(theta) + this.x0;
+    var y = this.rh - rh1 * Math.cos(theta) + this.y0;
+    p.x = x;
+    p.y = y;
+    return p;
+  }
+  function inverse14(p) {
+    var rh1, qs, con, theta, lon, lat;
+    p.x -= this.x0;
+    p.y = this.rh - p.y + this.y0;
+    if (this.ns0 >= 0) {
+      rh1 = Math.sqrt(p.x * p.x + p.y * p.y);
+      con = 1;
+    } else {
+      rh1 = -Math.sqrt(p.x * p.x + p.y * p.y);
+      con = -1;
+    }
+    theta = 0;
+    if (rh1 !== 0) {
+      theta = Math.atan2(con * p.x, con * p.y);
+    }
+    con = rh1 * this.ns0 / this.a;
+    if (this.sphere) {
+      lat = Math.asin((this.c - con * con) / (2 * this.ns0));
+    } else {
+      qs = (this.c - con * con) / this.ns0;
+      lat = this.phi1z(this.e3, qs);
+    }
+    lon = adjust_lon_default(theta / this.ns0 + this.long0, this.over);
+    p.x = lon;
+    p.y = lat;
+    return p;
+  }
+  function phi1z(eccent, qs) {
+    var sinphi, cosphi, con, com, dphi;
+    var phi = asinz_default(0.5 * qs);
+    if (eccent < EPSLN) {
+      return phi;
+    }
+    var eccnts = eccent * eccent;
+    for (var i = 1; i <= 25; i++) {
+      sinphi = Math.sin(phi);
+      cosphi = Math.cos(phi);
+      con = eccent * sinphi;
+      com = 1 - con * con;
+      dphi = 0.5 * com * com / cosphi * (qs / (1 - eccnts) - sinphi / com + 0.5 / eccent * Math.log((1 - con) / (1 + con)));
+      phi = phi + dphi;
+      if (Math.abs(dphi) <= 1e-7) {
+        return phi;
+      }
+    }
+    return null;
+  }
+  var names16 = ["Albers_Conic_Equal_Area", "Albers_Equal_Area", "Albers", "aea"];
+  var aea_default = {
+    init: init17,
+    forward: forward14,
+    inverse: inverse14,
+    names: names16,
+    phi1z
+  };
+
+  // node_modules/proj4/lib/projections/gnom.js
+  function init18() {
+    this.sin_p14 = Math.sin(this.lat0);
+    this.cos_p14 = Math.cos(this.lat0);
+    this.infinity_dist = 1e3 * this.a;
+    this.rc = 1;
+  }
+  function forward15(p) {
+    var sinphi, cosphi;
+    var dlon;
+    var coslon;
+    var ksp;
+    var g;
+    var x, y;
+    var lon = p.x;
+    var lat = p.y;
+    dlon = adjust_lon_default(lon - this.long0, this.over);
+    sinphi = Math.sin(lat);
+    cosphi = Math.cos(lat);
+    coslon = Math.cos(dlon);
+    g = this.sin_p14 * sinphi + this.cos_p14 * cosphi * coslon;
+    ksp = 1;
+    if (g > 0 || Math.abs(g) <= EPSLN) {
+      x = this.x0 + this.a * ksp * cosphi * Math.sin(dlon) / g;
+      y = this.y0 + this.a * ksp * (this.cos_p14 * sinphi - this.sin_p14 * cosphi * coslon) / g;
+    } else {
+      x = this.x0 + this.infinity_dist * cosphi * Math.sin(dlon);
+      y = this.y0 + this.infinity_dist * (this.cos_p14 * sinphi - this.sin_p14 * cosphi * coslon);
+    }
+    p.x = x;
+    p.y = y;
+    return p;
+  }
+  function inverse15(p) {
+    var rh;
+    var sinc, cosc;
+    var c;
+    var lon, lat;
+    p.x = (p.x - this.x0) / this.a;
+    p.y = (p.y - this.y0) / this.a;
+    p.x /= this.k0;
+    p.y /= this.k0;
+    if (rh = Math.sqrt(p.x * p.x + p.y * p.y)) {
+      c = Math.atan2(rh, this.rc);
+      sinc = Math.sin(c);
+      cosc = Math.cos(c);
+      lat = asinz_default(cosc * this.sin_p14 + p.y * sinc * this.cos_p14 / rh);
+      lon = Math.atan2(p.x * sinc, rh * this.cos_p14 * cosc - p.y * this.sin_p14 * sinc);
+      lon = adjust_lon_default(this.long0 + lon, this.over);
+    } else {
+      lat = this.phic0;
+      lon = 0;
+    }
+    p.x = lon;
+    p.y = lat;
+    return p;
+  }
+  var names17 = ["gnom"];
+  var gnom_default = {
+    init: init18,
+    forward: forward15,
+    inverse: inverse15,
+    names: names17
+  };
+
+  // node_modules/proj4/lib/common/iqsfnz.js
+  function iqsfnz_default(eccent, q) {
+    var temp = 1 - (1 - eccent * eccent) / (2 * eccent) * Math.log((1 - eccent) / (1 + eccent));
+    if (Math.abs(Math.abs(q) - temp) < 1e-6) {
+      if (q < 0) {
+        return -1 * HALF_PI;
+      } else {
+        return HALF_PI;
+      }
+    }
+    var phi = Math.asin(0.5 * q);
+    var dphi;
+    var sin_phi;
+    var cos_phi;
+    var con;
+    for (var i = 0; i < 30; i++) {
+      sin_phi = Math.sin(phi);
+      cos_phi = Math.cos(phi);
+      con = eccent * sin_phi;
+      dphi = Math.pow(1 - con * con, 2) / (2 * cos_phi) * (q / (1 - eccent * eccent) - sin_phi / (1 - con * con) + 0.5 / eccent * Math.log((1 - con) / (1 + con)));
+      phi += dphi;
+      if (Math.abs(dphi) <= 1e-10) {
+        return phi;
+      }
+    }
+    return NaN;
+  }
+
+  // node_modules/proj4/lib/projections/cea.js
+  function init19() {
+    if (!this.sphere) {
+      this.k0 = msfnz_default(this.e, Math.sin(this.lat_ts), Math.cos(this.lat_ts));
+    }
+  }
+  function forward16(p) {
+    var lon = p.x;
+    var lat = p.y;
+    var x, y;
+    var dlon = adjust_lon_default(lon - this.long0, this.over);
+    if (this.sphere) {
+      x = this.x0 + this.a * dlon * Math.cos(this.lat_ts);
+      y = this.y0 + this.a * Math.sin(lat) / Math.cos(this.lat_ts);
+    } else {
+      var qs = qsfnz_default(this.e, Math.sin(lat));
+      x = this.x0 + this.a * this.k0 * dlon;
+      y = this.y0 + this.a * qs * 0.5 / this.k0;
+    }
+    p.x = x;
+    p.y = y;
+    return p;
+  }
+  function inverse16(p) {
+    p.x -= this.x0;
+    p.y -= this.y0;
+    var lon, lat;
+    if (this.sphere) {
+      lon = adjust_lon_default(this.long0 + p.x / this.a / Math.cos(this.lat_ts), this.over);
+      lat = Math.asin(p.y / this.a * Math.cos(this.lat_ts));
+    } else {
+      lat = iqsfnz_default(this.e, 2 * p.y * this.k0 / this.a);
+      lon = adjust_lon_default(this.long0 + p.x / (this.a * this.k0), this.over);
+    }
+    p.x = lon;
+    p.y = lat;
+    return p;
+  }
+  var names18 = ["cea"];
+  var cea_default = {
+    init: init19,
+    forward: forward16,
+    inverse: inverse16,
+    names: names18
+  };
+
+  // node_modules/proj4/lib/projections/eqc.js
+  function init20() {
+    this.x0 = this.x0 || 0;
+    this.y0 = this.y0 || 0;
+    this.lat0 = this.lat0 || 0;
+    this.long0 = this.long0 || 0;
+    this.lat_ts = this.lat_ts || 0;
+    this.title = this.title || "Equidistant Cylindrical (Plate Carre)";
+    this.rc = Math.cos(this.lat_ts);
+  }
+  function forward17(p) {
+    var lon = p.x;
+    var lat = p.y;
+    var dlon = adjust_lon_default(lon - this.long0, this.over);
+    var dlat = adjust_lat_default(lat - this.lat0);
+    p.x = this.x0 + this.a * dlon * this.rc;
+    p.y = this.y0 + this.a * dlat;
+    return p;
+  }
+  function inverse17(p) {
+    var x = p.x;
+    var y = p.y;
+    p.x = adjust_lon_default(this.long0 + (x - this.x0) / (this.a * this.rc), this.over);
+    p.y = adjust_lat_default(this.lat0 + (y - this.y0) / this.a);
+    return p;
+  }
+  var names19 = ["Equirectangular", "Equidistant_Cylindrical", "Equidistant_Cylindrical_Spherical", "eqc"];
+  var eqc_default = {
+    init: init20,
+    forward: forward17,
+    inverse: inverse17,
+    names: names19
+  };
+
+  // node_modules/proj4/lib/projections/poly.js
+  var MAX_ITER3 = 20;
+  function init21() {
+    this.temp = this.b / this.a;
+    this.es = 1 - Math.pow(this.temp, 2);
+    this.e = Math.sqrt(this.es);
+    this.e0 = e0fn_default(this.es);
+    this.e1 = e1fn_default(this.es);
+    this.e2 = e2fn_default(this.es);
+    this.e3 = e3fn_default(this.es);
+    this.ml0 = this.a * mlfn_default(this.e0, this.e1, this.e2, this.e3, this.lat0);
+  }
+  function forward18(p) {
+    var lon = p.x;
+    var lat = p.y;
+    var x, y, el;
+    var dlon = adjust_lon_default(lon - this.long0, this.over);
+    el = dlon * Math.sin(lat);
+    if (this.sphere) {
+      if (Math.abs(lat) <= EPSLN) {
+        x = this.a * dlon;
+        y = -1 * this.a * this.lat0;
+      } else {
+        x = this.a * Math.sin(el) / Math.tan(lat);
+        y = this.a * (adjust_lat_default(lat - this.lat0) + (1 - Math.cos(el)) / Math.tan(lat));
+      }
+    } else {
+      if (Math.abs(lat) <= EPSLN) {
+        x = this.a * dlon;
+        y = -1 * this.ml0;
+      } else {
+        var nl = gN_default(this.a, this.e, Math.sin(lat)) / Math.tan(lat);
+        x = nl * Math.sin(el);
+        y = this.a * mlfn_default(this.e0, this.e1, this.e2, this.e3, lat) - this.ml0 + nl * (1 - Math.cos(el));
+      }
+    }
+    p.x = x + this.x0;
+    p.y = y + this.y0;
+    return p;
+  }
+  function inverse18(p) {
+    var lon, lat, x, y, i;
+    var al, bl;
+    var phi, dphi;
+    x = p.x - this.x0;
+    y = p.y - this.y0;
+    if (this.sphere) {
+      if (Math.abs(y + this.a * this.lat0) <= EPSLN) {
+        lon = adjust_lon_default(x / this.a + this.long0, this.over);
+        lat = 0;
+      } else {
+        al = this.lat0 + y / this.a;
+        bl = x * x / this.a / this.a + al * al;
+        phi = al;
+        var tanphi;
+        for (i = MAX_ITER3; i; --i) {
+          tanphi = Math.tan(phi);
+          dphi = -1 * (al * (phi * tanphi + 1) - phi - 0.5 * (phi * phi + bl) * tanphi) / ((phi - al) / tanphi - 1);
+          phi += dphi;
+          if (Math.abs(dphi) <= EPSLN) {
+            lat = phi;
+            break;
+          }
+        }
+        lon = adjust_lon_default(this.long0 + Math.asin(x * Math.tan(phi) / this.a) / Math.sin(lat), this.over);
+      }
+    } else {
+      if (Math.abs(y + this.ml0) <= EPSLN) {
+        lat = 0;
+        lon = adjust_lon_default(this.long0 + x / this.a, this.over);
+      } else {
+        al = (this.ml0 + y) / this.a;
+        bl = x * x / this.a / this.a + al * al;
+        phi = al;
+        var cl, mln, mlnp, ma;
+        var con;
+        for (i = MAX_ITER3; i; --i) {
+          con = this.e * Math.sin(phi);
+          cl = Math.sqrt(1 - con * con) * Math.tan(phi);
+          mln = this.a * mlfn_default(this.e0, this.e1, this.e2, this.e3, phi);
+          mlnp = this.e0 - 2 * this.e1 * Math.cos(2 * phi) + 4 * this.e2 * Math.cos(4 * phi) - 6 * this.e3 * Math.cos(6 * phi);
+          ma = mln / this.a;
+          dphi = (al * (cl * ma + 1) - ma - 0.5 * cl * (ma * ma + bl)) / (this.es * Math.sin(2 * phi) * (ma * ma + bl - 2 * al * ma) / (4 * cl) + (al - ma) * (cl * mlnp - 2 / Math.sin(2 * phi)) - mlnp);
+          phi -= dphi;
+          if (Math.abs(dphi) <= EPSLN) {
+            lat = phi;
+            break;
+          }
+        }
+        cl = Math.sqrt(1 - this.es * Math.pow(Math.sin(lat), 2)) * Math.tan(lat);
+        lon = adjust_lon_default(this.long0 + Math.asin(x * cl / this.a) / Math.sin(lat), this.over);
+      }
+    }
+    p.x = lon;
+    p.y = lat;
+    return p;
+  }
+  var names20 = ["Polyconic", "American_Polyconic", "poly"];
+  var poly_default = {
+    init: init21,
+    forward: forward18,
+    inverse: inverse18,
+    names: names20
+  };
+
+  // node_modules/proj4/lib/projections/nzmg.js
+  function init22() {
+    this.A = [];
+    this.A[1] = 0.6399175073;
+    this.A[2] = -0.1358797613;
+    this.A[3] = 0.063294409;
+    this.A[4] = -0.02526853;
+    this.A[5] = 0.0117879;
+    this.A[6] = -55161e-7;
+    this.A[7] = 26906e-7;
+    this.A[8] = -1333e-6;
+    this.A[9] = 67e-5;
+    this.A[10] = -34e-5;
+    this.B_re = [];
+    this.B_im = [];
+    this.B_re[1] = 0.7557853228;
+    this.B_im[1] = 0;
+    this.B_re[2] = 0.249204646;
+    this.B_im[2] = 3371507e-9;
+    this.B_re[3] = -1541739e-9;
+    this.B_im[3] = 0.04105856;
+    this.B_re[4] = -0.10162907;
+    this.B_im[4] = 0.01727609;
+    this.B_re[5] = -0.26623489;
+    this.B_im[5] = -0.36249218;
+    this.B_re[6] = -0.6870983;
+    this.B_im[6] = -1.1651967;
+    this.C_re = [];
+    this.C_im = [];
+    this.C_re[1] = 1.3231270439;
+    this.C_im[1] = 0;
+    this.C_re[2] = -0.577245789;
+    this.C_im[2] = -7809598e-9;
+    this.C_re[3] = 0.508307513;
+    this.C_im[3] = -0.112208952;
+    this.C_re[4] = -0.15094762;
+    this.C_im[4] = 0.18200602;
+    this.C_re[5] = 1.01418179;
+    this.C_im[5] = 1.64497696;
+    this.C_re[6] = 1.9660549;
+    this.C_im[6] = 2.5127645;
+    this.D = [];
+    this.D[1] = 1.5627014243;
+    this.D[2] = 0.5185406398;
+    this.D[3] = -0.03333098;
+    this.D[4] = -0.1052906;
+    this.D[5] = -0.0368594;
+    this.D[6] = 7317e-6;
+    this.D[7] = 0.0122;
+    this.D[8] = 394e-5;
+    this.D[9] = -13e-4;
+  }
+  function forward19(p) {
+    var n;
+    var lon = p.x;
+    var lat = p.y;
+    var delta_lat = lat - this.lat0;
+    var delta_lon = lon - this.long0;
+    var d_phi = delta_lat / SEC_TO_RAD * 1e-5;
+    var d_lambda = delta_lon;
+    var d_phi_n = 1;
+    var d_psi = 0;
+    for (n = 1; n <= 10; n++) {
+      d_phi_n = d_phi_n * d_phi;
+      d_psi = d_psi + this.A[n] * d_phi_n;
+    }
+    var th_re = d_psi;
+    var th_im = d_lambda;
+    var th_n_re = 1;
+    var th_n_im = 0;
+    var th_n_re1;
+    var th_n_im1;
+    var z_re = 0;
+    var z_im = 0;
+    for (n = 1; n <= 6; n++) {
+      th_n_re1 = th_n_re * th_re - th_n_im * th_im;
+      th_n_im1 = th_n_im * th_re + th_n_re * th_im;
+      th_n_re = th_n_re1;
+      th_n_im = th_n_im1;
+      z_re = z_re + this.B_re[n] * th_n_re - this.B_im[n] * th_n_im;
+      z_im = z_im + this.B_im[n] * th_n_re + this.B_re[n] * th_n_im;
+    }
+    p.x = z_im * this.a + this.x0;
+    p.y = z_re * this.a + this.y0;
+    return p;
+  }
+  function inverse19(p) {
+    var n;
+    var x = p.x;
+    var y = p.y;
+    var delta_x = x - this.x0;
+    var delta_y = y - this.y0;
+    var z_re = delta_y / this.a;
+    var z_im = delta_x / this.a;
+    var z_n_re = 1;
+    var z_n_im = 0;
+    var z_n_re1;
+    var z_n_im1;
+    var th_re = 0;
+    var th_im = 0;
+    for (n = 1; n <= 6; n++) {
+      z_n_re1 = z_n_re * z_re - z_n_im * z_im;
+      z_n_im1 = z_n_im * z_re + z_n_re * z_im;
+      z_n_re = z_n_re1;
+      z_n_im = z_n_im1;
+      th_re = th_re + this.C_re[n] * z_n_re - this.C_im[n] * z_n_im;
+      th_im = th_im + this.C_im[n] * z_n_re + this.C_re[n] * z_n_im;
+    }
+    for (var i = 0; i < this.iterations; i++) {
+      var th_n_re = th_re;
+      var th_n_im = th_im;
+      var th_n_re1;
+      var th_n_im1;
+      var num_re = z_re;
+      var num_im = z_im;
+      for (n = 2; n <= 6; n++) {
+        th_n_re1 = th_n_re * th_re - th_n_im * th_im;
+        th_n_im1 = th_n_im * th_re + th_n_re * th_im;
+        th_n_re = th_n_re1;
+        th_n_im = th_n_im1;
+        num_re = num_re + (n - 1) * (this.B_re[n] * th_n_re - this.B_im[n] * th_n_im);
+        num_im = num_im + (n - 1) * (this.B_im[n] * th_n_re + this.B_re[n] * th_n_im);
+      }
+      th_n_re = 1;
+      th_n_im = 0;
+      var den_re = this.B_re[1];
+      var den_im = this.B_im[1];
+      for (n = 2; n <= 6; n++) {
+        th_n_re1 = th_n_re * th_re - th_n_im * th_im;
+        th_n_im1 = th_n_im * th_re + th_n_re * th_im;
+        th_n_re = th_n_re1;
+        th_n_im = th_n_im1;
+        den_re = den_re + n * (this.B_re[n] * th_n_re - this.B_im[n] * th_n_im);
+        den_im = den_im + n * (this.B_im[n] * th_n_re + this.B_re[n] * th_n_im);
+      }
+      var den2 = den_re * den_re + den_im * den_im;
+      th_re = (num_re * den_re + num_im * den_im) / den2;
+      th_im = (num_im * den_re - num_re * den_im) / den2;
+    }
+    var d_psi = th_re;
+    var d_lambda = th_im;
+    var d_psi_n = 1;
+    var d_phi = 0;
+    for (n = 1; n <= 9; n++) {
+      d_psi_n = d_psi_n * d_psi;
+      d_phi = d_phi + this.D[n] * d_psi_n;
+    }
+    var lat = this.lat0 + d_phi * SEC_TO_RAD * 1e5;
+    var lon = this.long0 + d_lambda;
+    p.x = lon;
+    p.y = lat;
+    return p;
+  }
+  var names21 = ["New_Zealand_Map_Grid", "nzmg"];
+  var nzmg_default = {
+    init: init22,
+    forward: forward19,
+    inverse: inverse19,
+    names: names21
+  };
+
+  // node_modules/proj4/lib/projections/mill.js
+  function init23() {
+  }
+  function forward20(p) {
+    var lon = p.x;
+    var lat = p.y;
+    var dlon = adjust_lon_default(lon - this.long0, this.over);
+    var x = this.x0 + this.a * dlon;
+    var y = this.y0 + this.a * Math.log(Math.tan(Math.PI / 4 + lat / 2.5)) * 1.25;
+    p.x = x;
+    p.y = y;
+    return p;
+  }
+  function inverse20(p) {
+    p.x -= this.x0;
+    p.y -= this.y0;
+    var lon = adjust_lon_default(this.long0 + p.x / this.a, this.over);
+    var lat = 2.5 * (Math.atan(Math.exp(0.8 * p.y / this.a)) - Math.PI / 4);
+    p.x = lon;
+    p.y = lat;
+    return p;
+  }
+  var names22 = ["Miller_Cylindrical", "mill"];
+  var mill_default = {
+    init: init23,
+    forward: forward20,
+    inverse: inverse20,
+    names: names22
+  };
+
+  // node_modules/proj4/lib/projections/sinu.js
+  var MAX_ITER4 = 20;
+  function init24() {
+    this.long0 = this.long0 || 0;
+    if (!this.sphere) {
+      this.en = pj_enfn_default(this.es);
+    } else {
+      this.n = 1;
+      this.m = 0;
+      this.es = 0;
+      this.C_y = Math.sqrt((this.m + 1) / this.n);
+      this.C_x = this.C_y / (this.m + 1);
+    }
+  }
+  function forward21(p) {
+    var x, y;
+    var lon = p.x;
+    var lat = p.y;
+    lon = adjust_lon_default(lon - this.long0, this.over);
+    if (this.sphere) {
+      if (!this.m) {
+        lat = this.n !== 1 ? Math.asin(this.n * Math.sin(lat)) : lat;
+      } else {
+        var k = this.n * Math.sin(lat);
+        for (var i = MAX_ITER4; i; --i) {
+          var V2 = (this.m * lat + Math.sin(lat) - k) / (this.m + Math.cos(lat));
+          lat -= V2;
+          if (Math.abs(V2) < EPSLN) {
+            break;
+          }
+        }
+      }
+      x = this.a * this.C_x * lon * (this.m + Math.cos(lat));
+      y = this.a * this.C_y * lat;
+    } else {
+      var s = Math.sin(lat);
+      var c = Math.cos(lat);
+      y = this.a * pj_mlfn_default(lat, s, c, this.en);
+      x = this.a * lon * c / Math.sqrt(1 - this.es * s * s);
+    }
+    p.x = x;
+    p.y = y;
+    return p;
+  }
+  function inverse21(p) {
+    var lat, temp, lon, s;
+    p.x -= this.x0;
+    lon = p.x / this.a;
+    p.y -= this.y0;
+    lat = p.y / this.a;
+    if (this.sphere) {
+      lat /= this.C_y;
+      lon = lon / (this.C_x * (this.m + Math.cos(lat)));
+      if (this.m) {
+        lat = asinz_default((this.m * lat + Math.sin(lat)) / this.n);
+      } else if (this.n !== 1) {
+        lat = asinz_default(Math.sin(lat) / this.n);
+      }
+      lon = adjust_lon_default(lon + this.long0, this.over);
+      lat = adjust_lat_default(lat);
+    } else {
+      lat = pj_inv_mlfn_default(p.y / this.a, this.es, this.en);
+      s = Math.abs(lat);
+      if (s < HALF_PI) {
+        s = Math.sin(lat);
+        temp = this.long0 + p.x * Math.sqrt(1 - this.es * s * s) / (this.a * Math.cos(lat));
+        lon = adjust_lon_default(temp, this.over);
+      } else if (s - EPSLN < HALF_PI) {
+        lon = this.long0;
+      }
+    }
+    p.x = lon;
+    p.y = lat;
+    return p;
+  }
+  var names23 = ["Sinusoidal", "sinu"];
+  var sinu_default = {
+    init: init24,
+    forward: forward21,
+    inverse: inverse21,
+    names: names23
+  };
+
+  // node_modules/proj4/lib/projections/eck6.js
+  function init25() {
+    this.sphere = true;
+    this.b = this.a;
+    this.m = 1;
+    this.n = 2.5707963267948966;
+    this.es = 0;
+    this.C_y = Math.sqrt((this.m + 1) / this.n);
+    this.C_x = this.C_y / (this.m + 1);
+  }
+  var forward22 = forward21;
+  var inverse22 = inverse21;
+  var names24 = ["Eckert_VI", "eck6"];
+  var eck6_default = {
+    init: init25,
+    forward: forward22,
+    inverse: inverse22,
+    names: names24
+  };
+
+  // node_modules/proj4/lib/projections/moll.js
+  function init26() {
+    this.x0 = this.x0 !== void 0 ? this.x0 : 0;
+    this.y0 = this.y0 !== void 0 ? this.y0 : 0;
+    this.long0 = this.long0 !== void 0 ? this.long0 : 0;
+  }
+  function forward23(p) {
+    var lon = p.x;
+    var lat = p.y;
+    var delta_lon = adjust_lon_default(lon - this.long0, this.over);
+    var theta = lat;
+    var con = Math.PI * Math.sin(lat);
+    while (true) {
+      var delta_theta = -(theta + Math.sin(theta) - con) / (1 + Math.cos(theta));
+      theta += delta_theta;
+      if (Math.abs(delta_theta) < EPSLN) {
+        break;
+      }
+    }
+    theta /= 2;
+    if (Math.PI / 2 - Math.abs(lat) < EPSLN) {
+      delta_lon = 0;
+    }
+    var x = 0.900316316158 * this.a * delta_lon * Math.cos(theta) + this.x0;
+    var y = 1.4142135623731 * this.a * Math.sin(theta) + this.y0;
+    p.x = x;
+    p.y = y;
+    return p;
+  }
+  function inverse23(p) {
+    var theta;
+    var arg;
+    p.x -= this.x0;
+    p.y -= this.y0;
+    arg = p.y / (1.4142135623731 * this.a);
+    if (Math.abs(arg) > 0.999999999999) {
+      arg = 0.999999999999;
+    }
+    theta = Math.asin(arg);
+    var lon = adjust_lon_default(this.long0 + p.x / (0.900316316158 * this.a * Math.cos(theta)), this.over);
+    if (lon < -Math.PI) {
+      lon = -Math.PI;
+    }
+    if (lon > Math.PI) {
+      lon = Math.PI;
+    }
+    arg = (2 * theta + Math.sin(2 * theta)) / Math.PI;
+    if (Math.abs(arg) > 1) {
+      arg = 1;
+    }
+    var lat = Math.asin(arg);
+    p.x = lon;
+    p.y = lat;
+    return p;
+  }
+  var names25 = ["Mollweide", "moll"];
+  var moll_default = {
+    init: init26,
+    forward: forward23,
+    inverse: inverse23,
+    names: names25
+  };
+
+  // node_modules/proj4/lib/projections/eqdc.js
+  function init27() {
+    if (Math.abs(this.lat1 + this.lat2) < EPSLN) {
+      return;
+    }
+    this.lat2 = this.lat2 || this.lat1;
+    this.temp = this.b / this.a;
+    this.es = 1 - Math.pow(this.temp, 2);
+    this.e = Math.sqrt(this.es);
+    this.e0 = e0fn_default(this.es);
+    this.e1 = e1fn_default(this.es);
+    this.e2 = e2fn_default(this.es);
+    this.e3 = e3fn_default(this.es);
+    this.sin_phi = Math.sin(this.lat1);
+    this.cos_phi = Math.cos(this.lat1);
+    this.ms1 = msfnz_default(this.e, this.sin_phi, this.cos_phi);
+    this.ml1 = mlfn_default(this.e0, this.e1, this.e2, this.e3, this.lat1);
+    if (Math.abs(this.lat1 - this.lat2) < EPSLN) {
+      this.ns = this.sin_phi;
+    } else {
+      this.sin_phi = Math.sin(this.lat2);
+      this.cos_phi = Math.cos(this.lat2);
+      this.ms2 = msfnz_default(this.e, this.sin_phi, this.cos_phi);
+      this.ml2 = mlfn_default(this.e0, this.e1, this.e2, this.e3, this.lat2);
+      this.ns = (this.ms1 - this.ms2) / (this.ml2 - this.ml1);
+    }
+    this.g = this.ml1 + this.ms1 / this.ns;
+    this.ml0 = mlfn_default(this.e0, this.e1, this.e2, this.e3, this.lat0);
+    this.rh = this.a * (this.g - this.ml0);
+  }
+  function forward24(p) {
+    var lon = p.x;
+    var lat = p.y;
+    var rh1;
+    if (this.sphere) {
+      rh1 = this.a * (this.g - lat);
+    } else {
+      var ml = mlfn_default(this.e0, this.e1, this.e2, this.e3, lat);
+      rh1 = this.a * (this.g - ml);
+    }
+    var theta = this.ns * adjust_lon_default(lon - this.long0, this.over);
+    var x = this.x0 + rh1 * Math.sin(theta);
+    var y = this.y0 + this.rh - rh1 * Math.cos(theta);
+    p.x = x;
+    p.y = y;
+    return p;
+  }
+  function inverse24(p) {
+    p.x -= this.x0;
+    p.y = this.rh - p.y + this.y0;
+    var con, rh1, lat, lon;
+    if (this.ns >= 0) {
+      rh1 = Math.sqrt(p.x * p.x + p.y * p.y);
+      con = 1;
+    } else {
+      rh1 = -Math.sqrt(p.x * p.x + p.y * p.y);
+      con = -1;
+    }
+    var theta = 0;
+    if (rh1 !== 0) {
+      theta = Math.atan2(con * p.x, con * p.y);
+    }
+    if (this.sphere) {
+      lon = adjust_lon_default(this.long0 + theta / this.ns, this.over);
+      lat = adjust_lat_default(this.g - rh1 / this.a);
+      p.x = lon;
+      p.y = lat;
+      return p;
+    } else {
+      var ml = this.g - rh1 / this.a;
+      lat = imlfn_default(ml, this.e0, this.e1, this.e2, this.e3);
+      lon = adjust_lon_default(this.long0 + theta / this.ns, this.over);
+      p.x = lon;
+      p.y = lat;
+      return p;
+    }
+  }
+  var names26 = ["Equidistant_Conic", "eqdc"];
+  var eqdc_default = {
+    init: init27,
+    forward: forward24,
+    inverse: inverse24,
+    names: names26
+  };
+
+  // node_modules/proj4/lib/projections/vandg.js
+  function init28() {
+    this.R = this.a;
+  }
+  function forward25(p) {
+    var lon = p.x;
+    var lat = p.y;
+    var dlon = adjust_lon_default(lon - this.long0, this.over);
+    var x, y;
+    if (Math.abs(lat) <= EPSLN) {
+      x = this.x0 + this.R * dlon;
+      y = this.y0;
+    }
+    var theta = asinz_default(2 * Math.abs(lat / Math.PI));
+    if (Math.abs(dlon) <= EPSLN || Math.abs(Math.abs(lat) - HALF_PI) <= EPSLN) {
+      x = this.x0;
+      if (lat >= 0) {
+        y = this.y0 + Math.PI * this.R * Math.tan(0.5 * theta);
+      } else {
+        y = this.y0 + Math.PI * this.R * -Math.tan(0.5 * theta);
+      }
+    }
+    var al = 0.5 * Math.abs(Math.PI / dlon - dlon / Math.PI);
+    var asq = al * al;
+    var sinth = Math.sin(theta);
+    var costh = Math.cos(theta);
+    var g = costh / (sinth + costh - 1);
+    var gsq = g * g;
+    var m = g * (2 / sinth - 1);
+    var msq = m * m;
+    var con = Math.PI * this.R * (al * (g - msq) + Math.sqrt(asq * (g - msq) * (g - msq) - (msq + asq) * (gsq - msq))) / (msq + asq);
+    if (dlon < 0) {
+      con = -con;
+    }
+    x = this.x0 + con;
+    var q = asq + g;
+    con = Math.PI * this.R * (m * q - al * Math.sqrt((msq + asq) * (asq + 1) - q * q)) / (msq + asq);
+    if (lat >= 0) {
+      y = this.y0 + con;
+    } else {
+      y = this.y0 - con;
+    }
+    p.x = x;
+    p.y = y;
+    return p;
+  }
+  function inverse25(p) {
+    var lon, lat;
+    var xx, yy, xys, c1, c2, c3;
+    var a12;
+    var m1;
+    var con;
+    var th1;
+    var d;
+    p.x -= this.x0;
+    p.y -= this.y0;
+    con = Math.PI * this.R;
+    xx = p.x / con;
+    yy = p.y / con;
+    xys = xx * xx + yy * yy;
+    c1 = -Math.abs(yy) * (1 + xys);
+    c2 = c1 - 2 * yy * yy + xx * xx;
+    c3 = -2 * c1 + 1 + 2 * yy * yy + xys * xys;
+    d = yy * yy / c3 + (2 * c2 * c2 * c2 / c3 / c3 / c3 - 9 * c1 * c2 / c3 / c3) / 27;
+    a12 = (c1 - c2 * c2 / 3 / c3) / c3;
+    m1 = 2 * Math.sqrt(-a12 / 3);
+    con = 3 * d / a12 / m1;
+    if (Math.abs(con) > 1) {
+      if (con >= 0) {
+        con = 1;
+      } else {
+        con = -1;
+      }
+    }
+    th1 = Math.acos(con) / 3;
+    if (p.y >= 0) {
+      lat = (-m1 * Math.cos(th1 + Math.PI / 3) - c2 / 3 / c3) * Math.PI;
+    } else {
+      lat = -(-m1 * Math.cos(th1 + Math.PI / 3) - c2 / 3 / c3) * Math.PI;
+    }
+    if (Math.abs(xx) < EPSLN) {
+      lon = this.long0;
+    } else {
+      lon = adjust_lon_default(this.long0 + Math.PI * (xys - 1 + Math.sqrt(1 + 2 * (xx * xx - yy * yy) + xys * xys)) / 2 / xx, this.over);
+    }
+    p.x = lon;
+    p.y = lat;
+    return p;
+  }
+  var names27 = ["Van_der_Grinten_I", "VanDerGrinten", "Van_der_Grinten", "vandg"];
+  var vandg_default = {
+    init: init28,
+    forward: forward25,
+    inverse: inverse25,
+    names: names27
+  };
+
+  // node_modules/proj4/lib/common/vincenty.js
+  function vincentyInverse(lat1, lon1, lat2, lon2, a, f) {
+    const L = lon2 - lon1;
+    const U1 = Math.atan((1 - f) * Math.tan(lat1));
+    const U2 = Math.atan((1 - f) * Math.tan(lat2));
+    const sinU1 = Math.sin(U1), cosU1 = Math.cos(U1);
+    const sinU2 = Math.sin(U2), cosU2 = Math.cos(U2);
+    let lambda = L, lambdaP, iterLimit = 100;
+    let sinLambda, cosLambda, sinSigma, cosSigma, sigma, sinAlpha, cos2Alpha, cos2SigmaM, C;
+    let uSq, A5, B, deltaSigma, s;
+    do {
+      sinLambda = Math.sin(lambda);
+      cosLambda = Math.cos(lambda);
+      sinSigma = Math.sqrt(
+        cosU2 * sinLambda * (cosU2 * sinLambda) + (cosU1 * sinU2 - sinU1 * cosU2 * cosLambda) * (cosU1 * sinU2 - sinU1 * cosU2 * cosLambda)
+      );
+      if (sinSigma === 0) {
+        return { azi1: 0, s12: 0 };
+      }
+      cosSigma = sinU1 * sinU2 + cosU1 * cosU2 * cosLambda;
+      sigma = Math.atan2(sinSigma, cosSigma);
+      sinAlpha = cosU1 * cosU2 * sinLambda / sinSigma;
+      cos2Alpha = 1 - sinAlpha * sinAlpha;
+      cos2SigmaM = cos2Alpha !== 0 ? cosSigma - 2 * sinU1 * sinU2 / cos2Alpha : 0;
+      C = f / 16 * cos2Alpha * (4 + f * (4 - 3 * cos2Alpha));
+      lambdaP = lambda;
+      lambda = L + (1 - C) * f * sinAlpha * (sigma + C * sinSigma * (cos2SigmaM + C * cosSigma * (-1 + 2 * cos2SigmaM * cos2SigmaM)));
+    } while (Math.abs(lambda - lambdaP) > 1e-12 && --iterLimit > 0);
+    if (iterLimit === 0) {
+      return { azi1: NaN, s12: NaN };
+    }
+    uSq = cos2Alpha * (a * a - a * (1 - f) * (a * (1 - f))) / (a * (1 - f) * (a * (1 - f)));
+    A5 = 1 + uSq / 16384 * (4096 + uSq * (-768 + uSq * (320 - 175 * uSq)));
+    B = uSq / 1024 * (256 + uSq * (-128 + uSq * (74 - 47 * uSq)));
+    deltaSigma = B * sinSigma * (cos2SigmaM + B / 4 * (cosSigma * (-1 + 2 * cos2SigmaM * cos2SigmaM) - B / 6 * cos2SigmaM * (-3 + 4 * sinSigma * sinSigma) * (-3 + 4 * cos2SigmaM * cos2SigmaM)));
+    s = a * (1 - f) * A5 * (sigma - deltaSigma);
+    const azi1 = Math.atan2(cosU2 * sinLambda, cosU1 * sinU2 - sinU1 * cosU2 * cosLambda);
+    return { azi1, s12: s };
+  }
+  function vincentyDirect(lat1, lon1, azi1, s12, a, f) {
+    const U1 = Math.atan((1 - f) * Math.tan(lat1));
+    const sinU1 = Math.sin(U1), cosU1 = Math.cos(U1);
+    const sinAlpha1 = Math.sin(azi1), cosAlpha1 = Math.cos(azi1);
+    const sigma1 = Math.atan2(sinU1, cosU1 * cosAlpha1);
+    const sinAlpha = cosU1 * sinAlpha1;
+    const cos2Alpha = 1 - sinAlpha * sinAlpha;
+    const uSq = cos2Alpha * (a * a - a * (1 - f) * (a * (1 - f))) / (a * (1 - f) * (a * (1 - f)));
+    const A5 = 1 + uSq / 16384 * (4096 + uSq * (-768 + uSq * (320 - 175 * uSq)));
+    const B = uSq / 1024 * (256 + uSq * (-128 + uSq * (74 - 47 * uSq)));
+    let sigma = s12 / (a * (1 - f) * A5), sigmaP, iterLimit = 100;
+    let cos2SigmaM, sinSigma, cosSigma, deltaSigma;
+    do {
+      cos2SigmaM = Math.cos(2 * sigma1 + sigma);
+      sinSigma = Math.sin(sigma);
+      cosSigma = Math.cos(sigma);
+      deltaSigma = B * sinSigma * (cos2SigmaM + B / 4 * (cosSigma * (-1 + 2 * cos2SigmaM * cos2SigmaM) - B / 6 * cos2SigmaM * (-3 + 4 * sinSigma * sinSigma) * (-3 + 4 * cos2SigmaM * cos2SigmaM)));
+      sigmaP = sigma;
+      sigma = s12 / (a * (1 - f) * A5) + deltaSigma;
+    } while (Math.abs(sigma - sigmaP) > 1e-12 && --iterLimit > 0);
+    if (iterLimit === 0) {
+      return { lat2: NaN, lon2: NaN };
+    }
+    const tmp = sinU1 * sinSigma - cosU1 * cosSigma * cosAlpha1;
+    const lat2 = Math.atan2(
+      sinU1 * cosSigma + cosU1 * sinSigma * cosAlpha1,
+      (1 - f) * Math.sqrt(sinAlpha * sinAlpha + tmp * tmp)
+    );
+    const lambda = Math.atan2(
+      sinSigma * sinAlpha1,
+      cosU1 * cosSigma - sinU1 * sinSigma * cosAlpha1
+    );
+    const C = f / 16 * cos2Alpha * (4 + f * (4 - 3 * cos2Alpha));
+    const L = lambda - (1 - C) * f * sinAlpha * (sigma + C * sinSigma * (cos2SigmaM + C * cosSigma * (-1 + 2 * cos2SigmaM * cos2SigmaM)));
+    const lon2 = lon1 + L;
+    return { lat2, lon2 };
+  }
+
+  // node_modules/proj4/lib/projections/aeqd.js
+  function init29() {
+    this.sin_p12 = Math.sin(this.lat0);
+    this.cos_p12 = Math.cos(this.lat0);
+    this.f = this.es / (1 + Math.sqrt(1 - this.es));
+  }
+  function forward26(p) {
+    var lon = p.x;
+    var lat = p.y;
+    var sinphi = Math.sin(p.y);
+    var cosphi = Math.cos(p.y);
+    var dlon = adjust_lon_default(lon - this.long0, this.over);
+    var e0, e1, e2, e3, Mlp, Ml, c, kp, cos_c, vars, azi1;
+    if (this.sphere) {
+      if (Math.abs(this.sin_p12 - 1) <= EPSLN) {
+        p.x = this.x0 + this.a * (HALF_PI - lat) * Math.sin(dlon);
+        p.y = this.y0 - this.a * (HALF_PI - lat) * Math.cos(dlon);
+        return p;
+      } else if (Math.abs(this.sin_p12 + 1) <= EPSLN) {
+        p.x = this.x0 + this.a * (HALF_PI + lat) * Math.sin(dlon);
+        p.y = this.y0 + this.a * (HALF_PI + lat) * Math.cos(dlon);
+        return p;
+      } else {
+        cos_c = this.sin_p12 * sinphi + this.cos_p12 * cosphi * Math.cos(dlon);
+        c = Math.acos(cos_c);
+        kp = c ? c / Math.sin(c) : 1;
+        p.x = this.x0 + this.a * kp * cosphi * Math.sin(dlon);
+        p.y = this.y0 + this.a * kp * (this.cos_p12 * sinphi - this.sin_p12 * cosphi * Math.cos(dlon));
+        return p;
+      }
+    } else {
+      e0 = e0fn_default(this.es);
+      e1 = e1fn_default(this.es);
+      e2 = e2fn_default(this.es);
+      e3 = e3fn_default(this.es);
+      if (Math.abs(this.sin_p12 - 1) <= EPSLN) {
+        Mlp = this.a * mlfn_default(e0, e1, e2, e3, HALF_PI);
+        Ml = this.a * mlfn_default(e0, e1, e2, e3, lat);
+        p.x = this.x0 + (Mlp - Ml) * Math.sin(dlon);
+        p.y = this.y0 - (Mlp - Ml) * Math.cos(dlon);
+        return p;
+      } else if (Math.abs(this.sin_p12 + 1) <= EPSLN) {
+        Mlp = this.a * mlfn_default(e0, e1, e2, e3, HALF_PI);
+        Ml = this.a * mlfn_default(e0, e1, e2, e3, lat);
+        p.x = this.x0 + (Mlp + Ml) * Math.sin(dlon);
+        p.y = this.y0 + (Mlp + Ml) * Math.cos(dlon);
+        return p;
+      } else {
+        if (Math.abs(lon) < EPSLN && Math.abs(lat - this.lat0) < EPSLN) {
+          p.x = p.y = 0;
+          return p;
+        }
+        vars = vincentyInverse(this.lat0, this.long0, lat, lon, this.a, this.f);
+        azi1 = vars.azi1;
+        p.x = vars.s12 * Math.sin(azi1);
+        p.y = vars.s12 * Math.cos(azi1);
+        return p;
+      }
+    }
+  }
+  function inverse26(p) {
+    p.x -= this.x0;
+    p.y -= this.y0;
+    var rh, z, sinz, cosz, lon, lat, con, e0, e1, e2, e3, Mlp, M5, azi1, s12, vars;
+    if (this.sphere) {
+      rh = Math.sqrt(p.x * p.x + p.y * p.y);
+      if (rh > 2 * HALF_PI * this.a) {
+        return;
+      }
+      z = rh / this.a;
+      sinz = Math.sin(z);
+      cosz = Math.cos(z);
+      lon = this.long0;
+      if (Math.abs(rh) <= EPSLN) {
+        lat = this.lat0;
+      } else {
+        lat = asinz_default(cosz * this.sin_p12 + p.y * sinz * this.cos_p12 / rh);
+        con = Math.abs(this.lat0) - HALF_PI;
+        if (Math.abs(con) <= EPSLN) {
+          if (this.lat0 >= 0) {
+            lon = adjust_lon_default(this.long0 + Math.atan2(p.x, -p.y), this.over);
+          } else {
+            lon = adjust_lon_default(this.long0 - Math.atan2(-p.x, p.y), this.over);
+          }
+        } else {
+          lon = adjust_lon_default(this.long0 + Math.atan2(p.x * sinz, rh * this.cos_p12 * cosz - p.y * this.sin_p12 * sinz), this.over);
+        }
+      }
+      p.x = lon;
+      p.y = lat;
+      return p;
+    } else {
+      e0 = e0fn_default(this.es);
+      e1 = e1fn_default(this.es);
+      e2 = e2fn_default(this.es);
+      e3 = e3fn_default(this.es);
+      if (Math.abs(this.sin_p12 - 1) <= EPSLN) {
+        Mlp = this.a * mlfn_default(e0, e1, e2, e3, HALF_PI);
+        rh = Math.sqrt(p.x * p.x + p.y * p.y);
+        M5 = Mlp - rh;
+        lat = imlfn_default(M5 / this.a, e0, e1, e2, e3);
+        lon = adjust_lon_default(this.long0 + Math.atan2(p.x, -1 * p.y), this.over);
+        p.x = lon;
+        p.y = lat;
+        return p;
+      } else if (Math.abs(this.sin_p12 + 1) <= EPSLN) {
+        Mlp = this.a * mlfn_default(e0, e1, e2, e3, HALF_PI);
+        rh = Math.sqrt(p.x * p.x + p.y * p.y);
+        M5 = rh - Mlp;
+        lat = imlfn_default(M5 / this.a, e0, e1, e2, e3);
+        lon = adjust_lon_default(this.long0 + Math.atan2(p.x, p.y), this.over);
+        p.x = lon;
+        p.y = lat;
+        return p;
+      } else {
+        azi1 = Math.atan2(p.x, p.y);
+        s12 = Math.sqrt(p.x * p.x + p.y * p.y);
+        vars = vincentyDirect(this.lat0, this.long0, azi1, s12, this.a, this.f);
+        p.x = vars.lon2;
+        p.y = vars.lat2;
+        return p;
+      }
+    }
+  }
+  var names28 = ["Azimuthal_Equidistant", "aeqd"];
+  var aeqd_default = {
+    init: init29,
+    forward: forward26,
+    inverse: inverse26,
+    names: names28
+  };
+
+  // node_modules/proj4/lib/projections/ortho.js
+  function init30() {
+    this.sin_p14 = Math.sin(this.lat0 || 0);
+    this.cos_p14 = Math.cos(this.lat0 || 0);
+  }
+  function forward27(p) {
+    var sinphi, cosphi;
+    var dlon;
+    var coslon;
+    var ksp;
+    var g, x, y;
+    var lon = p.x;
+    var lat = p.y;
+    dlon = adjust_lon_default(lon - (this.long0 || 0), this.over);
+    sinphi = Math.sin(lat);
+    cosphi = Math.cos(lat);
+    coslon = Math.cos(dlon);
+    g = this.sin_p14 * sinphi + this.cos_p14 * cosphi * coslon;
+    ksp = 1;
+    if (g > 0 || Math.abs(g) <= EPSLN) {
+      x = this.a * ksp * cosphi * Math.sin(dlon);
+      y = (this.y0 || 0) + this.a * ksp * (this.cos_p14 * sinphi - this.sin_p14 * cosphi * coslon);
+    }
+    p.x = x;
+    p.y = y;
+    return p;
+  }
+  function inverse27(p) {
+    var rh;
+    var z;
+    var sinz, cosz;
+    var con;
+    var lon, lat;
+    var long0, lat0;
+    p.x -= this.x0 || 0;
+    p.y -= this.y0 || 0;
+    rh = Math.sqrt(p.x * p.x + p.y * p.y);
+    z = asinz_default(rh / this.a);
+    sinz = Math.sin(z);
+    cosz = Math.cos(z);
+    long0 = this.long0 || 0;
+    lat0 = this.lat0 || 0;
+    lon = long0;
+    if (Math.abs(rh) <= EPSLN) {
+      lat = lat0;
+      p.x = lon;
+      p.y = lat;
+      return p;
+    }
+    lat = asinz_default(cosz * this.sin_p14 + p.y * sinz * this.cos_p14 / rh);
+    con = Math.abs(lat0) - HALF_PI;
+    if (Math.abs(con) <= EPSLN) {
+      if (lat0 >= 0) {
+        lon = adjust_lon_default(long0 + Math.atan2(p.x, -p.y), this.over);
+      } else {
+        lon = adjust_lon_default(long0 - Math.atan2(-p.x, p.y), this.over);
+      }
+      p.x = lon;
+      p.y = lat;
+      return p;
+    }
+    lon = adjust_lon_default(long0 + Math.atan2(p.x * sinz, rh * this.cos_p14 * cosz - p.y * this.sin_p14 * sinz), this.over);
+    p.x = lon;
+    p.y = lat;
+    return p;
+  }
+  var names29 = ["ortho"];
+  var ortho_default = {
+    init: init30,
+    forward: forward27,
+    inverse: inverse27,
+    names: names29
+  };
+
+  // node_modules/proj4/lib/projections/qsc.js
+  var FACE_ENUM = {
+    FRONT: 1,
+    RIGHT: 2,
+    BACK: 3,
+    LEFT: 4,
+    TOP: 5,
+    BOTTOM: 6
+  };
+  var AREA_ENUM = {
+    AREA_0: 1,
+    AREA_1: 2,
+    AREA_2: 3,
+    AREA_3: 4
+  };
+  function init31() {
+    this.x0 = this.x0 || 0;
+    this.y0 = this.y0 || 0;
+    this.lat0 = this.lat0 || 0;
+    this.long0 = this.long0 || 0;
+    this.lat_ts = this.lat_ts || 0;
+    this.title = this.title || "Quadrilateralized Spherical Cube";
+    if (this.lat0 >= HALF_PI - FORTPI / 2) {
+      this.face = FACE_ENUM.TOP;
+    } else if (this.lat0 <= -(HALF_PI - FORTPI / 2)) {
+      this.face = FACE_ENUM.BOTTOM;
+    } else if (Math.abs(this.long0) <= FORTPI) {
+      this.face = FACE_ENUM.FRONT;
+    } else if (Math.abs(this.long0) <= HALF_PI + FORTPI) {
+      this.face = this.long0 > 0 ? FACE_ENUM.RIGHT : FACE_ENUM.LEFT;
+    } else {
+      this.face = FACE_ENUM.BACK;
+    }
+    if (this.es !== 0) {
+      this.one_minus_f = 1 - (this.a - this.b) / this.a;
+      this.one_minus_f_squared = this.one_minus_f * this.one_minus_f;
+    }
+  }
+  function forward28(p) {
+    var xy = { x: 0, y: 0 };
+    var lat, lon;
+    var theta, phi;
+    var t, mu;
+    var area = { value: 0 };
+    p.x -= this.long0;
+    if (this.es !== 0) {
+      lat = Math.atan(this.one_minus_f_squared * Math.tan(p.y));
+    } else {
+      lat = p.y;
+    }
+    lon = p.x;
+    if (this.face === FACE_ENUM.TOP) {
+      phi = HALF_PI - lat;
+      if (lon >= FORTPI && lon <= HALF_PI + FORTPI) {
+        area.value = AREA_ENUM.AREA_0;
+        theta = lon - HALF_PI;
+      } else if (lon > HALF_PI + FORTPI || lon <= -(HALF_PI + FORTPI)) {
+        area.value = AREA_ENUM.AREA_1;
+        theta = lon > 0 ? lon - SPI : lon + SPI;
+      } else if (lon > -(HALF_PI + FORTPI) && lon <= -FORTPI) {
+        area.value = AREA_ENUM.AREA_2;
+        theta = lon + HALF_PI;
+      } else {
+        area.value = AREA_ENUM.AREA_3;
+        theta = lon;
+      }
+    } else if (this.face === FACE_ENUM.BOTTOM) {
+      phi = HALF_PI + lat;
+      if (lon >= FORTPI && lon <= HALF_PI + FORTPI) {
+        area.value = AREA_ENUM.AREA_0;
+        theta = -lon + HALF_PI;
+      } else if (lon < FORTPI && lon >= -FORTPI) {
+        area.value = AREA_ENUM.AREA_1;
+        theta = -lon;
+      } else if (lon < -FORTPI && lon >= -(HALF_PI + FORTPI)) {
+        area.value = AREA_ENUM.AREA_2;
+        theta = -lon - HALF_PI;
+      } else {
+        area.value = AREA_ENUM.AREA_3;
+        theta = lon > 0 ? -lon + SPI : -lon - SPI;
+      }
+    } else {
+      var q, r, s;
+      var sinlat, coslat;
+      var sinlon, coslon;
+      if (this.face === FACE_ENUM.RIGHT) {
+        lon = qsc_shift_lon_origin(lon, +HALF_PI);
+      } else if (this.face === FACE_ENUM.BACK) {
+        lon = qsc_shift_lon_origin(lon, +SPI);
+      } else if (this.face === FACE_ENUM.LEFT) {
+        lon = qsc_shift_lon_origin(lon, -HALF_PI);
+      }
+      sinlat = Math.sin(lat);
+      coslat = Math.cos(lat);
+      sinlon = Math.sin(lon);
+      coslon = Math.cos(lon);
+      q = coslat * coslon;
+      r = coslat * sinlon;
+      s = sinlat;
+      if (this.face === FACE_ENUM.FRONT) {
+        phi = Math.acos(q);
+        theta = qsc_fwd_equat_face_theta(phi, s, r, area);
+      } else if (this.face === FACE_ENUM.RIGHT) {
+        phi = Math.acos(r);
+        theta = qsc_fwd_equat_face_theta(phi, s, -q, area);
+      } else if (this.face === FACE_ENUM.BACK) {
+        phi = Math.acos(-q);
+        theta = qsc_fwd_equat_face_theta(phi, s, -r, area);
+      } else if (this.face === FACE_ENUM.LEFT) {
+        phi = Math.acos(-r);
+        theta = qsc_fwd_equat_face_theta(phi, s, q, area);
+      } else {
+        phi = theta = 0;
+        area.value = AREA_ENUM.AREA_0;
+      }
+    }
+    mu = Math.atan(12 / SPI * (theta + Math.acos(Math.sin(theta) * Math.cos(FORTPI)) - HALF_PI));
+    t = Math.sqrt((1 - Math.cos(phi)) / (Math.cos(mu) * Math.cos(mu)) / (1 - Math.cos(Math.atan(1 / Math.cos(theta)))));
+    if (area.value === AREA_ENUM.AREA_1) {
+      mu += HALF_PI;
+    } else if (area.value === AREA_ENUM.AREA_2) {
+      mu += SPI;
+    } else if (area.value === AREA_ENUM.AREA_3) {
+      mu += 1.5 * SPI;
+    }
+    xy.x = t * Math.cos(mu);
+    xy.y = t * Math.sin(mu);
+    xy.x = xy.x * this.a + this.x0;
+    xy.y = xy.y * this.a + this.y0;
+    p.x = xy.x;
+    p.y = xy.y;
+    return p;
+  }
+  function inverse28(p) {
+    var lp = { lam: 0, phi: 0 };
+    var mu, nu, cosmu, tannu;
+    var tantheta, theta, cosphi, phi;
+    var t;
+    var area = { value: 0 };
+    p.x = (p.x - this.x0) / this.a;
+    p.y = (p.y - this.y0) / this.a;
+    nu = Math.atan(Math.sqrt(p.x * p.x + p.y * p.y));
+    mu = Math.atan2(p.y, p.x);
+    if (p.x >= 0 && p.x >= Math.abs(p.y)) {
+      area.value = AREA_ENUM.AREA_0;
+    } else if (p.y >= 0 && p.y >= Math.abs(p.x)) {
+      area.value = AREA_ENUM.AREA_1;
+      mu -= HALF_PI;
+    } else if (p.x < 0 && -p.x >= Math.abs(p.y)) {
+      area.value = AREA_ENUM.AREA_2;
+      mu = mu < 0 ? mu + SPI : mu - SPI;
+    } else {
+      area.value = AREA_ENUM.AREA_3;
+      mu += HALF_PI;
+    }
+    t = SPI / 12 * Math.tan(mu);
+    tantheta = Math.sin(t) / (Math.cos(t) - 1 / Math.sqrt(2));
+    theta = Math.atan(tantheta);
+    cosmu = Math.cos(mu);
+    tannu = Math.tan(nu);
+    cosphi = 1 - cosmu * cosmu * tannu * tannu * (1 - Math.cos(Math.atan(1 / Math.cos(theta))));
+    if (cosphi < -1) {
+      cosphi = -1;
+    } else if (cosphi > 1) {
+      cosphi = 1;
+    }
+    if (this.face === FACE_ENUM.TOP) {
+      phi = Math.acos(cosphi);
+      lp.phi = HALF_PI - phi;
+      if (area.value === AREA_ENUM.AREA_0) {
+        lp.lam = theta + HALF_PI;
+      } else if (area.value === AREA_ENUM.AREA_1) {
+        lp.lam = theta < 0 ? theta + SPI : theta - SPI;
+      } else if (area.value === AREA_ENUM.AREA_2) {
+        lp.lam = theta - HALF_PI;
+      } else {
+        lp.lam = theta;
+      }
+    } else if (this.face === FACE_ENUM.BOTTOM) {
+      phi = Math.acos(cosphi);
+      lp.phi = phi - HALF_PI;
+      if (area.value === AREA_ENUM.AREA_0) {
+        lp.lam = -theta + HALF_PI;
+      } else if (area.value === AREA_ENUM.AREA_1) {
+        lp.lam = -theta;
+      } else if (area.value === AREA_ENUM.AREA_2) {
+        lp.lam = -theta - HALF_PI;
+      } else {
+        lp.lam = theta < 0 ? -theta - SPI : -theta + SPI;
+      }
+    } else {
+      var q, r, s;
+      q = cosphi;
+      t = q * q;
+      if (t >= 1) {
+        s = 0;
+      } else {
+        s = Math.sqrt(1 - t) * Math.sin(theta);
+      }
+      t += s * s;
+      if (t >= 1) {
+        r = 0;
+      } else {
+        r = Math.sqrt(1 - t);
+      }
+      if (area.value === AREA_ENUM.AREA_1) {
+        t = r;
+        r = -s;
+        s = t;
+      } else if (area.value === AREA_ENUM.AREA_2) {
+        r = -r;
+        s = -s;
+      } else if (area.value === AREA_ENUM.AREA_3) {
+        t = r;
+        r = s;
+        s = -t;
+      }
+      if (this.face === FACE_ENUM.RIGHT) {
+        t = q;
+        q = -r;
+        r = t;
+      } else if (this.face === FACE_ENUM.BACK) {
+        q = -q;
+        r = -r;
+      } else if (this.face === FACE_ENUM.LEFT) {
+        t = q;
+        q = r;
+        r = -t;
+      }
+      lp.phi = Math.acos(-s) - HALF_PI;
+      lp.lam = Math.atan2(r, q);
+      if (this.face === FACE_ENUM.RIGHT) {
+        lp.lam = qsc_shift_lon_origin(lp.lam, -HALF_PI);
+      } else if (this.face === FACE_ENUM.BACK) {
+        lp.lam = qsc_shift_lon_origin(lp.lam, -SPI);
+      } else if (this.face === FACE_ENUM.LEFT) {
+        lp.lam = qsc_shift_lon_origin(lp.lam, +HALF_PI);
+      }
+    }
+    if (this.es !== 0) {
+      var invert_sign;
+      var tanphi, xa;
+      invert_sign = lp.phi < 0 ? 1 : 0;
+      tanphi = Math.tan(lp.phi);
+      xa = this.b / Math.sqrt(tanphi * tanphi + this.one_minus_f_squared);
+      lp.phi = Math.atan(Math.sqrt(this.a * this.a - xa * xa) / (this.one_minus_f * xa));
+      if (invert_sign) {
+        lp.phi = -lp.phi;
+      }
+    }
+    lp.lam += this.long0;
+    p.x = lp.lam;
+    p.y = lp.phi;
+    return p;
+  }
+  function qsc_fwd_equat_face_theta(phi, y, x, area) {
+    var theta;
+    if (phi < EPSLN) {
+      area.value = AREA_ENUM.AREA_0;
+      theta = 0;
+    } else {
+      theta = Math.atan2(y, x);
+      if (Math.abs(theta) <= FORTPI) {
+        area.value = AREA_ENUM.AREA_0;
+      } else if (theta > FORTPI && theta <= HALF_PI + FORTPI) {
+        area.value = AREA_ENUM.AREA_1;
+        theta -= HALF_PI;
+      } else if (theta > HALF_PI + FORTPI || theta <= -(HALF_PI + FORTPI)) {
+        area.value = AREA_ENUM.AREA_2;
+        theta = theta >= 0 ? theta - SPI : theta + SPI;
+      } else {
+        area.value = AREA_ENUM.AREA_3;
+        theta += HALF_PI;
+      }
+    }
+    return theta;
+  }
+  function qsc_shift_lon_origin(lon, offset) {
+    var slon = lon + offset;
+    if (slon < -SPI) {
+      slon += TWO_PI;
+    } else if (slon > +SPI) {
+      slon -= TWO_PI;
+    }
+    return slon;
+  }
+  var names30 = ["Quadrilateralized Spherical Cube", "Quadrilateralized_Spherical_Cube", "qsc"];
+  var qsc_default = {
+    init: init31,
+    forward: forward28,
+    inverse: inverse28,
+    names: names30
+  };
+
+  // node_modules/proj4/lib/projections/robin.js
+  var COEFS_X = [
+    [1, 22199e-21, -715515e-10, 31103e-10],
+    [0.9986, -482243e-9, -24897e-9, -13309e-10],
+    [0.9954, -83103e-8, -448605e-10, -986701e-12],
+    [0.99, -135364e-8, -59661e-9, 36777e-10],
+    [0.9822, -167442e-8, -449547e-11, -572411e-11],
+    [0.973, -214868e-8, -903571e-10, 18736e-12],
+    [0.96, -305085e-8, -900761e-10, 164917e-11],
+    [0.9427, -382792e-8, -653386e-10, -26154e-10],
+    [0.9216, -467746e-8, -10457e-8, 481243e-11],
+    [0.8962, -536223e-8, -323831e-10, -543432e-11],
+    [0.8679, -609363e-8, -113898e-9, 332484e-11],
+    [0.835, -698325e-8, -640253e-10, 934959e-12],
+    [0.7986, -755338e-8, -500009e-10, 935324e-12],
+    [0.7597, -798324e-8, -35971e-9, -227626e-11],
+    [0.7186, -851367e-8, -701149e-10, -86303e-10],
+    [0.6732, -986209e-8, -199569e-9, 191974e-10],
+    [0.6213, -0.010418, 883923e-10, 624051e-11],
+    [0.5722, -906601e-8, 182e-6, 624051e-11],
+    [0.5322, -677797e-8, 275608e-9, 624051e-11]
+  ];
+  var COEFS_Y = [
+    [-520417e-23, 0.0124, 121431e-23, -845284e-16],
+    [0.062, 0.0124, -126793e-14, 422642e-15],
+    [0.124, 0.0124, 507171e-14, -160604e-14],
+    [0.186, 0.0123999, -190189e-13, 600152e-14],
+    [0.248, 0.0124002, 710039e-13, -224e-10],
+    [0.31, 0.0123992, -264997e-12, 835986e-13],
+    [0.372, 0.0124029, 988983e-12, -311994e-12],
+    [0.434, 0.0123893, -369093e-11, -435621e-12],
+    [0.4958, 0.0123198, -102252e-10, -345523e-12],
+    [0.5571, 0.0121916, -154081e-10, -582288e-12],
+    [0.6176, 0.0119938, -241424e-10, -525327e-12],
+    [0.6769, 0.011713, -320223e-10, -516405e-12],
+    [0.7346, 0.0113541, -397684e-10, -609052e-12],
+    [0.7903, 0.0109107, -489042e-10, -104739e-11],
+    [0.8435, 0.0103431, -64615e-9, -140374e-14],
+    [0.8936, 969686e-8, -64636e-9, -8547e-9],
+    [0.9394, 840947e-8, -192841e-9, -42106e-10],
+    [0.9761, 616527e-8, -256e-6, -42106e-10],
+    [1, 328947e-8, -319159e-9, -42106e-10]
+  ];
+  var FXC = 0.8487;
+  var FYC = 1.3523;
+  var C1 = R2D / 5;
+  var RC1 = 1 / C1;
+  var NODES = 18;
+  var poly3_val = function(coefs, x) {
+    return coefs[0] + x * (coefs[1] + x * (coefs[2] + x * coefs[3]));
+  };
+  var poly3_der = function(coefs, x) {
+    return coefs[1] + x * (2 * coefs[2] + x * 3 * coefs[3]);
+  };
+  function newton_rapshon(f_df, start2, max_err, iters) {
+    var x = start2;
+    for (; iters; --iters) {
+      var upd = f_df(x);
+      x -= upd;
+      if (Math.abs(upd) < max_err) {
+        break;
+      }
+    }
+    return x;
+  }
+  function init32() {
+    this.x0 = this.x0 || 0;
+    this.y0 = this.y0 || 0;
+    this.long0 = this.long0 || 0;
+    this.es = 0;
+    this.title = this.title || "Robinson";
+  }
+  function forward29(ll) {
+    var lon = adjust_lon_default(ll.x - this.long0, this.over);
+    var dphi = Math.abs(ll.y);
+    var i = Math.floor(dphi * C1);
+    if (i < 0) {
+      i = 0;
+    } else if (i >= NODES) {
+      i = NODES - 1;
+    }
+    dphi = R2D * (dphi - RC1 * i);
+    var xy = {
+      x: poly3_val(COEFS_X[i], dphi) * lon,
+      y: poly3_val(COEFS_Y[i], dphi)
+    };
+    if (ll.y < 0) {
+      xy.y = -xy.y;
+    }
+    xy.x = xy.x * this.a * FXC + this.x0;
+    xy.y = xy.y * this.a * FYC + this.y0;
+    return xy;
+  }
+  function inverse29(xy) {
+    var ll = {
+      x: (xy.x - this.x0) / (this.a * FXC),
+      y: Math.abs(xy.y - this.y0) / (this.a * FYC)
+    };
+    if (ll.y >= 1) {
+      ll.x /= COEFS_X[NODES][0];
+      ll.y = xy.y < 0 ? -HALF_PI : HALF_PI;
+    } else {
+      var i = Math.floor(ll.y * NODES);
+      if (i < 0) {
+        i = 0;
+      } else if (i >= NODES) {
+        i = NODES - 1;
+      }
+      for (; ; ) {
+        if (COEFS_Y[i][0] > ll.y) {
+          --i;
+        } else if (COEFS_Y[i + 1][0] <= ll.y) {
+          ++i;
+        } else {
+          break;
+        }
+      }
+      var coefs = COEFS_Y[i];
+      var t = 5 * (ll.y - coefs[0]) / (COEFS_Y[i + 1][0] - coefs[0]);
+      t = newton_rapshon(function(x) {
+        return (poly3_val(coefs, x) - ll.y) / poly3_der(coefs, x);
+      }, t, EPSLN, 100);
+      ll.x /= poly3_val(COEFS_X[i], t);
+      ll.y = (5 * i + t) * D2R;
+      if (xy.y < 0) {
+        ll.y = -ll.y;
+      }
+    }
+    ll.x = adjust_lon_default(ll.x + this.long0, this.over);
+    return ll;
+  }
+  var names31 = ["Robinson", "robin"];
+  var robin_default = {
+    init: init32,
+    forward: forward29,
+    inverse: inverse29,
+    names: names31
+  };
+
+  // node_modules/proj4/lib/projections/geocent.js
+  function init33() {
+    this.name = "geocent";
+  }
+  function forward30(p) {
+    var point = geodeticToGeocentric(p, this.es, this.a);
+    return point;
+  }
+  function inverse30(p) {
+    var point = geocentricToGeodetic(p, this.es, this.a, this.b);
+    return point;
+  }
+  var names32 = ["Geocentric", "geocentric", "geocent", "Geocent"];
+  var geocent_default = {
+    init: init33,
+    forward: forward30,
+    inverse: inverse30,
+    names: names32
+  };
+
+  // node_modules/proj4/lib/projections/tpers.js
+  var mode = {
+    N_POLE: 0,
+    S_POLE: 1,
+    EQUIT: 2,
+    OBLIQ: 3
+  };
+  var params = {
+    h: { def: 1e5, num: true },
+    // default is Karman line, no default in PROJ.7
+    azi: { def: 0, num: true, degrees: true },
+    // default is North
+    tilt: { def: 0, num: true, degrees: true },
+    // default is Nadir
+    long0: { def: 0, num: true },
+    // default is Greenwich, conversion to rad is automatic
+    lat0: { def: 0, num: true }
+    // default is Equator, conversion to rad is automatic
+  };
+  function init34() {
+    Object.keys(params).forEach(function(p) {
+      if (typeof this[p] === "undefined") {
+        this[p] = params[p].def;
+      } else if (params[p].num && isNaN(this[p])) {
+        throw new Error("Invalid parameter value, must be numeric " + p + " = " + this[p]);
+      } else if (params[p].num) {
+        this[p] = parseFloat(this[p]);
+      }
+      if (params[p].degrees) {
+        this[p] = this[p] * D2R;
+      }
+    }.bind(this));
+    if (Math.abs(Math.abs(this.lat0) - HALF_PI) < EPSLN) {
+      this.mode = this.lat0 < 0 ? mode.S_POLE : mode.N_POLE;
+    } else if (Math.abs(this.lat0) < EPSLN) {
+      this.mode = mode.EQUIT;
+    } else {
+      this.mode = mode.OBLIQ;
+      this.sinph0 = Math.sin(this.lat0);
+      this.cosph0 = Math.cos(this.lat0);
+    }
+    this.pn1 = this.h / this.a;
+    if (this.pn1 <= 0 || this.pn1 > 1e10) {
+      throw new Error("Invalid height");
+    }
+    this.p = 1 + this.pn1;
+    this.rp = 1 / this.p;
+    this.h1 = 1 / this.pn1;
+    this.pfact = (this.p + 1) * this.h1;
+    this.es = 0;
+    var omega = this.tilt;
+    var gamma = this.azi;
+    this.cg = Math.cos(gamma);
+    this.sg = Math.sin(gamma);
+    this.cw = Math.cos(omega);
+    this.sw = Math.sin(omega);
+  }
+  function forward31(p) {
+    p.x -= this.long0;
+    var sinphi = Math.sin(p.y);
+    var cosphi = Math.cos(p.y);
+    var coslam = Math.cos(p.x);
+    var x, y;
+    switch (this.mode) {
+      case mode.OBLIQ:
+        y = this.sinph0 * sinphi + this.cosph0 * cosphi * coslam;
+        break;
+      case mode.EQUIT:
+        y = cosphi * coslam;
+        break;
+      case mode.S_POLE:
+        y = -sinphi;
+        break;
+      case mode.N_POLE:
+        y = sinphi;
+        break;
+    }
+    y = this.pn1 / (this.p - y);
+    x = y * cosphi * Math.sin(p.x);
+    switch (this.mode) {
+      case mode.OBLIQ:
+        y *= this.cosph0 * sinphi - this.sinph0 * cosphi * coslam;
+        break;
+      case mode.EQUIT:
+        y *= sinphi;
+        break;
+      case mode.N_POLE:
+        y *= -(cosphi * coslam);
+        break;
+      case mode.S_POLE:
+        y *= cosphi * coslam;
+        break;
+    }
+    var yt, ba;
+    yt = y * this.cg + x * this.sg;
+    ba = 1 / (yt * this.sw * this.h1 + this.cw);
+    x = (x * this.cg - y * this.sg) * this.cw * ba;
+    y = yt * ba;
+    p.x = x * this.a;
+    p.y = y * this.a;
+    return p;
+  }
+  function inverse31(p) {
+    p.x /= this.a;
+    p.y /= this.a;
+    var r = { x: p.x, y: p.y };
+    var bm, bq, yt;
+    yt = 1 / (this.pn1 - p.y * this.sw);
+    bm = this.pn1 * p.x * yt;
+    bq = this.pn1 * p.y * this.cw * yt;
+    p.x = bm * this.cg + bq * this.sg;
+    p.y = bq * this.cg - bm * this.sg;
+    var rh = hypot_default(p.x, p.y);
+    if (Math.abs(rh) < EPSLN) {
+      r.x = 0;
+      r.y = p.y;
+    } else {
+      var cosz, sinz;
+      sinz = 1 - rh * rh * this.pfact;
+      sinz = (this.p - Math.sqrt(sinz)) / (this.pn1 / rh + rh / this.pn1);
+      cosz = Math.sqrt(1 - sinz * sinz);
+      switch (this.mode) {
+        case mode.OBLIQ:
+          r.y = Math.asin(cosz * this.sinph0 + p.y * sinz * this.cosph0 / rh);
+          p.y = (cosz - this.sinph0 * Math.sin(r.y)) * rh;
+          p.x *= sinz * this.cosph0;
+          break;
+        case mode.EQUIT:
+          r.y = Math.asin(p.y * sinz / rh);
+          p.y = cosz * rh;
+          p.x *= sinz;
+          break;
+        case mode.N_POLE:
+          r.y = Math.asin(cosz);
+          p.y = -p.y;
+          break;
+        case mode.S_POLE:
+          r.y = -Math.asin(cosz);
+          break;
+      }
+      r.x = Math.atan2(p.x, p.y);
+    }
+    p.x = r.x + this.long0;
+    p.y = r.y;
+    return p;
+  }
+  var names33 = ["Tilted_Perspective", "tpers"];
+  var tpers_default = {
+    init: init34,
+    forward: forward31,
+    inverse: inverse31,
+    names: names33
+  };
+
+  // node_modules/proj4/lib/projections/geos.js
+  function init35() {
+    this.flip_axis = this.sweep === "x" ? 1 : 0;
+    this.h = Number(this.h);
+    this.radius_g_1 = this.h / this.a;
+    if (this.radius_g_1 <= 0 || this.radius_g_1 > 1e10) {
+      throw new Error();
+    }
+    this.radius_g = 1 + this.radius_g_1;
+    this.C = this.radius_g * this.radius_g - 1;
+    if (this.es !== 0) {
+      var one_es = 1 - this.es;
+      var rone_es = 1 / one_es;
+      this.radius_p = Math.sqrt(one_es);
+      this.radius_p2 = one_es;
+      this.radius_p_inv2 = rone_es;
+      this.shape = "ellipse";
+    } else {
+      this.radius_p = 1;
+      this.radius_p2 = 1;
+      this.radius_p_inv2 = 1;
+      this.shape = "sphere";
+    }
+    if (!this.title) {
+      this.title = "Geostationary Satellite View";
+    }
+  }
+  function forward32(p) {
+    var lon = p.x;
+    var lat = p.y;
+    var tmp, v_x, v_y, v_z;
+    lon = lon - this.long0;
+    if (this.shape === "ellipse") {
+      lat = Math.atan(this.radius_p2 * Math.tan(lat));
+      var r = this.radius_p / hypot_default(this.radius_p * Math.cos(lat), Math.sin(lat));
+      v_x = r * Math.cos(lon) * Math.cos(lat);
+      v_y = r * Math.sin(lon) * Math.cos(lat);
+      v_z = r * Math.sin(lat);
+      if ((this.radius_g - v_x) * v_x - v_y * v_y - v_z * v_z * this.radius_p_inv2 < 0) {
+        p.x = Number.NaN;
+        p.y = Number.NaN;
+        return p;
+      }
+      tmp = this.radius_g - v_x;
+      if (this.flip_axis) {
+        p.x = this.radius_g_1 * Math.atan(v_y / hypot_default(v_z, tmp));
+        p.y = this.radius_g_1 * Math.atan(v_z / tmp);
+      } else {
+        p.x = this.radius_g_1 * Math.atan(v_y / tmp);
+        p.y = this.radius_g_1 * Math.atan(v_z / hypot_default(v_y, tmp));
+      }
+    } else if (this.shape === "sphere") {
+      tmp = Math.cos(lat);
+      v_x = Math.cos(lon) * tmp;
+      v_y = Math.sin(lon) * tmp;
+      v_z = Math.sin(lat);
+      tmp = this.radius_g - v_x;
+      if (this.flip_axis) {
+        p.x = this.radius_g_1 * Math.atan(v_y / hypot_default(v_z, tmp));
+        p.y = this.radius_g_1 * Math.atan(v_z / tmp);
+      } else {
+        p.x = this.radius_g_1 * Math.atan(v_y / tmp);
+        p.y = this.radius_g_1 * Math.atan(v_z / hypot_default(v_y, tmp));
+      }
+    }
+    p.x = p.x * this.a;
+    p.y = p.y * this.a;
+    return p;
+  }
+  function inverse32(p) {
+    var v_x = -1;
+    var v_y = 0;
+    var v_z = 0;
+    var a, b, det, k;
+    p.x = p.x / this.a;
+    p.y = p.y / this.a;
+    if (this.shape === "ellipse") {
+      if (this.flip_axis) {
+        v_z = Math.tan(p.y / this.radius_g_1);
+        v_y = Math.tan(p.x / this.radius_g_1) * hypot_default(1, v_z);
+      } else {
+        v_y = Math.tan(p.x / this.radius_g_1);
+        v_z = Math.tan(p.y / this.radius_g_1) * hypot_default(1, v_y);
+      }
+      var v_zp = v_z / this.radius_p;
+      a = v_y * v_y + v_zp * v_zp + v_x * v_x;
+      b = 2 * this.radius_g * v_x;
+      det = b * b - 4 * a * this.C;
+      if (det < 0) {
+        p.x = Number.NaN;
+        p.y = Number.NaN;
+        return p;
+      }
+      k = (-b - Math.sqrt(det)) / (2 * a);
+      v_x = this.radius_g + k * v_x;
+      v_y *= k;
+      v_z *= k;
+      p.x = Math.atan2(v_y, v_x);
+      p.y = Math.atan(v_z * Math.cos(p.x) / v_x);
+      p.y = Math.atan(this.radius_p_inv2 * Math.tan(p.y));
+    } else if (this.shape === "sphere") {
+      if (this.flip_axis) {
+        v_z = Math.tan(p.y / this.radius_g_1);
+        v_y = Math.tan(p.x / this.radius_g_1) * Math.sqrt(1 + v_z * v_z);
+      } else {
+        v_y = Math.tan(p.x / this.radius_g_1);
+        v_z = Math.tan(p.y / this.radius_g_1) * Math.sqrt(1 + v_y * v_y);
+      }
+      a = v_y * v_y + v_z * v_z + v_x * v_x;
+      b = 2 * this.radius_g * v_x;
+      det = b * b - 4 * a * this.C;
+      if (det < 0) {
+        p.x = Number.NaN;
+        p.y = Number.NaN;
+        return p;
+      }
+      k = (-b - Math.sqrt(det)) / (2 * a);
+      v_x = this.radius_g + k * v_x;
+      v_y *= k;
+      v_z *= k;
+      p.x = Math.atan2(v_y, v_x);
+      p.y = Math.atan(v_z * Math.cos(p.x) / v_x);
+    }
+    p.x = p.x + this.long0;
+    return p;
+  }
+  var names34 = ["Geostationary Satellite View", "Geostationary_Satellite", "geos"];
+  var geos_default = {
+    init: init35,
+    forward: forward32,
+    inverse: inverse32,
+    names: names34
+  };
+
+  // node_modules/proj4/lib/projections/eqearth.js
+  var A1 = 1.340264;
+  var A2 = -0.081106;
+  var A3 = 893e-6;
+  var A4 = 3796e-6;
+  var M = Math.sqrt(3) / 2;
+  function init36() {
+    this.long0 = this.long0 !== void 0 ? this.long0 : 0;
+    this.x0 = this.x0 !== void 0 ? this.x0 : 0;
+    this.y0 = this.y0 !== void 0 ? this.y0 : 0;
+    if (this.es !== 0) {
+      this.apa = authset(this.es);
+      this.qp = qsfnz_default(this.e, 1);
+      this.rqda = Math.sqrt(0.5 * this.qp);
+    }
+  }
+  function forward33(p) {
+    var lam = adjust_lon_default(p.x - this.long0, this.over);
+    var phi = p.y;
+    var sinphi = Math.sin(phi);
+    if (this.es !== 0) {
+      sinphi = qsfnz_default(this.e, sinphi) / this.qp;
+    }
+    var paramLat = Math.asin(M * sinphi), paramLatSq = paramLat * paramLat, paramLatPow6 = paramLatSq * paramLatSq * paramLatSq;
+    p.x = lam * Math.cos(paramLat) / (M * (A1 + 3 * A2 * paramLatSq + paramLatPow6 * (7 * A3 + 9 * A4 * paramLatSq)));
+    p.y = paramLat * (A1 + A2 * paramLatSq + paramLatPow6 * (A3 + A4 * paramLatSq));
+    if (this.es !== 0) {
+      p.x *= this.rqda;
+      p.y *= this.rqda;
+    }
+    p.x = this.a * p.x + this.x0;
+    p.y = this.a * p.y + this.y0;
+    return p;
+  }
+  function inverse33(p) {
+    p.x = (p.x - this.x0) / this.a;
+    p.y = (p.y - this.y0) / this.a;
+    if (this.es !== 0) {
+      p.x /= this.rqda;
+      p.y /= this.rqda;
+    }
+    var EPS = 1e-9, NITER = 12, paramLat = p.y, paramLatSq, paramLatPow6, fy, fpy, dlat, i;
+    for (i = 0; i < NITER; ++i) {
+      paramLatSq = paramLat * paramLat;
+      paramLatPow6 = paramLatSq * paramLatSq * paramLatSq;
+      fy = paramLat * (A1 + A2 * paramLatSq + paramLatPow6 * (A3 + A4 * paramLatSq)) - p.y;
+      fpy = A1 + 3 * A2 * paramLatSq + paramLatPow6 * (7 * A3 + 9 * A4 * paramLatSq);
+      paramLat -= dlat = fy / fpy;
+      if (Math.abs(dlat) < EPS) {
+        break;
+      }
+    }
+    paramLatSq = paramLat * paramLat;
+    paramLatPow6 = paramLatSq * paramLatSq * paramLatSq;
+    p.x = M * p.x * (A1 + 3 * A2 * paramLatSq + paramLatPow6 * (7 * A3 + 9 * A4 * paramLatSq)) / Math.cos(paramLat);
+    p.y = Math.asin(Math.sin(paramLat) / M);
+    if (this.es !== 0) {
+      p.y = authlat(p.y, this.apa);
+    }
+    p.x = adjust_lon_default(p.x + this.long0, this.over);
+    return p;
+  }
+  var names35 = ["eqearth", "Equal Earth", "Equal_Earth"];
+  var eqearth_default = {
+    init: init36,
+    forward: forward33,
+    inverse: inverse33,
+    names: names35
+  };
+
+  // node_modules/proj4/lib/projections/bonne.js
+  var EPS10 = 1e-10;
+  function init37() {
+    var c;
+    this.phi1 = this.lat1;
+    if (Math.abs(this.phi1) < EPS10) {
+      throw new Error();
+    }
+    if (this.es) {
+      this.en = pj_enfn_default(this.es);
+      this.m1 = pj_mlfn_default(
+        this.phi1,
+        this.am1 = Math.sin(this.phi1),
+        c = Math.cos(this.phi1),
+        this.en
+      );
+      this.am1 = c / (Math.sqrt(1 - this.es * this.am1 * this.am1) * this.am1);
+      this.inverse = e_inv;
+      this.forward = e_fwd;
+    } else {
+      if (Math.abs(this.phi1) + EPS10 >= HALF_PI) {
+        this.cphi1 = 0;
+      } else {
+        this.cphi1 = 1 / Math.tan(this.phi1);
+      }
+      this.inverse = s_inv;
+      this.forward = s_fwd;
+    }
+  }
+  function e_fwd(p) {
+    var lam = adjust_lon_default(p.x - (this.long0 || 0), this.over);
+    var phi = p.y;
+    var rh, E4, c;
+    rh = this.am1 + this.m1 - pj_mlfn_default(phi, E4 = Math.sin(phi), c = Math.cos(phi), this.en);
+    E4 = c * lam / (rh * Math.sqrt(1 - this.es * E4 * E4));
+    p.x = rh * Math.sin(E4);
+    p.y = this.am1 - rh * Math.cos(E4);
+    p.x = this.a * p.x + (this.x0 || 0);
+    p.y = this.a * p.y + (this.y0 || 0);
+    return p;
+  }
+  function e_inv(p) {
+    p.x = (p.x - (this.x0 || 0)) / this.a;
+    p.y = (p.y - (this.y0 || 0)) / this.a;
+    var s, rh, lam, phi;
+    rh = hypot_default(p.x, p.y = this.am1 - p.y);
+    phi = pj_inv_mlfn_default(this.am1 + this.m1 - rh, this.es, this.en);
+    if ((s = Math.abs(phi)) < HALF_PI) {
+      s = Math.sin(phi);
+      lam = rh * Math.atan2(p.x, p.y) * Math.sqrt(1 - this.es * s * s) / Math.cos(phi);
+    } else if (Math.abs(s - HALF_PI) <= EPS10) {
+      lam = 0;
+    } else {
+      throw new Error();
+    }
+    p.x = adjust_lon_default(lam + (this.long0 || 0), this.over);
+    p.y = adjust_lat_default(phi);
+    return p;
+  }
+  function s_fwd(p) {
+    var lam = adjust_lon_default(p.x - (this.long0 || 0), this.over);
+    var phi = p.y;
+    var E4, rh;
+    rh = this.cphi1 + this.phi1 - phi;
+    if (Math.abs(rh) > EPS10) {
+      p.x = rh * Math.sin(E4 = lam * Math.cos(phi) / rh);
+      p.y = this.cphi1 - rh * Math.cos(E4);
+    } else {
+      p.x = p.y = 0;
+    }
+    p.x = this.a * p.x + (this.x0 || 0);
+    p.y = this.a * p.y + (this.y0 || 0);
+    return p;
+  }
+  function s_inv(p) {
+    p.x = (p.x - (this.x0 || 0)) / this.a;
+    p.y = (p.y - (this.y0 || 0)) / this.a;
+    var lam, phi;
+    var rh = hypot_default(p.x, p.y = this.cphi1 - p.y);
+    phi = this.cphi1 + this.phi1 - rh;
+    if (Math.abs(phi) > HALF_PI) {
+      throw new Error();
+    }
+    if (Math.abs(Math.abs(phi) - HALF_PI) <= EPS10) {
+      lam = 0;
+    } else {
+      lam = rh * Math.atan2(p.x, p.y) / Math.cos(phi);
+    }
+    p.x = adjust_lon_default(lam + (this.long0 || 0), this.over);
+    p.y = adjust_lat_default(phi);
+    return p;
+  }
+  var names36 = ["bonne", "Bonne (Werner lat_1=90)"];
+  var bonne_default = {
+    init: init37,
+    names: names36
+  };
+
+  // node_modules/proj4/lib/projections/ob_tran.js
+  var projectionType = {
+    OBLIQUE: {
+      forward: forwardOblique,
+      inverse: inverseOblique
+    },
+    TRANSVERSE: {
+      forward: forwardTransverse,
+      inverse: inverseTransverse
+    }
+  };
+  var paramSets = {
+    ROTATE: {
+      o_alpha: "oAlpha",
+      o_lon_c: "oLongC",
+      o_lat_c: "oLatC"
+    },
+    NEW_POLE: {
+      o_lat_p: "oLatP",
+      o_lon_p: "oLongP"
+    },
+    NEW_EQUATOR: {
+      o_lon_1: "oLong1",
+      o_lat_1: "oLat1",
+      o_lon_2: "oLong2",
+      o_lat_2: "oLat2"
+    }
+  };
+  function init38() {
+    this.x0 = this.x0 || 0;
+    this.y0 = this.y0 || 0;
+    this.long0 = this.long0 || 0;
+    this.title = this.title || "General Oblique Transformation";
+    this.isIdentity = names2.includes(this.o_proj);
+    if (!this.o_proj) {
+      throw new Error("Missing parameter: o_proj");
+    }
+    if (this.o_proj === `ob_tran`) {
+      throw new Error("Invalid value for o_proj: " + this.o_proj);
+    }
+    const newProjStr = this.projStr.replace("+proj=ob_tran", "").replace("+o_proj=", "+proj=").trim();
+    const oProj = Proj_default(newProjStr);
+    if (!oProj) {
+      throw new Error("Invalid parameter: o_proj. Unknown projection " + this.o_proj);
+    }
+    oProj.long0 = 0;
+    this.obliqueProjection = oProj;
+    let matchedSet;
+    const paramSetsKeys = Object.keys(paramSets);
+    const parseParam = (name) => {
+      if (typeof this[name] === `undefined`) {
+        return void 0;
+      }
+      const val = parseFloat(this[name]) * D2R;
+      if (isNaN(val)) {
+        throw new Error("Invalid value for " + name + ": " + this[name]);
+      }
+      return val;
+    };
+    for (let i = 0; i < paramSetsKeys.length; i++) {
+      const setKey = paramSetsKeys[i];
+      const set2 = paramSets[setKey];
+      const params2 = Object.entries(set2);
+      const setHasParams = params2.some(
+        ([p]) => typeof this[p] !== "undefined"
+      );
+      if (!setHasParams) {
+        continue;
+      }
+      matchedSet = set2;
+      for (let ii = 0; ii < params2.length; ii++) {
+        const [inputParam, param] = params2[ii];
+        const val = parseParam(inputParam);
+        if (typeof val === "undefined") {
+          throw new Error("Missing parameter: " + inputParam + ".");
+        }
+        this[param] = val;
+      }
+      break;
+    }
+    if (!matchedSet) {
+      throw new Error("No valid parameters provided for ob_tran projection.");
+    }
+    const { lamp, phip } = createRotation(this, matchedSet);
+    this.lamp = lamp;
+    if (Math.abs(phip) > EPSLN) {
+      this.cphip = Math.cos(phip);
+      this.sphip = Math.sin(phip);
+      this.projectionType = projectionType.OBLIQUE;
+    } else {
+      this.projectionType = projectionType.TRANSVERSE;
+    }
+  }
+  function forward34(p) {
+    return this.projectionType.forward(this, p);
+  }
+  function inverse34(p) {
+    return this.projectionType.inverse(this, p);
+  }
+  function createRotation(params2, how) {
+    let phip, lamp;
+    if (how === paramSets.ROTATE) {
+      let lamc = params2.oLongC;
+      let phic = params2.oLatC;
+      let alpha = params2.oAlpha;
+      if (Math.abs(Math.abs(phic) - HALF_PI) <= EPSLN) {
+        throw new Error("Invalid value for o_lat_c: " + params2.o_lat_c + " should be < 90\xB0");
+      }
+      lamp = lamc + Math.atan2(-1 * Math.cos(alpha), -1 * Math.sin(alpha) * Math.sin(phic));
+      phip = Math.asin(Math.cos(phic) * Math.sin(alpha));
+    } else if (how === paramSets.NEW_POLE) {
+      lamp = params2.oLongP;
+      phip = params2.oLatP;
+    } else {
+      let lam1 = params2.oLong1;
+      let phi1 = params2.oLat1;
+      let lam2 = params2.oLong2;
+      let phi2 = params2.oLat2;
+      let con = Math.abs(phi1);
+      if (Math.abs(phi1) > HALF_PI - EPSLN) {
+        throw new Error("Invalid value for o_lat_1: " + params2.o_lat_1 + " should be < 90\xB0");
+      }
+      if (Math.abs(phi2) > HALF_PI - EPSLN) {
+        throw new Error("Invalid value for o_lat_2: " + params2.o_lat_2 + " should be < 90\xB0");
+      }
+      if (Math.abs(phi1 - phi2) < EPSLN) {
+        throw new Error("Invalid value for o_lat_1 and o_lat_2: o_lat_1 should be different from o_lat_2");
+      }
+      if (con < EPSLN) {
+        throw new Error("Invalid value for o_lat_1: o_lat_1 should be different from zero");
+      }
+      lamp = Math.atan2(
+        Math.cos(phi1) * Math.sin(phi2) * Math.cos(lam1) - Math.sin(phi1) * Math.cos(phi2) * Math.cos(lam2),
+        Math.sin(phi1) * Math.cos(phi2) * Math.sin(lam2) - Math.cos(phi1) * Math.sin(phi2) * Math.sin(lam1)
+      );
+      phip = Math.atan(-1 * Math.cos(lamp - lam1) / Math.tan(phi1));
+    }
+    return { lamp, phip };
+  }
+  function forwardOblique(self2, lp) {
+    let { x: lam, y: phi } = lp;
+    lam = adjust_lon_default(lam - self2.long0, self2.over);
+    const coslam = Math.cos(lam);
+    const sinphi = Math.sin(phi);
+    const cosphi = Math.cos(phi);
+    lp.x = adjust_lon_default(
+      Math.atan2(
+        cosphi * Math.sin(lam),
+        self2.sphip * cosphi * coslam + self2.cphip * sinphi
+      ) + self2.lamp
+    );
+    lp.y = Math.asin(
+      self2.sphip * sinphi - self2.cphip * cosphi * coslam
+    );
+    const result = self2.obliqueProjection.forward(lp);
+    if (self2.isIdentity) {
+      result.x *= R2D;
+      result.y *= R2D;
+    }
+    return result;
+  }
+  function forwardTransverse(self2, lp) {
+    let { x: lam, y: phi } = lp;
+    lam = adjust_lon_default(lam - self2.long0, self2.over);
+    const cosphi = Math.cos(phi);
+    const coslam = Math.cos(lam);
+    lp.x = adjust_lon_default(
+      Math.atan2(
+        cosphi * Math.sin(lam),
+        Math.sin(phi)
+      ) + self2.lamp
+    );
+    lp.y = Math.asin(-1 * cosphi * coslam);
+    const result = self2.obliqueProjection.forward(lp);
+    if (self2.isIdentity) {
+      result.x *= R2D;
+      result.y *= R2D;
+    }
+    return result;
+  }
+  function inverseOblique(self2, lp) {
+    if (self2.isIdentity) {
+      lp.x *= D2R;
+      lp.y *= D2R;
+    }
+    const innerLp = self2.obliqueProjection.inverse(lp);
+    let { x: lam, y: phi } = innerLp;
+    if (lam < Number.MAX_VALUE) {
+      lam -= self2.lamp;
+      const coslam = Math.cos(lam);
+      const sinphi = Math.sin(phi);
+      const cosphi = Math.cos(phi);
+      lp.x = Math.atan2(
+        cosphi * Math.sin(lam),
+        self2.sphip * cosphi * coslam - self2.cphip * sinphi
+      );
+      lp.y = Math.asin(
+        self2.sphip * sinphi + self2.cphip * cosphi * coslam
+      );
+    }
+    lp.x = adjust_lon_default(lp.x + self2.long0);
+    return lp;
+  }
+  function inverseTransverse(self2, lp) {
+    if (self2.isIdentity) {
+      lp.x *= D2R;
+      lp.y *= D2R;
+    }
+    const innerLp = self2.obliqueProjection.inverse(lp);
+    let { x: lam, y: phi } = innerLp;
+    if (lam < Number.MAX_VALUE) {
+      const cosphi = Math.cos(phi);
+      lam -= self2.lamp;
+      lp.x = Math.atan2(
+        cosphi * Math.sin(lam),
+        -1 * Math.sin(phi)
+      );
+      lp.y = Math.asin(
+        cosphi * Math.cos(lam)
+      );
+    }
+    lp.x = adjust_lon_default(lp.x + self2.long0);
+    return lp;
+  }
+  var names37 = ["General Oblique Transformation", "General_Oblique_Transformation", "ob_tran"];
+  var ob_tran_default = {
+    init: init38,
+    forward: forward34,
+    inverse: inverse34,
+    names: names37
+  };
+
+  // node_modules/proj4/projs.js
+  function projs_default(proj43) {
+    proj43.Proj.projections.add(tmerc_default);
+    proj43.Proj.projections.add(etmerc_default);
+    proj43.Proj.projections.add(utm_default);
+    proj43.Proj.projections.add(sterea_default);
+    proj43.Proj.projections.add(stere_default);
+    proj43.Proj.projections.add(somerc_default);
+    proj43.Proj.projections.add(omerc_default);
+    proj43.Proj.projections.add(lcc_default);
+    proj43.Proj.projections.add(krovak_default);
+    proj43.Proj.projections.add(cass_default);
+    proj43.Proj.projections.add(laea_default);
+    proj43.Proj.projections.add(aea_default);
+    proj43.Proj.projections.add(gnom_default);
+    proj43.Proj.projections.add(cea_default);
+    proj43.Proj.projections.add(eqc_default);
+    proj43.Proj.projections.add(poly_default);
+    proj43.Proj.projections.add(nzmg_default);
+    proj43.Proj.projections.add(mill_default);
+    proj43.Proj.projections.add(sinu_default);
+    proj43.Proj.projections.add(eck6_default);
+    proj43.Proj.projections.add(moll_default);
+    proj43.Proj.projections.add(eqdc_default);
+    proj43.Proj.projections.add(vandg_default);
+    proj43.Proj.projections.add(aeqd_default);
+    proj43.Proj.projections.add(ortho_default);
+    proj43.Proj.projections.add(qsc_default);
+    proj43.Proj.projections.add(robin_default);
+    proj43.Proj.projections.add(geocent_default);
+    proj43.Proj.projections.add(tpers_default);
+    proj43.Proj.projections.add(geos_default);
+    proj43.Proj.projections.add(eqearth_default);
+    proj43.Proj.projections.add(bonne_default);
+    proj43.Proj.projections.add(ob_tran_default);
+  }
+
+  // node_modules/proj4/lib/index.js
+  var proj42 = Object.assign(core_default, {
+    defaultDatum: "WGS84",
+    Proj: Proj_default,
+    WGS84: new Proj_default("WGS84"),
+    Point: Point_default2,
+    toPoint: toPoint_default,
+    defs: defs_default,
+    nadgrid,
+    transform: transform2,
+    mgrs: mgrs_default,
+    version: "__VERSION__"
+  });
+  projs_default(proj42);
+  var lib_default = proj42;
+
+  // media/src/mapCrs.js
+  var EXTRA_DEFS = {
+    4490: "+proj=longlat +ellps=GRS80 +no_defs +type=crs",
+    // 3° GK zone 39 / CGCS2000 — common in China
+    4547: "+proj=tmerc +lat_0=0 +lon_0=117 +k=1 +x_0=500000 +y_0=0 +ellps=GRS80 +units=m +no_defs +type=crs",
+    4548: "+proj=tmerc +lat_0=0 +lon_0=120 +k=1 +x_0=500000 +y_0=0 +ellps=GRS80 +units=m +no_defs +type=crs",
+    4549: "+proj=tmerc +lat_0=0 +lon_0=123 +k=1 +x_0=500000 +y_0=0 +ellps=GRS80 +units=m +no_defs +type=crs",
+    4550: "+proj=tmerc +lat_0=0 +lon_0=126 +k=1 +x_0=500000 +y_0=0 +ellps=GRS80 +units=m +no_defs +type=crs",
+    3857: "+proj=merc +a=6378137 +b=6378137 +lat_ts=0 +lon_0=0 +x_0=0 +y_0=0 +k=1 +units=m +nadgrids=@null +wktext +no_defs +type=crs"
+  };
+  var registered2 = false;
+  function ensureProj4Registered() {
+    if (registered2) return;
+    for (const [code, def] of Object.entries(EXTRA_DEFS)) {
+      try {
+        lib_default.defs(`EPSG:${code}`, def);
+      } catch {
+      }
+    }
+    register(lib_default);
+    registered2 = true;
+  }
+  function ensureProjection(crsCode) {
+    ensureProj4Registered();
+    if (!crsCode || crsCode === "none") return null;
+    const code = crsCode.startsWith("EPSG:") ? crsCode : `EPSG:${crsCode}`;
+    let proj = get3(code);
+    if (proj) return proj;
+    const num = code.replace(/^EPSG:/i, "");
+    if (EXTRA_DEFS[num]) {
+      lib_default.defs(code, EXTRA_DEFS[num]);
+      register(lib_default);
+      proj = get3(code);
+      return proj || null;
+    }
+    const n = Number(num);
+    if (Number.isInteger(n) && n >= 32601 && n <= 32660) {
+      const zone = n - 32600;
+      lib_default.defs(code, `+proj=utm +zone=${zone} +datum=WGS84 +units=m +no_defs`);
+      register(lib_default);
+      return get3(code);
+    }
+    if (Number.isInteger(n) && n >= 32701 && n <= 32760) {
+      const zone = n - 32700;
+      lib_default.defs(code, `+proj=utm +zone=${zone} +south +datum=WGS84 +units=m +no_defs`);
+      register(lib_default);
+      return get3(code);
+    }
+    return null;
+  }
+  function projectionCode(proj) {
+    try {
+      return String(proj?.getCode?.() || "");
+    } catch {
+      return "";
+    }
+  }
+  function isLocalProjection(proj) {
+    const code = projectionCode(proj);
+    if (!code) return true;
+    if (/^RV:Local$/i.test(code)) return true;
+    if (/local/i.test(code)) return true;
+    if (/32767/.test(code)) return true;
+    if (/^EPSG:0$/i.test(code)) return true;
+    return false;
+  }
+  function extentArea(e) {
+    if (!e || e.length < 4) return 0;
+    const w = Math.abs(e[2] - e[0]);
+    const h = Math.abs(e[3] - e[1]);
+    if (!Number.isFinite(w) || !Number.isFinite(h)) return 0;
+    return w * h;
+  }
+  function extentsOverlap(a, b) {
+    if (!a || !b) return false;
+    const xOverlap = Math.min(a[2], b[2]) > Math.max(a[0], b[0]);
+    const yOverlap = Math.min(a[3], b[3]) > Math.max(a[1], b[1]);
+    return xOverlap && yOverlap;
+  }
+  function safeTransformExtent(extent, fromProj, toProj) {
+    if (!extent || !fromProj || !toProj) return null;
+    try {
+      const te = transformExtent(extent, fromProj, toProj);
+      if (!te || te.some((v) => !Number.isFinite(v))) return null;
+      return te;
+    } catch {
+      return null;
+    }
+  }
+  function applyMapViewCrs(map, mapCrs, layerNativeViewConfig) {
+    if (!map) return;
+    const code = mapCrs && mapCrs !== "none" ? mapCrs : "EPSG:3857";
+    const proj = ensureProjection(code);
+    if (!proj) {
+      throw new Error(`\u65E0\u6CD5\u6CE8\u518C\u5750\u6807\u7CFB ${code}`);
+    }
+    const oldView = map.getView();
+    const oldProj = oldView.getProjection();
+    const layerProj = layerNativeViewConfig?.projection || null;
+    const layerExtent = layerNativeViewConfig?.extent;
+    if (layerExtent && isLocalProjection(layerProj)) {
+      map.setView(
+        new View_default(
+          freeViewOptions({
+            projection: proj
+          })
+        )
+      );
+      try {
+        map.getView().fit(layerExtent, { padding: [24, 24, 24, 24], nearest: true });
+      } catch {
+      }
+      map.updateSize();
+      return;
+    }
+    const layerTe = layerExtent && layerProj && !isLocalProjection(layerProj) ? safeTransformExtent(layerExtent, layerProj, proj) : null;
+    let viewTe = null;
+    if (oldProj) {
+      try {
+        const size = map.getSize?.();
+        const extent = size && size[0] > 0 && size[1] > 0 ? oldView.calculateExtent(size) : oldView.calculateExtent?.([800, 800]);
+        viewTe = safeTransformExtent(extent, oldProj, proj);
+      } catch {
+        viewTe = null;
+      }
+    }
+    let fitTarget = null;
+    if (layerTe && viewTe && extentsOverlap(viewTe, layerTe) && extentArea(viewTe) > 0) {
+      fitTarget = viewTe;
+    } else if (layerTe) {
+      fitTarget = layerTe;
+    } else if (viewTe && extentArea(viewTe) > 0) {
+      fitTarget = viewTe;
+    }
+    map.setView(
+      new View_default(
+        freeViewOptions({
+          projection: proj
+        })
+      )
+    );
+    if (fitTarget) {
+      try {
+        map.getView().fit(fitTarget, { padding: [24, 24, 24, 24], nearest: true });
+      } catch {
+      }
+    }
+    map.updateSize();
+  }
+
+  // scripts/smoke/crs-harness.js
   function waitFrames(n = 3) {
     return new Promise((resolve) => {
       let left = n;
@@ -39051,41 +47697,97 @@ ${ifBlocks}
       requestAnimationFrame(tick);
     });
   }
-  async function waitMapIdle(map, ms = 2500) {
-    const start = performance.now();
-    await new Promise((r) => {
-      let done = false;
-      const finish = () => {
-        if (done) return;
-        done = true;
-        map.un("rendercomplete", onRender);
-        r();
-      };
-      const onRender = () => {
-      };
-      map.on("rendercomplete", onRender);
-      setTimeout(finish, ms);
-    });
+  async function waitMapIdle(map, ms = 2e3) {
+    await new Promise((r) => setTimeout(r, ms));
     await waitFrames(5);
-    return performance.now() - start;
   }
-  window.runSmoke = async function runSmoke() {
+  function identityGeo(h) {
+    return {
+      geoTransform: [0, 1, 0, h || 0, 0, -1],
+      crs: "Local",
+      modelPixelScale: [1, 1, 0],
+      modelTiepoint: [0, 0, 0, 0, h || 0, 0],
+      yFlipped: true,
+      source: "identity"
+    };
+  }
+  function fileHasOwnCrs(g) {
+    return g?.source === "geotiff" && !!normalizeEpsg(g?.crs);
+  }
+  function applyLayerCrsPolicy(g, mapCrs) {
+    if (normalizeEpsg(g?.crs)) return g;
+    return { ...g, crs: mapCrs || "EPSG:3857" };
+  }
+  function blobCrsForGeo(fileGeo, mapCrs) {
+    if (fileGeo?.source === "geotiff") {
+      const fileEpsg = normalizeEpsg(fileGeo.crs);
+      if (fileEpsg) return `EPSG:${fileEpsg}`;
+    }
+    const mapEpsg = normalizeEpsg(mapCrs);
+    return mapEpsg ? `EPSG:${mapEpsg}` : mapCrs || "EPSG:3857";
+  }
+  function projCode(p) {
+    try {
+      return String(p?.getCode?.() || p || "");
+    } catch {
+      return String(p || "");
+    }
+  }
+  function nearly(a, b, eps = 1e-3) {
+    return Math.abs(a - b) <= eps;
+  }
+  function extentClose(a, b, eps = 1) {
+    if (!a || !b || a.length < 4 || b.length < 4) return false;
+    return a.every((v, i) => nearly(v, b[i], eps));
+  }
+  function sampleCenter(mapEl) {
+    const canvas = mapEl.querySelector("canvas");
+    if (!canvas) return null;
+    const gl = canvas.getContext("webgl2") || canvas.getContext("webgl");
+    const w = canvas.width;
+    const h = canvas.height;
+    const x = Math.floor(w / 2);
+    const y = Math.floor(h / 2);
+    if (gl) {
+      const buf = new Uint8Array(4);
+      gl.readPixels(x, h - 1 - y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, buf);
+      return { rgba: [...buf], lum: (buf[0] + buf[1] + buf[2]) / 3 };
+    }
+    return null;
+  }
+  window.runCrsSmoke = async function runCrsSmoke() {
     const checks = [];
     const push = (name, ok2, detail) => checks.push({ name, ok: !!ok2, detail });
-    if (window.__MENU__) {
-      const groups = window.__MENU__.map((m) => m.group);
-      const ok2 = groups[0] === "viewLayer@1" && groups[1] === "viewLayer@2" && groups.every((g) => String(g).startsWith("viewLayer"));
-      push("menu.groupAdjacent", ok2, groups.join(", "));
-    }
+    let mapCrs = "EPSG:3857";
+    ensureProjection(mapCrs);
+    ensureProjection("EPSG:4326");
+    ensureProjection("EPSG:32649");
     const mapEl = document.getElementById("map");
     mapEl.replaceChildren();
-    const jpg = await decodeImage("/00001.jpg");
-    const mask = await decodeImage("/mask.png");
-    const jpgPlanes = rgbPlanes(jpg.data, jpg.width, jpg.height);
-    const maskPlanes = maskPlane(mask.data, mask.width, mask.height, true);
-    const jpgGeo = identityGeo(jpg.height);
-    const maskGeo = identityGeo(mask.height);
-    const jpgStyleState = {
+    const w = 64;
+    const h = 64;
+    const n = w * h;
+    const r = new Float64Array(n);
+    const g = new Float64Array(n);
+    const b = new Float64Array(n);
+    for (let i = 0; i < n; i++) {
+      r[i] = 200;
+      g[i] = 40;
+      b[i] = 40;
+    }
+    let noCrsGeo = applyLayerCrsPolicy(identityGeo(h), mapCrs);
+    push("policy.noCrsAssignedMap", noCrsGeo.crs === "EPSG:3857", noCrsGeo.crs);
+    push("policy.noCrsNotOwn", !fileHasOwnCrs(noCrsGeo), JSON.stringify(noCrsGeo));
+    const noCrsExtentBefore = [0, 0, w, h];
+    const noCrsBlob3857 = planesToGeoTiffBlob(
+      [r, g, b],
+      w,
+      h,
+      noCrsGeo,
+      blobCrsForGeo(noCrsGeo, mapCrs)
+    );
+    const noCrsBounds = resolveSourceBounds(3, null, [r, g, b]);
+    const noCrsStyle = buildWebGlStyle({
       mode: "rgb",
       redBand: 0,
       greenBand: 1,
@@ -39096,99 +47798,219 @@ ${ifBlocks}
       greenMax: 255,
       blueMin: 0,
       blueMax: 255,
-      sourceMins: [0, 0, 0],
-      sourceMaxs: [255, 255, 255]
-    };
-    const maskStyleState = {
-      mode: "paletted",
-      paletteBand: 0,
-      colormap: { 4: "#22c55e", 6: "#a855f7" },
-      sourceMins: [0],
-      sourceMaxs: [255]
-    };
-    const jpgBlob = planesToGeoTiffBlob(jpgPlanes, jpg.width, jpg.height, jpgGeo, null);
-    const maskBlob = planesToGeoTiffBlob(maskPlanes, mask.width, mask.height, maskGeo, null);
-    const jpgBounds = resolveSourceBounds(3, null, jpgPlanes);
-    const maskBounds = resolveSourceBounds(1, null, maskPlanes, { lockByteRange: true });
-    const jpgLayer = await createRasterLayer({
-      blob: jpgBlob,
-      style: buildWebGlStyle(jpgStyleState),
+      sourceMins: noCrsBounds.mins,
+      sourceMaxs: noCrsBounds.maxs
+    });
+    const noCrsLayer = await createRasterLayer({
+      blob: noCrsBlob3857,
+      style: noCrsStyle,
       bandCount: 3,
       zIndex: 1,
-      mins: jpgBounds.mins,
-      maxs: jpgBounds.maxs,
-      projection: LOCAL_PIXEL_PROJECTION
+      mins: noCrsBounds.mins,
+      maxs: noCrsBounds.maxs
     });
-    const map = createEmptyMap(mapEl, jpgLayer.viewConfig);
-    map.setView(new View_default(freeViewOptions(jpgLayer.viewConfig)));
-    map.addLayer(jpgLayer.layer);
-    fitMap(map, jpgLayer.viewConfig);
-    map.updateSize();
-    await waitMapIdle(map, 2e3);
-    let shot = sampleCanvas(mapEl, [
-      [0.5, 0.5, "jpgCenter"],
-      [0.9, 0.9, "jpgBR"]
-    ]);
-    const jpgCenter = shot.samples.find((s) => s.label === "jpgCenter");
+    const noCrsNativeExtent = noCrsLayer.viewConfig.extent;
+    const noCrsNativeProj = projCode(noCrsLayer.viewConfig.projection);
     push(
-      "jpg.aloneVisible",
-      jpgCenter && jpgCenter.lum > 5 && jpgCenter.rgba[3] > 200,
-      JSON.stringify(jpgCenter)
+      "noCrs.taggedAsMapCrs",
+      /3857/.test(noCrsNativeProj),
+      noCrsNativeProj
     );
-    const maskLayer = await createRasterLayer({
-      blob: maskBlob,
-      style: buildWebGlStyle(maskStyleState),
+    const withGeo = {
+      geoTransform: [574960, 10, 0, 3889850, 0, -10],
+      crs: "EPSG:32649",
+      modelPixelScale: [10, 10, 0],
+      modelTiepoint: [0, 0, 0, 574960, 3889850, 0],
+      yFlipped: true,
+      source: "geotiff"
+    };
+    push("policy.withCrsOwn", fileHasOwnCrs(withGeo), withGeo.crs);
+    push(
+      "policy.withCrsKept",
+      applyLayerCrsPolicy(withGeo, mapCrs).crs === "EPSG:32649",
+      applyLayerCrsPolicy(withGeo, mapCrs).crs
+    );
+    push(
+      "policy.blobKeepsFileCrs",
+      blobCrsForGeo(withGeo, mapCrs) === "EPSG:32649",
+      blobCrsForGeo(withGeo, mapCrs)
+    );
+    const withResp = await fetch("/scripts/smoke/fixtures/chla64.tif");
+    if (!withResp.ok) throw new Error(`fixture fetch failed: ${withResp.status}`);
+    const withBlob = await withResp.blob();
+    const withLayer = await createRasterLayer({
+      blob: withBlob,
+      style: buildWebGlStyle({
+        mode: "gray",
+        grayBand: 0,
+        grayMin: 70,
+        grayMax: 90,
+        grayContrast: "none",
+        grayRamp: "blackwhite",
+        sourceMins: [70],
+        sourceMaxs: [90]
+      }),
       bandCount: 1,
       zIndex: 2,
-      mins: maskBounds.mins,
-      maxs: maskBounds.maxs,
-      projection: LOCAL_PIXEL_PROJECTION
+      mins: [70],
+      maxs: [90]
+      // production blob with file CRS: GeoKeys from file, no forced projection
     });
-    map.addLayer(maskLayer.layer);
-    const sameProj = jpgLayer.viewConfig.projection === maskLayer.viewConfig.projection || jpgLayer.viewConfig.projection?.getCode?.() === maskLayer.viewConfig.projection?.getCode?.();
+    const withNativeProj = projCode(withLayer.viewConfig.projection);
+    const withNativeExtent = withLayer.viewConfig.extent;
+    push("withCrs.sourceIs32649", /32649/.test(withNativeProj), withNativeProj);
     push(
-      "local.sharedProjection",
-      sameProj && String(jpgLayer.viewConfig.projection?.getCode?.() || "") === "RV:Local",
-      `jpg=${jpgLayer.viewConfig.projection?.getCode?.()} mask=${maskLayer.viewConfig.projection?.getCode?.()}`
+      "withCrs.extentInUtm",
+      withNativeExtent && withNativeExtent[0] > 5e5 && withNativeExtent[1] > 3e6,
+      JSON.stringify(withNativeExtent)
     );
-    refreshAll([
-      { layer: jpgLayer.layer, styleState: jpgStyleState },
-      { layer: maskLayer.layer, styleState: maskStyleState }
-    ]);
-    jpgLayer.layer.setVisible(true);
-    maskLayer.layer.setVisible(true);
-    jpgLayer.layer.setOpacity(1);
-    maskLayer.layer.setOpacity(1);
-    map.renderSync?.();
-    map.render();
+    const map = createEmptyMap(mapEl, withLayer.viewConfig);
+    map.addLayer(noCrsLayer.layer);
+    map.addLayer(withLayer.layer);
+    map.updateSize();
+    applyMapViewCrs(map, mapCrs, withLayer.viewConfig);
+    push("map.stays3857OnOpen", /3857/.test(projCode(map.getView().getProjection())), projCode(map.getView().getProjection()));
+    const expected4326Extent = transformExtent(withNativeExtent, "EPSG:32649", "EPSG:4326");
+    const expected3857Extent = transformExtent(withNativeExtent, "EPSG:32649", "EPSG:3857");
+    const expectedCenter3857 = [
+      (expected3857Extent[0] + expected3857Extent[2]) / 2,
+      (expected3857Extent[1] + expected3857Extent[3]) / 2
+    ];
+    push(
+      "reproject.mathOk",
+      expected4326Extent[0] > 100 && expected4326Extent[0] < 130 && expected4326Extent[1] > 20 && expected4326Extent[1] < 50,
+      JSON.stringify(expected4326Extent)
+    );
+    withLayer.layer.setStyle(
+      buildWebGlStyle({
+        mode: "gray",
+        grayBand: 0,
+        grayMin: 70,
+        grayMax: 90,
+        grayContrast: "none",
+        grayRamp: "blackwhite",
+        sourceMins: [70],
+        sourceMaxs: [90]
+      })
+    );
+    map.updateSize();
     await waitMapIdle(map, 2500);
-    shot = sampleCanvas(mapEl, [
-      // Mask covers [0,512]x[0,512] in Local pixel space; JPG is 800x800.
-      // After fit-to-JPG, top-left ~ mask, bottom-right ~ JPG only.
-      [0.2, 0.2, "maskRegion"],
-      [0.9, 0.9, "jpgOnlyRegion"]
-    ]);
-    const maskPx = shot.samples.find((s) => s.label === "maskRegion");
-    const jpgOnly = shot.samples.find((s) => s.label === "jpgOnlyRegion");
-    const isGreen = maskPx && maskPx.rgba[1] > 120 && maskPx.rgba[1] > maskPx.rgba[0] && maskPx.rgba[1] > maskPx.rgba[2];
-    const isPurple = maskPx && maskPx.rgba[0] > 100 && maskPx.rgba[2] > 100 && maskPx.rgba[1] < 120;
+    const sample3857 = sampleCenter(mapEl);
     push(
-      "mask.afterJpgSolidClassColor",
-      !!(isGreen || isPurple) && maskPx.rgba[3] > 200,
-      JSON.stringify(maskPx)
+      "render.withCrsOpaqueIn3857",
+      sample3857 && sample3857.rgba[3] > 200,
+      JSON.stringify(sample3857)
+    );
+    const center3857 = map.getView().getCenter();
+    push(
+      "map.fitReprojectedNotPixels",
+      center3857 && Math.abs(center3857[0] - expectedCenter3857[0]) < 5e5 && Math.abs(center3857[1] - expectedCenter3857[1]) < 5e5 && Math.abs(center3857[0]) > 1e6,
+      JSON.stringify({ center3857, expectedCenter3857 })
+    );
+    mapCrs = "EPSG:4326";
+    ensureProjection(mapCrs);
+    const noCrsExtentBeforeSwitch = noCrsLayer.viewConfig.extent.slice();
+    noCrsGeo = { ...noCrsGeo, crs: mapCrs };
+    const noCrsBlob4326 = planesToGeoTiffBlob(
+      [r, g, b],
+      w,
+      h,
+      noCrsGeo,
+      blobCrsForGeo(noCrsGeo, mapCrs)
+    );
+    map.removeLayer(noCrsLayer.layer);
+    const noCrsLayer2 = await createRasterLayer({
+      blob: noCrsBlob4326,
+      style: noCrsStyle,
+      bandCount: 3,
+      zIndex: 1,
+      mins: noCrsBounds.mins,
+      maxs: noCrsBounds.maxs
+    });
+    map.addLayer(noCrsLayer2.layer);
+    const noCrsAfterProj = projCode(noCrsLayer2.viewConfig.projection);
+    const noCrsAfterExtent = noCrsLayer2.viewConfig.extent;
+    push("noCrs.afterSwitchTagged4326", /4326/.test(noCrsAfterProj), noCrsAfterProj);
+    push(
+      "noCrs.extentNumbersUnchanged",
+      extentClose(noCrsExtentBeforeSwitch, noCrsAfterExtent, 1e-6),
+      JSON.stringify({ before: noCrsExtentBeforeSwitch, after: noCrsAfterExtent })
     );
     push(
-      "jpg.stillVisibleAfterMask",
-      jpgOnly && jpgOnly.lum > 8 && jpgOnly.rgba[3] > 200,
-      JSON.stringify(jpgOnly)
+      "noCrs.notReprojectedToGeo",
+      noCrsAfterExtent[2] < 1e3 && noCrsAfterExtent[3] < 1e3,
+      JSON.stringify(noCrsAfterExtent)
+    );
+    const withExtentStill = withLayer.viewConfig.extent;
+    push(
+      "withCrs.nativeExtentUnchanged",
+      extentClose(withNativeExtent, withExtentStill, 1e-6),
+      JSON.stringify({ before: withNativeExtent, after: withExtentStill })
+    );
+    push("withCrs.nativeStill32649", /32649/.test(projCode(withLayer.viewConfig.projection)), projCode(withLayer.viewConfig.projection));
+    applyMapViewCrs(map, mapCrs, withLayer.viewConfig);
+    push("map.switchedTo4326", /4326/.test(projCode(map.getView().getProjection())), projCode(map.getView().getProjection()));
+    const center4326 = map.getView().getCenter();
+    const expectedCenter4326 = [
+      (expected4326Extent[0] + expected4326Extent[2]) / 2,
+      (expected4326Extent[1] + expected4326Extent[3]) / 2
+    ];
+    push(
+      "withCrs.viewReprojectedTo4326",
+      center4326 && Math.abs(center4326[0] - expectedCenter4326[0]) < 2 && Math.abs(center4326[1] - expectedCenter4326[1]) < 2,
+      JSON.stringify({ center4326, expectedCenter4326, expected4326Extent })
     );
     push(
-      "jpg.opacityIsOne",
-      jpgLayer.layer.getOpacity() === 1 && jpgLayer.layer.getVisible() === true,
-      `opacity=${jpgLayer.layer.getOpacity()} visible=${jpgLayer.layer.getVisible()}`
+      "map.neverLocal",
+      !/local/i.test(projCode(map.getView().getProjection())),
+      projCode(map.getView().getProjection())
     );
+    map.updateSize();
+    await waitMapIdle(map, 2500);
+    const sample4326 = sampleCenter(mapEl);
+    push(
+      "render.withCrsOpaqueIn4326",
+      sample4326 && sample4326.rgba[3] > 200,
+      JSON.stringify(sample4326)
+    );
+    mapCrs = "EPSG:3857";
+    noCrsGeo = { ...noCrsGeo, crs: mapCrs };
+    map.removeLayer(noCrsLayer2.layer);
+    const noCrsLayer3 = await createRasterLayer({
+      blob: planesToGeoTiffBlob([r, g, b], w, h, noCrsGeo, blobCrsForGeo(noCrsGeo, mapCrs)),
+      style: noCrsStyle,
+      bandCount: 3,
+      zIndex: 1,
+      mins: noCrsBounds.mins,
+      maxs: noCrsBounds.maxs
+    });
+    map.addLayer(noCrsLayer3.layer);
+    applyMapViewCrs(map, mapCrs, withLayer.viewConfig);
+    push("map.backTo3857", /3857/.test(projCode(map.getView().getProjection())), projCode(map.getView().getProjection()));
+    const centerBack = map.getView().getCenter();
+    push(
+      "withCrs.reprojectBack3857",
+      centerBack && Math.abs(centerBack[0] - expectedCenter3857[0]) < 5e5,
+      JSON.stringify({ centerBack, expectedCenter3857 })
+    );
+    push(
+      "noCrs.extentStableAcrossSwitches",
+      extentClose(noCrsNativeExtent, noCrsLayer3.viewConfig.extent, 1e-6),
+      JSON.stringify({ first: noCrsNativeExtent, last: noCrsLayer3.viewConfig.extent })
+    );
+    void noCrsExtentBefore;
     const ok = checks.every((c) => c.ok);
-    const result = { ok, checks, canvas: { w: shot.w, h: shot.h }, samples: shot.samples };
+    const result = {
+      ok,
+      checks,
+      meta: {
+        withNativeExtent,
+        expected4326Extent,
+        expected3857Extent,
+        noCrsNativeExtent,
+        noCrsAfterExtent
+      }
+    };
     window.__SMOKE_RESULT__ = result;
     document.getElementById("out").textContent = JSON.stringify(result, null, 2);
     document.body.dataset.smoke = ok ? "pass" : "fail";

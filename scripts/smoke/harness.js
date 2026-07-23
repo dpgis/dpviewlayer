@@ -140,9 +140,9 @@ window.runSmoke = async function runSmoke() {
   if (window.__MENU__) {
     const groups = window.__MENU__.map((m) => m.group);
     const ok =
-      groups[0] === "rasterViewer@1" &&
-      groups[1] === "rasterViewer@2" &&
-      groups.every((g) => String(g).startsWith("rasterViewer"));
+      groups[0] === "viewLayer@1" &&
+      groups[1] === "viewLayer@2" &&
+      groups.every((g) => String(g).startsWith("viewLayer"));
     push("menu.groupAdjacent", ok, groups.join(", "));
   }
 

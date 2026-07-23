@@ -231,31 +231,64 @@ export function encodeIndexedPng(
   ]);
 }
 
-export type ColormapFile = {
-  /** value -> #rrggbb or [r,g,b] */
-  colors: Record<string, string | number[]>;
-  labels?: Record<string, string>;
+export type ColorTableRowFile = {
+  min: number;
+  max: number;
+  /** #rrggbb or [r,g,b] */
+  color: string | number[];
 };
 
-export function loadColormapFile(filePath: string): Record<number, Rgb> {
-  const raw = JSON.parse(fs.readFileSync(filePath, "utf8")) as ColormapFile | Record<string, string | number[]>;
-  const colors = "colors" in raw && raw.colors ? raw.colors : (raw as Record<string, string | number[]>);
-  const out: Record<number, Rgb> = {};
-  for (const [k, v] of Object.entries(colors)) {
-    const id = Number(k);
-    if (!Number.isFinite(id)) continue;
-    const rgb = parseColor(v);
-    if (rgb) out[id] = rgb;
+export type ColormapFile = {
+  /** Ordered rows; ID = array index (not stored on rows). */
+  colorTable: ColorTableRowFile[];
+};
+
+function rowColorToHex(v: string | number[]): string | undefined {
+  const rgb = parseColor(v);
+  return rgb ? rgbToHex(rgb) : undefined;
+}
+
+function normalizeColorTableRows(rows: ColorTableRowFile[] | undefined): Array<{
+  min: number;
+  max: number;
+  color: string;
+}> {
+  if (!Array.isArray(rows)) return [];
+  const out: Array<{ min: number; max: number; color: string }> = [];
+  for (const e of rows.slice(0, 256)) {
+    const min = Number(e?.min);
+    const max = Number(e?.max);
+    const hex = e?.color != null ? rowColorToHex(e.color) : undefined;
+    if (!Number.isFinite(min) || !Number.isFinite(max) || !(max > min) || !hex) continue;
+    out.push({ min, max, color: hex });
   }
   return out;
 }
 
-export function saveColormapFile(filePath: string, map: Record<number, Rgb>) {
-  const colors: Record<string, string> = {};
-  for (const [k, rgb] of Object.entries(map)) {
-    colors[k] = rgbToHex(rgb as Rgb);
+/** Load workspace config: only `colorTable` array is accepted. */
+export function loadColormapDocument(filePath: string): {
+  colorTable: Array<{ min: number; max: number; color: string }>;
+  colormap: Record<number, Rgb>;
+} {
+  const raw = JSON.parse(fs.readFileSync(filePath, "utf8")) as ColormapFile;
+  const colorTable = normalizeColorTableRows(
+    raw && typeof raw === "object" ? raw.colorTable : undefined,
+  );
+  const colormap: Record<number, Rgb> = {};
+  for (let i = 0; i < colorTable.length; i++) {
+    const rgb = parseColor(colorTable[i].color);
+    if (rgb) colormap[i] = rgb;
   }
-  const body: ColormapFile = { colors };
+  return { colorTable, colormap };
+}
+
+/** Persist color table as an array only — no id field (index is implicit). */
+export function saveColormapDocument(
+  filePath: string,
+  colorTable: Array<{ min: number; max: number; color: string }>,
+) {
+  const rows = normalizeColorTableRows(colorTable);
+  const body: ColormapFile = { colorTable: rows };
   fs.writeFileSync(filePath, JSON.stringify(body, null, 2) + "\n", "utf8");
 }
 

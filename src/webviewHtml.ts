@@ -30,9 +30,13 @@ export type WebviewPayload = {
   indexFormat?: "i32" | "f64" | "u8";
   awaitIndices?: boolean;
   colormap: Record<string, string>;
+  /** Ordered rows; ID = array index (not stored). */
+  colorTable?: Array<{ min: number; max: number; color: string }>;
   colormapSource: "workspace" | "default";
   colormapPath?: string;
   filePath: string;
+  /** Host-computed per-band min/max (PAM / overview / decode). */
+  bandStats?: Array<{ min: number; max: number; mean?: number; stddev?: number }>;
   /** Multi-file list (initial / empty shell) */
   files?: Array<{ id: string; name: string; filePath: string }>;
   activeId?: string | null;
@@ -57,7 +61,7 @@ export function buildWebviewHtml(
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="${styleUri}" />
   <link rel="stylesheet" href="${olStyleUri}" />
-  <title>Raster Viewer</title>
+  <title>View Layer</title>
 </head>
 <body>
   <div class="main" id="main">
@@ -65,36 +69,6 @@ export function buildWebviewHtml(
     <div class="h-split" id="splitSide" role="separator" aria-orientation="vertical" title="拖动调整宽度"></div>
     <aside class="side" id="side">
       <div class="side-top" id="sideTop">
-        <div class="map-head-row">
-          <span class="map-head-title" data-i18n="mapHead">地图</span>
-          <div class="map-head-actions">
-            <div class="map-crs-control" id="mapCrsControl" title="地图显示坐标系">
-              <select id="mapCrsSelect" class="field field-crs" aria-label="地图坐标系">
-                <option value="EPSG:3857" selected>EPSG:3857</option>
-                <option value="EPSG:4326">EPSG:4326</option>
-                <option value="EPSG:4490">EPSG:4490</option>
-                <option value="EPSG:4547">EPSG:4547</option>
-                <option value="custom" data-i18n="mapCrsCustom">自定义…</option>
-              </select>
-              <input
-                id="mapCrsCustom"
-                class="field field-crs hidden"
-                type="text"
-                hidden
-                spellcheck="false"
-                autocomplete="off"
-                placeholder="EPSG:4548"
-                aria-label="自定义地图坐标系"
-              />
-            </div>
-            <button type="button" id="btnResetView" class="icon-btn" title="定位地图" aria-label="定位地图">
-              <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true">
-                <path fill="currentColor" d="M8 1a7 7 0 1 0 6.32 4H12.9A5.5 5.5 0 1 1 8 2.5V5l3.5-3L8 0v1zm.5 4.5h-1v3.2l2.4 1.4.5-.86-1.9-1.1V5.5z"/>
-              </svg>
-            </button>
-          </div>
-        </div>
-        <div class="map-layer-sep" role="separator" aria-hidden="true"></div>
         <div class="layer-head-row">
           <span class="layer-head-title" data-i18n="layerList">图层</span>
           <div class="layer-head-actions">
@@ -148,7 +122,8 @@ export function buildWebviewHtml(
           </div>
         </div>
       </div>
-      <div class="v-split" id="splitInfo" role="separator" aria-orientation="horizontal" title="拖动调整高度"></div>
+
+      <div class="v-split" id="splitInfo" role="separator" aria-orientation="horizontal" title="拖动调整图层/样式高度"></div>
 
       <div class="side-tabs" id="sideTabs">
         <div class="tab-bar" role="tablist">
@@ -161,7 +136,7 @@ export function buildWebviewHtml(
               <select id="renderType" class="field field-grow" title="渲染类型">
                 <option value="gray" data-i18n="renderGray">单波段灰度</option>
                 <option value="rgb" data-i18n="renderRgb">多波段彩色</option>
-                <option value="paletted" data-i18n="renderPaletted">调色板/唯一值</option>
+                <option value="paletted" data-i18n="renderPaletted">颜色表渲染</option>
               </select>
             </div>
 
@@ -190,10 +165,14 @@ export function buildWebviewHtml(
             </select>
           </div>
           <div class="form-row form-row-minmax">
-            <span class="form-label" data-i18n="minVal">最小值</span>
-            <input id="grayMin" class="field field-num" type="number" step="any" />
-            <span class="form-label" data-i18n="maxVal">最大值</span>
-            <input id="grayMax" class="field field-num" type="number" step="any" />
+            <label class="minmax-item">
+              <span class="minmax-label" data-i18n="minVal">最小值</span>
+              <input id="grayMin" class="field field-num" type="number" step="any" />
+            </label>
+            <label class="minmax-item">
+              <span class="minmax-label" data-i18n="maxVal">最大值</span>
+              <input id="grayMax" class="field field-num" type="number" step="any" />
+            </label>
           </div>
           <div class="form-row">
             <span class="form-label" data-i18n="contrast">对比度增强</span>
@@ -217,10 +196,14 @@ export function buildWebviewHtml(
               <select id="redBand" class="field field-grow band-select"></select>
             </div>
             <div class="form-row form-row-minmax form-indent">
-              <span class="form-label" data-i18n="minVal">最小值</span>
-              <input id="redMin" class="field field-num" type="number" step="any" />
-              <span class="form-label" data-i18n="maxVal">最大值</span>
-              <input id="redMax" class="field field-num" type="number" step="any" />
+              <label class="minmax-item">
+                <span class="minmax-label" data-i18n="minVal">最小值</span>
+                <input id="redMin" class="field field-num" type="number" step="any" />
+              </label>
+              <label class="minmax-item">
+                <span class="minmax-label" data-i18n="maxVal">最大值</span>
+                <input id="redMax" class="field field-num" type="number" step="any" />
+              </label>
             </div>
           </div>
           <div class="channel-block">
@@ -229,10 +212,14 @@ export function buildWebviewHtml(
               <select id="greenBand" class="field field-grow band-select"></select>
             </div>
             <div class="form-row form-row-minmax form-indent">
-              <span class="form-label" data-i18n="minVal">最小值</span>
-              <input id="greenMin" class="field field-num" type="number" step="any" />
-              <span class="form-label" data-i18n="maxVal">最大值</span>
-              <input id="greenMax" class="field field-num" type="number" step="any" />
+              <label class="minmax-item">
+                <span class="minmax-label" data-i18n="minVal">最小值</span>
+                <input id="greenMin" class="field field-num" type="number" step="any" />
+              </label>
+              <label class="minmax-item">
+                <span class="minmax-label" data-i18n="maxVal">最大值</span>
+                <input id="greenMax" class="field field-num" type="number" step="any" />
+              </label>
             </div>
           </div>
           <div class="channel-block">
@@ -241,10 +228,14 @@ export function buildWebviewHtml(
               <select id="blueBand" class="field field-grow band-select"></select>
             </div>
             <div class="form-row form-row-minmax form-indent">
-              <span class="form-label" data-i18n="minVal">最小值</span>
-              <input id="blueMin" class="field field-num" type="number" step="any" />
-              <span class="form-label" data-i18n="maxVal">最大值</span>
-              <input id="blueMax" class="field field-num" type="number" step="any" />
+              <label class="minmax-item">
+                <span class="minmax-label" data-i18n="minVal">最小值</span>
+                <input id="blueMin" class="field field-num" type="number" step="any" />
+              </label>
+              <label class="minmax-item">
+                <span class="minmax-label" data-i18n="maxVal">最大值</span>
+                <input id="blueMax" class="field field-num" type="number" step="any" />
+              </label>
             </div>
           </div>
           <div class="form-row">
@@ -302,9 +293,10 @@ export function buildWebviewHtml(
             <table class="cmap-table" id="cmapTable">
               <thead>
                 <tr>
-                  <th data-i18n="colValue">值</th>
+                  <th data-i18n="colIndex">ID</th>
+                  <th data-i18n="colMin">≥</th>
+                  <th data-i18n="colMax">&lt;</th>
                   <th data-i18n="colColor">颜色</th>
-                  <th data-i18n="colLabel">标注</th>
                 </tr>
               </thead>
               <tbody id="cmapBody"></tbody>
@@ -325,7 +317,7 @@ export function buildWebviewHtml(
               <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true">
                 <path
                   fill="currentColor"
-                  d="M3.5 3.5h9v1.5H6.06l6.44 6.44-1.06 1.06L5 6.06V12.5H3.5v-9zm9 9h-9V11h6.44L3.5 4.56 4.56 3.5 11 9.94V3.5h1.5v9z"
+                  d="M8 1.25 11.5 5H9.25v3.25h-2.5V5H4.5L8 1.25zm0 13.5L4.5 11h2.25V7.75h2.5V11H11.5L8 14.75z"
                 />
               </svg>
             </button>
@@ -346,10 +338,17 @@ export function buildWebviewHtml(
             <div id="identifyEmpty" class="identify-empty" data-i18n="identifyEmpty">在地图上点击以识别各图层像元值</div>
             <div class="identify-table-wrap" id="identifyTableWrap" hidden>
               <table class="identify-table" id="identifyTable">
+                <colgroup>
+                  <col class="identify-col-feat" />
+                  <col class="identify-col-val" />
+                </colgroup>
                 <thead>
                   <tr>
-                    <th data-i18n="identifyFeature">要素</th>
-                    <th data-i18n="identifyValue">值</th>
+                    <th class="identify-th-feat">
+                      <span data-i18n="identifyFeature">要素</span>
+                      <span class="identify-col-resizer" id="identifyColResizer" role="separator" aria-orientation="vertical" title="拖动调节列宽"></span>
+                    </th>
+                    <th><span data-i18n="identifyValue">值</span></th>
                   </tr>
                 </thead>
                 <tbody id="identifyBody"></tbody>
@@ -359,11 +358,42 @@ export function buildWebviewHtml(
         </div>
       </div>
 
+      <div class="map-section" id="mapSection">
+      <div class="map-foot" id="mapFoot">
+        <div class="map-head-row">
+          <span class="map-head-title" data-i18n="mapHead">地图</span>
+          <div class="map-head-actions">
+            <div class="map-crs-control" id="mapCrsControl" title="地图显示坐标系">
+              <select id="mapCrsSelect" class="field field-crs" aria-label="地图坐标系">
+                <option value="EPSG:3857" selected>EPSG:3857</option>
+                <option value="EPSG:4326">EPSG:4326</option>
+                <option value="EPSG:4490">EPSG:4490</option>
+                <option value="EPSG:4547">EPSG:4547</option>
+                <option value="custom" data-i18n="mapCrsCustom">自定义…</option>
+              </select>
+              <input
+                id="mapCrsCustom"
+                class="field field-crs hidden"
+                type="text"
+                hidden
+                spellcheck="false"
+                autocomplete="off"
+                placeholder="EPSG:4548"
+                aria-label="自定义地图坐标系"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
       <div class="status-bar" id="statusBar">
         <span id="hoverLockBadge" class="status-lock hidden" title="坐标已锁定，可复制；再双击地图解锁">锁定</span>
         <div id="hover" class="status-hover" aria-live="polite" tabindex="0">—</div>
       </div>
+      </div>
     </aside>
+  </div>
+  <div id="cmapColorPop" class="cmap-color-pop hidden" hidden>
+    <input type="color" id="cmapColorPopInput" value="#808080" />
   </div>
   <script nonce="${nonce}">window.__RASTER_VIEWER__ = ${data};</script>
   <script nonce="${nonce}" src="${scriptUri}"></script>

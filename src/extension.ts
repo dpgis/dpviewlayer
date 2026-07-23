@@ -15,18 +15,18 @@ import { t } from "./l10n";
 export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      "rasterViewer.openInNewView",
+      "viewLayer.openInNewView",
       async (uri?: vscode.Uri, uris?: vscode.Uri[]) => {
         await openUris(context, resolveUris(uri, uris), "newView");
       },
     ),
     vscode.commands.registerCommand(
-      "rasterViewer.addAsLayer",
+      "viewLayer.addAsLayer",
       async (uri?: vscode.Uri, uris?: vscode.Uri[]) => {
         await openUris(context, resolveUris(uri, uris), "addLayer");
       },
     ),
-    vscode.commands.registerCommand("rasterViewer.newView", () => {
+    vscode.commands.registerCommand("viewLayer.newView", () => {
       createNewView(context);
     }),
   );
@@ -61,7 +61,7 @@ async function openUris(
 
   let first = true;
   for (const u of targets) {
-    const ok = await tryOpenRasterViewer(context, u, {
+    const ok = await tryOpenViewLayer(context, u, {
       newView: mode === "newView" && first,
       sessionId: mode === "newView" ? (first ? undefined : sessionId) : sessionId,
     });
@@ -92,7 +92,7 @@ async function pickTargetSession(): Promise<SessionInfo | null | "cancelled"> {
   return picked.session;
 }
 
-export async function tryOpenRasterViewer(
+export async function tryOpenViewLayer(
   context: vscode.ExtensionContext,
   uri: vscode.Uri,
   opts: { newView?: boolean; sessionId?: string } = {},

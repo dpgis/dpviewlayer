@@ -153,24 +153,87 @@ export function meanStd(plane) {
 }
 
 /**
+ * True when stats look like 8-bit display data (JPG/PNG/byte mask).
+ * Float / uint16 / scientific rasters must not fall back to 0..255.
+ */
+export function isByteLikeStats(stats) {
+  if (!stats) return false;
+  const lo = Number(stats.min);
+  const hi = Number(stats.max);
+  if (!Number.isFinite(lo) || !Number.isFinite(hi)) return false;
+  if (lo < 0 || hi > 255) return false;
+  // Float in 0..1 or continuous fractional range → not byte display
+  if (!Number.isInteger(lo) || !Number.isInteger(hi)) return false;
+  return true;
+}
+
+function resolveStats(plane, stats) {
+  if (stats && Number.isFinite(stats.min) && Number.isFinite(stats.max)) {
+    return {
+      min: stats.min,
+      max: stats.max === stats.min ? stats.min + 1 : stats.max,
+      mean: stats.mean,
+      stddev: stats.stddev,
+    };
+  }
+  if (plane?.length) {
+    let min = Infinity;
+    let max = -Infinity;
+    for (let i = 0; i < plane.length; i++) {
+      const v = plane[i];
+      if (!Number.isFinite(v)) continue;
+      if (v < min) min = v;
+      if (v > max) max = v;
+    }
+    if (Number.isFinite(min) && Number.isFinite(max)) {
+      return { min, max: max <= min ? min + 1 : max };
+    }
+  }
+  return { min: 0, max: 255 };
+}
+
+/**
  * Compute stretch min/max for a plane.
  * mode: none|minmax|percent|stddev
+ *
+ * "none" (无增强): byte-like → 0..255; otherwise use data stats (not 0..255).
+ * Native GeoTIFF often has PAM stats only (no in-memory plane) — percent/stddev
+ * still work via min/max span or STATISTICS_MEAN/STDDEV.
  */
 export function stretchRange(plane, stats, mode, { percent = 2, stddev = 2 } = {}) {
-  const s = stats || { min: 0, max: 255 };
-  if (mode === "none") return { min: 0, max: 255 };
+  const s = resolveStats(plane, stats);
+  if (mode === "none") {
+    if (isByteLikeStats(s)) return { min: 0, max: 255 };
+    return { min: s.min, max: s.max };
+  }
   if (mode === "percent") {
     const p = Math.max(0, Math.min(49.9, Number(percent) || 2));
-    const lo = percentile(plane, p);
-    const hi = percentile(plane, 100 - p);
-    if (!Number.isFinite(lo) || !Number.isFinite(hi) || hi === lo) {
-      return { min: s.min, max: s.max === s.min ? s.min + 1 : s.max };
+    if (plane?.length) {
+      const lo = percentile(plane, p);
+      const hi = percentile(plane, 100 - p);
+      if (!Number.isFinite(lo) || !Number.isFinite(hi) || hi === lo) {
+        return { min: s.min, max: s.max === s.min ? s.min + 1 : s.max };
+      }
+      return { min: lo, max: hi };
     }
-    return { min: lo, max: hi };
+    // No plane: approximate cumulative cut from min/max (PAM / host stats).
+    const span = s.max - s.min;
+    if (!(span > 0)) return { min: s.min, max: s.max === s.min ? s.min + 1 : s.max };
+    return { min: s.min + span * (p / 100), max: s.max - span * (p / 100) };
   }
   if (mode === "stddev") {
     const n = Math.max(0.1, Number(stddev) || 2);
-    const { mean, std } = meanStd(plane);
+    let mean;
+    let std;
+    if (plane?.length) {
+      ({ mean, std } = meanStd(plane));
+    } else if (Number.isFinite(s.mean) && Number.isFinite(s.stddev) && s.stddev > 0) {
+      mean = s.mean;
+      std = s.stddev;
+    } else {
+      mean = (s.min + s.max) / 2;
+      std = Math.max((s.max - s.min) / 4, 1e-9);
+    }
     return { min: mean - n * std, max: mean + n * std };
   }
   // minmax

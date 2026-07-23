@@ -109,9 +109,26 @@ function stretchExpr(rawExpr, min, max, invert) {
  * IMPORTANT: With normalize:true, ['band', i] is already 0..1 relative to the
  * source min/max. The `array` operator expects 0..1 channels; the `color`
  * operator expects 0..255 (passing 0..1 into `color` renders near-black).
+ *
+ * Alpha: GeoTIFF sources often append a nodata alpha band (last band). Using it
+ * keeps reprojected AABB padding transparent instead of opaque black.
  */
+function sourceAlphaExpr(state) {
+  const dataBands = Math.max(1, Number(state.bandCount) || 1);
+  const total = Number(state.sourceBandCount);
+  if (Number.isFinite(total) && total > dataBands) {
+    return ["band", total];
+  }
+  const ab = Number(state.alphaBand);
+  if (Number.isFinite(ab) && ab > dataBands) {
+    return ["band", ab];
+  }
+  return 1;
+}
+
 export function buildWebGlStyle(state) {
   const mode = state.mode || "gray";
+  const alpha = sourceAlphaExpr(state);
 
   if (mode === "gray") {
     const bi0 = Number(state.grayBand) || 0;
@@ -131,11 +148,17 @@ export function buildWebGlStyle(state) {
 
     if (CONTINUOUS_RAMPS[ramp]) {
       const stops = interpolateStops(ramp, 0, 1, false);
+      // Nodata / outside footprint → transparent; else ramp color.
       return {
-        color: ["interpolate", ["linear"], v, ...stops],
+        color: [
+          "case",
+          ["<=", alpha, 0],
+          [0, 0, 0, 0],
+          ["interpolate", ["linear"], v, ...stops],
+        ],
       };
     }
-    return { color: ["array", v, v, v, 1] };
+    return { color: ["array", v, v, v, alpha] };
   }
 
   if (mode === "rgb") {
@@ -159,20 +182,110 @@ export function buildWebGlStyle(state) {
         channel(state.redBand, state.redMin, state.redMax),
         channel(state.greenBand, state.greenMin, state.greenMax),
         channel(state.blueBand, state.blueMin, state.blueMax),
-        1,
+        alpha,
       ],
     };
   }
 
-  // paletted / unique values — OL `palette` LUT indexed by class id (0..255).
-  // Source is locked to 0..255 so class value V maps to V/255.
+  // Color-table / range rendering — half-open ranges [min, max).
   const bi = (Number(state.paletteBand) || 0) + 1;
+  const sb = sourceBound(state, Number(state.paletteBand) || 0, 0, 255);
+  const raw = rawBand(bi, sb.min, sb.max);
+
+  const table = Array.isArray(state.colorTable) ? state.colorTable : null;
+  if (table && table.length) {
+    const entries = table
+      .map((e) => ({
+        min: Number(e?.min),
+        max: Number(e?.max),
+        color: e?.color,
+      }))
+      .filter(
+        (e) =>
+          Number.isFinite(e.min) &&
+          Number.isFinite(e.max) &&
+          e.max > e.min &&
+          e.color,
+      )
+      .slice(0, 256);
+    if (!entries.length) {
+      /* fall through to legacy colormap */
+    } else {
+      const colors = entries.map((e) => e.color);
+
+      // Equal bins over [lo, hi): quantize → palette (avoid 256×case — WebGL fails).
+      const lo0 = entries[0].min;
+      const hiN = entries[entries.length - 1].max;
+      const n = entries.length;
+      const w0 = entries[0].max - entries[0].min;
+      const equalBins =
+        n >= 1 &&
+        Number.isFinite(lo0) &&
+        Number.isFinite(hiN) &&
+        hiN > lo0 &&
+        entries.every((e, i) => {
+          if (i === 0) return true;
+          const wi = e.max - e.min;
+          const gapOk = Math.abs(e.min - entries[i - 1].max) <= Math.abs(w0) * 1e-6 + 1e-12;
+          const widthOk = Math.abs(wi - w0) <= Math.abs(w0) * 1e-4 + 1e-9;
+          return gapOk && widthOk;
+        });
+
+      if (equalBins) {
+        const span = hiN - lo0;
+        const t = ["/", ["-", raw, lo0], span];
+        const idx = ["clamp", ["floor", ["*", t, n]], 0, n - 1];
+        const pal = ["palette", idx, colors];
+        if (alpha !== 1) {
+          return { color: ["case", ["<=", alpha, 0], [0, 0, 0, 0], pal] };
+        }
+        return { color: pal };
+      }
+
+      // Unit integer classes in 0..255 → palette by class id (pixel value).
+      const unitIds = entries.every(
+        (e) =>
+          Number.isInteger(e.min) &&
+          e.max === e.min + 1 &&
+          e.min >= 0 &&
+          e.min <= 255,
+      );
+      if (unitIds) {
+        const pal256 = new Array(256).fill("rgba(0,0,0,0)");
+        for (const e of entries) pal256[e.min] = e.color;
+        const pal = ["palette", ["round", ["clamp", raw, 0, 255]], pal256];
+        if (alpha !== 1) {
+          return { color: ["case", ["<=", alpha, 0], [0, 0, 0, 0], pal] };
+        }
+        return { color: pal };
+      }
+
+      // Sparse / irregular: small tables use case; larger use interpolate.
+      if (entries.length <= 48) {
+        const caseExpr = ["case"];
+        for (const e of entries) {
+          caseExpr.push(["all", [">=", raw, e.min], ["<", raw, e.max]]);
+          caseExpr.push(e.color);
+        }
+        caseExpr.push([0, 0, 0, 0]);
+        if (alpha !== 1) {
+          return { color: ["case", ["<=", alpha, 0], [0, 0, 0, 0], caseExpr] };
+        }
+        return { color: caseExpr };
+      }
+
+      const stops = [];
+      for (const e of entries) stops.push((e.min + e.max) / 2, e.color);
+      const interp = ["interpolate", ["linear"], raw, ...stops];
+      if (alpha !== 1) {
+        return { color: ["case", ["<=", alpha, 0], [0, 0, 0, 0], interp] };
+      }
+      return { color: interp };
+    }
+  }
+
+  // Legacy unique-value palette (0..255 class ids).
   const colors = new Array(256).fill("rgba(0,0,0,0)");
-  // paletteOpacity: 0 = opaque, 100 = fully transparent (ArcGIS-style 透明度).
-  const opacityPct = Number(state.paletteOpacity);
-  const alpha = Number.isFinite(opacityPct)
-    ? Math.max(0, Math.min(1, 1 - opacityPct / 100))
-    : 1;
   const ids = Object.keys(state.colormap || {})
     .map(Number)
     .filter((n) => Number.isFinite(n) && n >= 0 && n <= 255)
@@ -180,29 +293,21 @@ export function buildWebGlStyle(state) {
   for (const id of ids) {
     const hex = state.colormap[id] ?? state.colormap[String(id)];
     if (!hex) continue;
-    colors[id] = alpha >= 0.999 ? hex : colorWithAlpha(hex, alpha);
+    colors[id] = hex;
+  }
+  if (alpha !== 1) {
+    return {
+      color: [
+        "case",
+        ["<=", alpha, 0],
+        [0, 0, 0, 0],
+        ["palette", ["round", rawBand(bi, 0, 255)], colors],
+      ],
+    };
   }
   return {
     color: ["palette", ["round", rawBand(bi, 0, 255)], colors],
   };
-}
-
-/** Apply alpha to #rgb / #rrggbb / rgba() color strings. */
-function colorWithAlpha(color, alpha) {
-  const a = Math.max(0, Math.min(1, alpha));
-  const s = String(color || "").trim();
-  const hex = s.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
-  if (hex) {
-    let h = hex[1];
-    if (h.length === 3) h = h.split("").map((c) => c + c).join("");
-    const r = parseInt(h.slice(0, 2), 16);
-    const g = parseInt(h.slice(2, 4), 16);
-    const b = parseInt(h.slice(4, 6), 16);
-    return `rgba(${r},${g},${b},${a})`;
-  }
-  const rgb = s.match(/^rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)(?:\s*,\s*[\d.]+\s*)?\)$/i);
-  if (rgb) return `rgba(${rgb[1]},${rgb[2]},${rgb[3]},${a})`;
-  return color;
 }
 
 /** True when every finite sample is an integer in [0, 255]. */
@@ -469,22 +574,12 @@ export async function createOlMap(target, { url, blob, style, bandCount = 1, min
   return { map, layer, source, viewConfig };
 }
 
-/** Build a View that allows free pan and zoom-out beyond fit-to-window. */
+/** Build a View with free pan; no zoom floor/ceiling (any resolution allowed). */
 export function freeViewOptions(viewConfig = {}) {
-  const extent = viewConfig.extent;
-  let maxResolution = viewConfig.maxResolution;
-  let minResolution = viewConfig.minResolution;
-  if (extent && Number.isFinite(extent[0])) {
-    const w = Math.abs(extent[2] - extent[0]) || 1;
-    const h = Math.abs(extent[3] - extent[1]) || 1;
-    const fitish = Math.max(w, h);
-    maxResolution = Math.max(maxResolution || 0, fitish * 64);
-    const pixelish = Math.min(w, h) / 4096;
-    minResolution = Math.min(minResolution || pixelish, pixelish);
-  } else {
-    maxResolution = maxResolution || 1e7;
-    minResolution = minResolution || 1e-4;
-  }
+  // Never constrain pan to a single layer extent — stacked layers (geo + local JPG)
+  // live far apart in map CRS; a tight extent makes one of them unreachable / tiny.
+  // Also skip min/maxResolution derived from layer size — OL defaults still clamp
+  // zoom-in too early for stacked geo rasters.
   return {
     projection: viewConfig.projection,
     center: viewConfig.center,
@@ -494,8 +589,9 @@ export function freeViewOptions(viewConfig = {}) {
     multiWorld: true,
     // false: updateSize on side-panel reflow must not keep zooming out.
     showFullExtent: false,
-    maxResolution,
-    minResolution,
+    // Effectively unlimited zoom (OL always has some numeric bound).
+    minResolution: 1e-12,
+    maxResolution: 1e15,
   };
 }
 
@@ -550,6 +646,13 @@ export async function createRasterLayer({
 
   let sourceInfo;
   const externalOvers = Array.isArray(overviews) ? overviews : [];
+  // Force a nodata alpha band so WebGLTile padding outside the raster footprint
+  // stays transparent (otherwise uint8 fill=0 paints opaque black slabs at some zooms).
+  // NaN does not collide with real 0..255 JPG/PNG samples; float layers use it too.
+  const looksFloat =
+    hasBounds &&
+    mins.some((lo, i) => lo < 0 || (Number.isFinite(maxs[i]) && maxs[i] > 255));
+  const nodataOpt = looksFloat || blob ? { nodata: NaN } : {};
   if (blob && (overviewBlobs?.length || externalOvers.length)) {
     // OL only wires external overviews for URL sources — not blob.
     const mainUrl = URL.createObjectURL(blob);
@@ -562,16 +665,22 @@ export async function createRasterLayer({
       }),
       ...externalOvers,
     ];
-    sourceInfo = { url: mainUrl, overviews: ovrUrls, ...boundOpts };
+    sourceInfo = { url: mainUrl, overviews: ovrUrls, ...boundOpts, ...nodataOpt };
   } else if (blob) {
     // In-memory float blobs must have explicit bounds (dtype limits are unusable).
     sourceInfo = hasBounds
-      ? { blob, ...boundOpts }
-      : { blob, min: Array(bandCount).fill(0), max: Array(bandCount).fill(255) };
+      ? { blob, ...boundOpts, ...nodataOpt }
+      : {
+          blob,
+          min: Array(bandCount).fill(0),
+          max: Array(bandCount).fill(255),
+          ...nodataOpt,
+        };
   } else if (url) {
     sourceInfo = {
       url,
       ...boundOpts,
+      ...nodataOpt,
       ...(externalOvers.length ? { overviews: [...externalOvers] } : {}),
     };
   } else {
@@ -655,6 +764,8 @@ export function createStaticImageLayer({
       extent,
       center: getCenter(extent),
       resolution,
+      width: w,
+      height: h,
     },
     objectUrls: [],
   };
@@ -678,10 +789,22 @@ export function revokeLayerUrls(objectUrls) {
   }
 }
 
+export function opacityFromStyleState(state) {
+  if (!state || state.mode !== "paletted") return 1;
+  const pct = Number(state.paletteOpacity);
+  if (!Number.isFinite(pct)) return 1;
+  return Math.max(0, Math.min(1, 1 - pct / 100));
+}
+
 export function applyStyle(layer, state) {
   if (!layer) return;
-  // ImageStatic layers show the file as-is; WebGL style does not apply.
-  if (layer.get?.("rvKind") === "static") return;
+  // ImageStatic: no WebGL style, but still honor transparency slider.
+  if (layer.get?.("rvKind") === "static") {
+    if (typeof layer.setOpacity === "function") {
+      layer.setOpacity(opacityFromStyleState(state));
+    }
+    return;
+  }
   if (typeof layer.setStyle !== "function") return;
   // Accept either style-state or a pre-built WebGL style object.
   const built =
@@ -690,9 +813,13 @@ export function applyStyle(layer, state) {
       : buildWebGlStyle(state);
   const wasVisible = layer.getVisible();
   layer.setStyle(built);
-  // setStyle can leave a hidden layer drawable — re-assert visibility only
-  // (do not use setOpacity(0); that blanks sibling WebGL layers until click).
+  // setStyle can leave a hidden layer drawable — re-assert visibility only.
   if (!wasVisible) layer.setVisible(false);
+  // Use layer opacity so transparency composites over the checkerboard / layers below.
+  // (Baking alpha into WebGL palette colors does not show through the canvas.)
+  if (typeof layer.setOpacity === "function" && state && !state.color) {
+    layer.setOpacity(opacityFromStyleState(state));
+  }
 }
 
 export function fitMap(map, viewConfig) {

@@ -1,8 +1,8 @@
 {
-  "name": "raster-viewer",
+  "name": "dpviewlayer",
   "displayName": "%displayName%",
   "description": "%description%",
-  "version": "0.6.95",
+  "version": "1.0.0",
   "publisher": "local",
   "engines": {
     "vscode": "^1.85.0"
@@ -12,25 +12,25 @@
     "Other"
   ],
   "activationEvents": [
-    "onCommand:rasterViewer.openInNewView",
-    "onCommand:rasterViewer.addAsLayer",
-    "onCommand:rasterViewer.newView"
+    "onCommand:viewLayer.openInNewView",
+    "onCommand:viewLayer.addAsLayer",
+    "onCommand:viewLayer.newView"
   ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "rasterViewer.openInNewView",
+        "command": "viewLayer.openInNewView",
         "title": "%command.openInNewView.title%",
         "icon": "$(window)"
       },
       {
-        "command": "rasterViewer.addAsLayer",
+        "command": "viewLayer.addAsLayer",
         "title": "%command.addAsLayer.title%",
         "icon": "$(symbol-color)"
       },
       {
-        "command": "rasterViewer.newView",
+        "command": "viewLayer.newView",
         "title": "%command.newView.title%",
         "icon": "$(split-horizontal)"
       }
@@ -38,48 +38,53 @@
     "menus": {
       "explorer/context": [
         {
-          "command": "rasterViewer.openInNewView",
+          "command": "viewLayer.openInNewView",
           "when": "resourceExtname == .png || resourceExtname == .jpg || resourceExtname == .jpeg || resourceExtname == .tif || resourceExtname == .tiff || resourceExtname == .bmp",
-          "group": "rasterViewer@1"
+          "group": "viewLayer@1"
         },
         {
-          "command": "rasterViewer.addAsLayer",
+          "command": "viewLayer.addAsLayer",
           "when": "resourceExtname == .png || resourceExtname == .jpg || resourceExtname == .jpeg || resourceExtname == .tif || resourceExtname == .tiff || resourceExtname == .bmp",
-          "group": "rasterViewer@2"
+          "group": "viewLayer@2"
         }
       ],
       "editor/title/context": [
         {
-          "command": "rasterViewer.openInNewView",
+          "command": "viewLayer.openInNewView",
           "when": "resourceExtname == .png || resourceExtname == .jpg || resourceExtname == .jpeg || resourceExtname == .tif || resourceExtname == .tiff || resourceExtname == .bmp",
-          "group": "rasterViewer@1"
+          "group": "viewLayer@1"
         },
         {
-          "command": "rasterViewer.addAsLayer",
+          "command": "viewLayer.addAsLayer",
           "when": "resourceExtname == .png || resourceExtname == .jpg || resourceExtname == .jpeg || resourceExtname == .tif || resourceExtname == .tiff || resourceExtname == .bmp",
-          "group": "rasterViewer@2"
+          "group": "viewLayer@2"
         }
       ],
       "commandPalette": [
         {
-          "command": "rasterViewer.openInNewView"
+          "command": "viewLayer.openInNewView"
         },
         {
-          "command": "rasterViewer.addAsLayer"
+          "command": "viewLayer.addAsLayer"
         },
         {
-          "command": "rasterViewer.newView"
+          "command": "viewLayer.newView"
         }
       ]
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run build:webview && tsc -p ./",
+    "vscode:prepublish": "npm run build:icon && npm run build:webview && npm run build:geotiff && tsc -p ./",
     "bump": "npm version patch --no-git-tag-version",
+    "build:icon": "node scripts/build-icon.mjs",
     "build:webview": "esbuild media/src/main.js --bundle --outfile=media/main.js --format=iife",
-    "compile": "npm run bump && npm run build:webview && tsc -p ./",
-    "package": "npx --yes @vscode/vsce package --allow-missing-repository",
-    "smoke": "node scripts/smoke/run.mjs && node scripts/smoke/invert-unit.mjs",
+    "build:geotiff": "mkdir -p out/vendor && esbuild node_modules/geotiff/dist-module/geotiff.js --bundle --platform=node --format=cjs --outfile=out/vendor/geotiff.cjs",
+    "compile": "npm run bump && npm run build:icon && npm run build:webview && npm run build:geotiff && tsc -p ./",
+    "package": "npx --yes @vscode/vsce package --allow-missing-repository && node scripts/verify-vsix.mjs",
+    "smoke": "node scripts/smoke/run.mjs && node scripts/smoke/invert-unit.mjs && node scripts/smoke/stretch-unit.mjs && node scripts/smoke/crs-run.mjs",
+    "verify:vsix": "node scripts/verify-vsix.mjs",
+    "smoke:crs": "node scripts/smoke/crs-run.mjs",
+    "smoke:stretch": "node scripts/smoke/stretch-unit.mjs",
     "watch": "tsc -watch -p ./"
   },
   "devDependencies": {
