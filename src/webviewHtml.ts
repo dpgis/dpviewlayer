@@ -32,7 +32,7 @@ export type WebviewPayload = {
   colormap: Record<string, string>;
   /** Ordered rows; ID = array index (not stored). */
   colorTable?: Array<{ min: number; max: number; color: string }>;
-  colormapSource: "workspace" | "default";
+  colormapSource: "file" | "default";
   colormapPath?: string;
   filePath: string;
   /** Host-computed per-band min/max (PAM / overview / decode). */
@@ -128,7 +128,7 @@ export function buildWebviewHtml(
       <div class="side-tabs" id="sideTabs">
         <div class="tab-bar" role="tablist">
           <button type="button" class="tab-btn is-active" id="tabStyle" role="tab" aria-selected="true" data-tab="style" data-i18n="tabStyle">样式</button>
-          <button type="button" class="tab-btn" id="tabIdentify" role="tab" aria-selected="false" data-tab="identify" data-i18n="tabIdentify">识别</button>
+          <button type="button" class="tab-btn" id="tabSettings" role="tab" aria-selected="false" data-tab="settings" data-i18n="tabSettings">设置</button>
         </div>
         <div class="tab-panel is-active" id="panelStyle" role="tabpanel">
           <div class="symbology">
@@ -324,7 +324,7 @@ export function buildWebviewHtml(
             <div class="menu-wrap">
               <button type="button" id="btnMore" class="btn btn-icon" title="…">…</button>
               <div id="moreMenu" class="menu hidden" role="menu">
-                <button type="button" id="btnReloadCmap" class="menu-item" data-i18n="reloadCmap">重载色表</button>
+                <button type="button" id="btnReloadCmap" class="menu-item" data-i18n="reloadCmap">加载色表</button>
                 <button type="button" id="btnSaveCmap" class="menu-item" data-i18n="saveCmap">保存色表</button>
                 <button type="button" id="btnSavePlte" class="menu-item" data-i18n="savePlte">另存为 PLTE</button>
               </div>
@@ -333,7 +333,40 @@ export function buildWebviewHtml(
         </div>
           </div>
         </div>
-        <div class="tab-panel" id="panelIdentify" role="tabpanel" hidden>
+        <div class="tab-panel" id="panelSettings" role="tabpanel" hidden>
+          <div class="settings-wrap">
+            <div class="form-row">
+              <span class="form-label" data-i18n="resample">采样方式</span>
+              <select id="resampleMode" class="field field-grow" title="缩放重采样">
+                <option value="nearest" data-i18n="resampleNearest" selected>最近邻</option>
+                <option value="linear" data-i18n="resampleLinear">线性插值</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="v-split" id="splitIdentify" role="separator" aria-orientation="horizontal" title="拖动调整样式/识别高度"></div>
+
+      <div class="side-identify" id="sideIdentify">
+        <div class="identify-head-row">
+          <span class="identify-head-title" data-i18n="tabIdentify">识别</span>
+          <div class="identify-head-actions">
+            <button
+              type="button"
+              id="btnToggleIdentify"
+              class="icon-btn"
+              title="折叠识别"
+              aria-label="折叠识别"
+              aria-expanded="true"
+            >
+              <svg class="identify-toggle-icon" width="14" height="14" viewBox="0 0 16 16" aria-hidden="true">
+                <path fill="currentColor" d="M3.2 6.2 8 11l4.8-4.8-.9-.9L8 9.2 4.1 5.3l-.9.9z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="identify-body" id="identifyBodyWrap">
           <div class="identify-wrap">
             <div id="identifyEmpty" class="identify-empty" data-i18n="identifyEmpty">在地图上点击以识别各图层像元值</div>
             <div class="identify-table-wrap" id="identifyTableWrap" hidden>
@@ -359,28 +392,29 @@ export function buildWebviewHtml(
       </div>
 
       <div class="map-section" id="mapSection">
-      <div class="map-foot" id="mapFoot">
-        <div class="map-head-row">
-          <span class="map-head-title" data-i18n="mapHead">地图</span>
-          <div class="map-head-actions">
-            <div class="map-crs-control" id="mapCrsControl" title="地图显示坐标系">
-              <select id="mapCrsSelect" class="field field-crs" aria-label="地图坐标系">
-                <option value="EPSG:3857" selected>EPSG:3857</option>
-                <option value="EPSG:4326">EPSG:4326</option>
-                <option value="EPSG:4490">EPSG:4490</option>
-                <option value="EPSG:4547">EPSG:4547</option>
-                <option value="custom" data-i18n="mapCrsCustom">自定义…</option>
-              </select>
-              <input
-                id="mapCrsCustom"
-                class="field field-crs hidden"
-                type="text"
-                hidden
-                spellcheck="false"
-                autocomplete="off"
-                placeholder="EPSG:4548"
-                aria-label="自定义地图坐标系"
-              />
+        <div class="map-foot" id="mapFoot">
+          <div class="map-head-row">
+            <span class="map-head-title" data-i18n="mapHead">地图</span>
+            <div class="map-head-actions">
+              <div class="map-crs-control" id="mapCrsControl" title="地图显示坐标系">
+                <select id="mapCrsSelect" class="field field-crs" aria-label="地图坐标系">
+                  <option value="EPSG:3857" selected>EPSG:3857</option>
+                  <option value="EPSG:4326">EPSG:4326</option>
+                  <option value="EPSG:4490">EPSG:4490</option>
+                  <option value="EPSG:4547">EPSG:4547</option>
+                  <option value="custom" data-i18n="mapCrsCustom">自定义…</option>
+                </select>
+                <input
+                  id="mapCrsCustom"
+                  class="field field-crs hidden"
+                  type="text"
+                  hidden
+                  spellcheck="false"
+                  autocomplete="off"
+                  placeholder="EPSG:4548"
+                  aria-label="自定义地图坐标系"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -388,7 +422,6 @@ export function buildWebviewHtml(
       <div class="status-bar" id="statusBar">
         <span id="hoverLockBadge" class="status-lock hidden" title="坐标已锁定，可复制；再双击地图解锁">锁定</span>
         <div id="hover" class="status-hover" aria-live="polite" tabindex="0">—</div>
-      </div>
       </div>
     </aside>
   </div>

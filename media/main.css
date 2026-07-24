@@ -15,8 +15,12 @@
   --label-w: 72px;
   /* Usable floors — when the window is shorter, .side scrolls instead of crushing. */
   --side-top-min: 240px; /* layers(~3 rows) + info */
-  --side-tabs-min: 240px; /* tab bar + style/identify controls */
-  --map-section-min: 64px; /* 地图 + 坐标 */
+  --side-tabs-min: 300px; /* tab + gray/rgb form without inner scroll */
+  --side-identify-min: 120px; /* identify table area when expanded */
+  --side-identify-head: 36px; /* title + 26px icon button + padding */
+  --side-identify-h: 160px;
+  --map-section-min: 36px; /* 地图 CRS 行 */
+  --status-bar-min: 28px; /* 地理坐标行（吸底） */
   --file-list-min: 104px; /* ~3 layer rows */
   --side-info-min: 64px; /* 信息 + 仿射 readable (tighter row gaps) */
 }
@@ -82,10 +86,14 @@ body {
   width: 100%; /* fill grid cell flush to webview edge */
   box-sizing: border-box;
   overflow-x: hidden;
-  /* Keep side viewport-fixed; lists (file/cmap/identify) scroll internally. */
+  /* Default: lists scroll internally. Short window (.is-tight): whole side scrolls. */
   overflow-y: hidden;
   scrollbar-width: thin; /* Firefox: avoid wide system gutter */
   --side-top-h: 50%;
+}
+
+.side.is-tight {
+  overflow-y: auto;
 }
 
 /* Chromium/Electron: system scrollbar can be ~20px with a tiny thumb — force a thin edge bar */
@@ -533,11 +541,86 @@ body.is-resizing-side {
 .side-tabs {
   display: flex;
   flex-direction: column;
+  /* basis 0%: take leftover viewport, do NOT grow with cmap rows */
   flex: 1 1 0%;
-  min-height: 0;
+  min-height: var(--side-tabs-min); /* short window: floor → .side scrolls */
   overflow: hidden;
   border-top: none;
   margin-top: 0;
+}
+
+.side-identify {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 var(--side-identify-h);
+  height: var(--side-identify-h);
+  min-height: var(--side-identify-head);
+  overflow: hidden;
+  background: var(--panel);
+  border-top: none;
+}
+
+.side-identify.is-collapsed {
+  flex: 0 0 var(--side-identify-head);
+  flex-basis: var(--side-identify-head);
+  height: var(--side-identify-head);
+  min-height: var(--side-identify-head);
+}
+
+.side-identify.is-collapsed .identify-body {
+  display: none;
+}
+
+.v-split.is-disabled {
+  pointer-events: none;
+  opacity: 0.35;
+  cursor: default;
+}
+
+.identify-head-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  height: var(--side-identify-head);
+  min-height: var(--side-identify-head);
+  padding: 0 8px;
+  min-width: 0;
+  border-bottom: none;
+}
+
+.side-identify.is-collapsed .identify-head-row {
+  border-bottom: none;
+}
+
+.identify-head-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: var(--fs);
+  font-weight: 600;
+  color: var(--fg);
+  line-height: 1.2;
+}
+
+.identify-head-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+.side-identify.is-collapsed .identify-toggle-icon {
+  transform: rotate(-90deg);
+}
+
+.identify-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0%;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .map-section {
@@ -549,6 +632,7 @@ body.is-resizing-side {
   /* Content-sized — do not stretch and unbalance top/bottom padding */
   min-height: 0;
   background: var(--panel);
+  /* Separate map from identify */
   border-top: 1px solid var(--border);
 }
 
@@ -561,8 +645,8 @@ body.is-resizing-side {
 }
 
 .map-foot .map-head-row {
-  /* Top 5px matches .layer-head-row; bottom gap comes from .status-bar only */
-  padding: 5px 8px 0;
+  /* Same as .layer-head-row: 5px top/bottom, 8px sides (shared rule already). */
+  padding: 5px 8px;
 }
 
 .tab-bar {
@@ -615,10 +699,24 @@ body.is-resizing-side {
   min-height: 0;
   padding: 8px 10px;
   gap: 6px;
-  overflow: hidden; /* scroll only inside cmap/identify lists */
+  overflow: hidden; /* no style scrollbar — only cmap-table-wrap scrolls */
+}
+
+.settings-wrap {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0%;
+  min-height: 0;
+  padding: 8px 10px;
+  gap: 6px;
+  overflow: hidden;
 }
 
 .symbology > .form-row {
+  flex: 0 0 auto;
+}
+
+.settings-wrap > .form-row {
   flex: 0 0 auto;
 }
 
@@ -626,9 +724,26 @@ body.is-resizing-side {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  flex: 0 0 auto; /* size to content — avoid clipping band rows */
+  min-height: 0;
+  overflow: visible;
+}
+
+/* Color-table mode: fill leftover space; table scrolls inside (not .side). */
+body.render-paletted .render-panel.panel-paletted {
   flex: 1 1 0%;
   min-height: 0;
   overflow: hidden;
+}
+
+body.render-paletted .symbology {
+  overflow: hidden; /* cmap keeps its own scroll region */
+}
+
+body.render-paletted .cmap-table-wrap {
+  flex: 1 1 0%;
+  min-height: 0;
+  overflow: auto;
 }
 
 .render-panel > .form-row,
@@ -662,15 +777,19 @@ body.is-resizing-side {
   flex-direction: column;
   flex: 1;
   min-height: 0;
-  padding: 8px 10px;
+  /* Match .file-panel: 8px side inset so table lines up with layer list */
+  margin: 0 8px 8px;
+  padding: 0;
   overflow: hidden;
 }
 
 .identify-empty {
   color: var(--muted);
-  font-size: var(--fs);
-  padding: 8px 4px;
+  font-size: 11px;
+  padding: 10px 8px; /* match .file-list-empty */
   line-height: 1.45;
+  border: 1px solid var(--border);
+  background: var(--bg);
 }
 
 .identify-table {
@@ -764,6 +883,19 @@ body.is-resizing-identify-col {
 .identify-group-row td {
   font-weight: 600;
   padding: 5px 6px;
+  min-width: 0;
+}
+
+.identify-group-row td:first-child {
+  overflow: hidden;
+}
+
+.identify-feat {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .identify-group-row .identify-pix {
@@ -773,10 +905,20 @@ body.is-resizing-identify-col {
 }
 
 .identify-caret {
-  display: inline-block;
+  flex: 0 0 1em;
   width: 1em;
+  text-align: center;
   color: var(--muted);
   font-size: 0.85em;
+  line-height: 1;
+}
+
+.identify-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .identify-band-row td:first-child {
@@ -786,7 +928,7 @@ body.is-resizing-identify-col {
 }
 
 .identify-group-row.is-collapsed .identify-caret {
-  transform: rotate(-90deg);
+  transform: none; /* caret glyph already switches ▶ / ▼ */
 }
 
 .form-row {
@@ -1239,15 +1381,19 @@ body.is-resizing-identify-col {
   flex-direction: row;
   align-items: center;
   gap: 6px;
-  /* top 5px = gap under 地图 (same as 图层→列表); bottom 5px matches title top */
+  /* Same vertical inset as .layer-head-row / .map-head-row */
   padding: 5px 8px;
   border: none;
   margin-top: 0;
   font-variant-numeric: tabular-nums;
-  /* Same as map-section — no second strip that looks like a divider */
-  background: transparent;
+  background: var(--panel);
   flex: 0 0 auto;
   flex-shrink: 0;
+  /* Stay pinned to side viewport bottom while .side scrolls (is-tight). */
+  position: sticky;
+  bottom: 0;
+  z-index: 6;
+  box-shadow: 0 -1px 0 var(--border);
 }
 
 .status-lock {

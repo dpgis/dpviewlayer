@@ -7,48 +7,42 @@ import {
   type Rgb,
 } from "./pngCodec";
 
-const CONFIG_REL = path.join(".vscode", "dpviewlayer.json");
-
 export type WorkspaceColorTableRow = { min: number; max: number; color: string };
 
-/** Absolute path to workspace colormap config, if a folder is open for this file. */
-export function resolveViewLayerConfigPath(resource: vscode.Uri): string | undefined {
-  const folder = vscode.workspace.getWorkspaceFolder(resource);
-  if (!folder) return undefined;
-  return path.join(folder.uri.fsPath, CONFIG_REL);
+/** Suggest a default colormap JSON path next to the raster (or last used file). */
+export function defaultColormapSaveUri(
+  resource: vscode.Uri,
+  lastPath?: string,
+): vscode.Uri {
+  if (lastPath && path.isAbsolute(lastPath)) {
+    return vscode.Uri.file(lastPath);
+  }
+  const base = path.basename(resource.fsPath).replace(/\.[^.]+$/, "");
+  return vscode.Uri.file(
+    path.join(path.dirname(resource.fsPath), `${base}.colormap.json`),
+  );
 }
 
-/** Read color table from `.vscode/dpviewlayer.json` (ID = array index, not stored). */
-export function loadWorkspaceColormap(resource: vscode.Uri): {
+/** Read color table from an absolute JSON path (ID = array index, not stored). */
+export function loadColormapFromPath(filePath: string): {
   colorTable: WorkspaceColorTableRow[];
   colormap: Record<number, Rgb>;
-  path?: string;
-  source: "workspace" | "default";
+  path: string;
 } {
-  const configPath = resolveViewLayerConfigPath(resource);
-  if (!configPath || !fs.existsSync(configPath)) {
-    return { colorTable: [], colormap: {}, source: "default" };
-  }
-  const doc = loadColormapDocument(configPath);
+  const doc = loadColormapDocument(filePath);
   return {
     colorTable: doc.colorTable,
     colormap: doc.colormap,
-    path: configPath,
-    source: "workspace",
+    path: filePath,
   };
 }
 
-/** Write color table array to `.vscode/dpviewlayer.json` (no id field). */
-export function saveWorkspaceColormap(
-  resource: vscode.Uri,
+/** Write color table array to an absolute JSON path (no id field). */
+export function saveColormapToPath(
+  filePath: string,
   colorTable: WorkspaceColorTableRow[],
 ): string {
-  const folder = vscode.workspace.getWorkspaceFolder(resource);
-  if (!folder) {
-    throw new Error("需要打开工作区文件夹才能写入 .vscode/dpviewlayer.json");
-  }
-  const configPath = path.join(folder.uri.fsPath, CONFIG_REL);
-  fs.mkdirSync(path.dirname(configPath), { recursive: true });
-  saveColormapDocument(configPath, colorTable);
-  return configPath;
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  saveColormapDocument(filePath, colorTable);
+  return filePath;
 }

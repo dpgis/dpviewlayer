@@ -38532,6 +38532,11 @@ ${ifBlocks}
   }
 
   // media/src/olRaster.js
+  var webGlLayerSeq = 0;
+  function nextWebGlClassName() {
+    webGlLayerSeq += 1;
+    return `ol-layer rv-webgl-${webGlLayerSeq}`;
+  }
   var LOCAL_PIXEL_PROJECTION = (() => {
     const code = "RV:Local";
     let p = get3(code);
@@ -38604,16 +38609,16 @@ ${ifBlocks}
     if (mode === "gray") {
       const bi0 = Number(state.grayBand) || 0;
       const bi2 = bi0 + 1;
-      const sb = sourceBound(state, bi0, 0, 255);
-      const raw = rawBand(bi2, sb.min, sb.max);
+      const sb2 = sourceBound(state, bi0, 0, 255);
+      const raw2 = rawBand(bi2, sb2.min, sb2.max);
       const ramp = state.grayRamp || "blackwhite";
       const invertBw = ramp === "whiteblack";
       let min = Number(state.grayMin);
       let max = Number(state.grayMax);
-      if (!Number.isFinite(min)) min = sb.min;
-      if (!Number.isFinite(max)) max = sb.max;
+      if (!Number.isFinite(min)) min = sb2.min;
+      if (!Number.isFinite(max)) max = sb2.max;
       if (max <= min) max = min + 1;
-      let v = stretchExpr(raw, min, max, false);
+      let v = stretchExpr(raw2, min, max, false);
       if (invertBw) v = ["-", 1, v];
       if (CONTINUOUS_RAMPS[ramp]) {
         const stops = interpolateStops(ramp, 0, 1, false);
@@ -38633,14 +38638,14 @@ ${ifBlocks}
         if (sel === "unset" || sel === "" || sel == null) return 0;
         const bi0 = Number(sel);
         const bi2 = bi0 + 1;
-        const sb = sourceBound(state, bi0, 0, 255);
-        const raw = rawBand(bi2, sb.min, sb.max);
+        const sb2 = sourceBound(state, bi0, 0, 255);
+        const raw2 = rawBand(bi2, sb2.min, sb2.max);
         let lo = Number(min);
         let hi = Number(max);
-        if (!Number.isFinite(lo)) lo = sb.min;
-        if (!Number.isFinite(hi)) hi = sb.max;
+        if (!Number.isFinite(lo)) lo = sb2.min;
+        if (!Number.isFinite(hi)) hi = sb2.max;
         if (hi <= lo) hi = lo + 1;
-        return stretchExpr(raw, lo, hi, false);
+        return stretchExpr(raw2, lo, hi, false);
       };
       return {
         color: [
@@ -38653,14 +38658,80 @@ ${ifBlocks}
       };
     }
     const bi = (Number(state.paletteBand) || 0) + 1;
+    const sb = sourceBound(state, Number(state.paletteBand) || 0, 0, 255);
+    const raw = rawBand(bi, sb.min, sb.max);
+    const table = Array.isArray(state.colorTable) ? state.colorTable : null;
+    if (table && table.length) {
+      const entries = table.map((e) => ({
+        min: Number(e?.min),
+        max: Number(e?.max),
+        color: e?.color
+      })).filter(
+        (e) => Number.isFinite(e.min) && Number.isFinite(e.max) && e.max > e.min && e.color
+      ).slice(0, 256);
+      if (!entries.length) {
+      } else {
+        const colors2 = entries.map((e) => e.color);
+        const lo0 = entries[0].min;
+        const hiN = entries[entries.length - 1].max;
+        const n = entries.length;
+        const w0 = entries[0].max - entries[0].min;
+        const equalBins = n >= 1 && Number.isFinite(lo0) && Number.isFinite(hiN) && hiN > lo0 && entries.every((e, i) => {
+          if (i === 0) return true;
+          const wi = e.max - e.min;
+          const gapOk = Math.abs(e.min - entries[i - 1].max) <= Math.abs(w0) * 1e-6 + 1e-12;
+          const widthOk = Math.abs(wi - w0) <= Math.abs(w0) * 1e-4 + 1e-9;
+          return gapOk && widthOk;
+        });
+        if (equalBins) {
+          const span = hiN - lo0;
+          const t = ["/", ["-", raw, lo0], span];
+          const idx = ["clamp", ["floor", ["*", t, n]], 0, n - 1];
+          const pal = ["palette", idx, colors2];
+          if (alpha !== 1) {
+            return { color: ["case", ["<=", alpha, 0], [0, 0, 0, 0], pal] };
+          }
+          return { color: pal };
+        }
+        const unitIds = entries.every(
+          (e) => Number.isInteger(e.min) && e.max === e.min + 1 && e.min >= 0 && e.min <= 255
+        );
+        if (unitIds) {
+          const pal256 = new Array(256).fill("rgba(0,0,0,0)");
+          for (const e of entries) pal256[e.min] = e.color;
+          const pal = ["palette", ["round", ["clamp", raw, 0, 255]], pal256];
+          if (alpha !== 1) {
+            return { color: ["case", ["<=", alpha, 0], [0, 0, 0, 0], pal] };
+          }
+          return { color: pal };
+        }
+        if (entries.length <= 48) {
+          const caseExpr = ["case"];
+          for (const e of entries) {
+            caseExpr.push(["all", [">=", raw, e.min], ["<", raw, e.max]]);
+            caseExpr.push(e.color);
+          }
+          caseExpr.push([0, 0, 0, 0]);
+          if (alpha !== 1) {
+            return { color: ["case", ["<=", alpha, 0], [0, 0, 0, 0], caseExpr] };
+          }
+          return { color: caseExpr };
+        }
+        const stops = [];
+        for (const e of entries) stops.push((e.min + e.max) / 2, e.color);
+        const interp = ["interpolate", ["linear"], raw, ...stops];
+        if (alpha !== 1) {
+          return { color: ["case", ["<=", alpha, 0], [0, 0, 0, 0], interp] };
+        }
+        return { color: interp };
+      }
+    }
     const colors = new Array(256).fill("rgba(0,0,0,0)");
-    const opacityPct = Number(state.paletteOpacity);
-    const palAlpha = Number.isFinite(opacityPct) ? Math.max(0, Math.min(1, 1 - opacityPct / 100)) : 1;
     const ids = Object.keys(state.colormap || {}).map(Number).filter((n) => Number.isFinite(n) && n >= 0 && n <= 255).sort((a, b) => a - b);
     for (const id of ids) {
       const hex = state.colormap[id] ?? state.colormap[String(id)];
       if (!hex) continue;
-      colors[id] = palAlpha >= 0.999 ? hex : colorWithAlpha(hex, palAlpha);
+      colors[id] = hex;
     }
     if (alpha !== 1) {
       return {
@@ -38676,21 +38747,8 @@ ${ifBlocks}
       color: ["palette", ["round", rawBand(bi, 0, 255)], colors]
     };
   }
-  function colorWithAlpha(color, alpha) {
-    const a = Math.max(0, Math.min(1, alpha));
-    const s = String(color || "").trim();
-    const hex = s.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
-    if (hex) {
-      let h = hex[1];
-      if (h.length === 3) h = h.split("").map((c) => c + c).join("");
-      const r = parseInt(h.slice(0, 2), 16);
-      const g = parseInt(h.slice(2, 4), 16);
-      const b = parseInt(h.slice(4, 6), 16);
-      return `rgba(${r},${g},${b},${a})`;
-    }
-    const rgb = s.match(/^rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)(?:\s*,\s*[\d.]+\s*)?\)$/i);
-    if (rgb) return `rgba(${rgb[1]},${rgb[2]},${rgb[3]},${a})`;
-    return color;
+  function planesAreUint8(planes) {
+    return !!planes?.length && planes.every((p) => p instanceof Uint8Array);
   }
   function planesFitUint8(planes) {
     if (!planes?.length) return true;
@@ -38737,7 +38795,7 @@ ${ifBlocks}
     }
     return { mins, maxs };
   }
-  function encodePlanesLevel(planes, width, height, geo, crsCode, scaleFactor = 1) {
+  function encodePlanesLevel(planes, width, height, geo, crsCode, scaleFactor = 1, opts = {}) {
     const w = Math.trunc(Number(width));
     const h = Math.trunc(Number(height));
     if (!Number.isInteger(w) || !Number.isInteger(h) || w <= 0 || h <= 0) {
@@ -38749,7 +38807,7 @@ ${ifBlocks}
     const baseSx = geo?.modelPixelScale?.[0] ?? 1;
     const baseSy = geo?.modelPixelScale?.[1] ?? 1;
     const f = Math.max(1, scaleFactor);
-    const asFloat = !planesFitUint8(planes);
+    const asFloat = opts.assumeUint8 === true || planesAreUint8(planes) ? false : !planesFitUint8(planes);
     const meta = {
       ImageWidth: w,
       ImageLength: h,
@@ -38797,16 +38855,21 @@ ${ifBlocks}
       }
     }
     const flat = new Uint8Array(size * bandCount);
+    const nativeUint8 = planesAreUint8(planes);
     for (let i = 0; i < size; i++) {
       for (let b = 0; b < bandCount; b++) {
-        const v = planes[b][i];
-        flat[i * bandCount + b] = Number.isFinite(v) ? Math.max(0, Math.min(255, Math.round(v))) : 0;
+        if (nativeUint8) {
+          flat[i * bandCount + b] = planes[b][i];
+        } else {
+          const v = planes[b][i];
+          flat[i * bandCount + b] = Number.isFinite(v) ? Math.max(0, Math.min(255, Math.round(v))) : 0;
+        }
       }
     }
     return writeArrayBuffer(flat, meta);
   }
-  function planesToGeoTiffBlob(planes, width, height, geo, crsCode = "EPSG:3857") {
-    return new Blob([encodePlanesLevel(planes, width, height, geo, crsCode, 1)], {
+  function planesToGeoTiffBlob(planes, width, height, geo, crsCode = "EPSG:3857", opts = {}) {
+    return new Blob([encodePlanesLevel(planes, width, height, geo, crsCode, 1, opts)], {
       type: "image/tiff"
     });
   }
@@ -38834,20 +38897,6 @@ ${ifBlocks}
     };
   }
   function freeViewOptions(viewConfig = {}) {
-    const extent = viewConfig.extent;
-    let maxResolution = viewConfig.maxResolution;
-    let minResolution = viewConfig.minResolution;
-    if (extent && Number.isFinite(extent[0])) {
-      const w = Math.abs(extent[2] - extent[0]) || 1;
-      const h = Math.abs(extent[3] - extent[1]) || 1;
-      const fitish = Math.max(w, h);
-      maxResolution = Math.max(maxResolution || 0, fitish * 64);
-      const pixelish = Math.min(w, h) / 4096;
-      minResolution = Math.min(minResolution || pixelish, pixelish);
-    } else {
-      maxResolution = maxResolution || 1e7;
-      minResolution = minResolution || 1e-4;
-    }
     return {
       projection: viewConfig.projection,
       center: viewConfig.center,
@@ -38857,8 +38906,9 @@ ${ifBlocks}
       multiWorld: true,
       // false: updateSize on side-panel reflow must not keep zooming out.
       showFullExtent: false,
-      maxResolution,
-      minResolution
+      // Effectively unlimited zoom (OL always has some numeric bound).
+      minResolution: 1e-12,
+      maxResolution: 1e15
     };
   }
   function createEmptyMap(target, viewConfig) {
@@ -38886,7 +38936,9 @@ ${ifBlocks}
     mins,
     maxs,
     /** Force source/view projection (use LOCAL_PIXEL_PROJECTION for identity rasters). */
-    projection = null
+    projection = null,
+    /** false = nearest neighbor; true = linear (OpenLayers GeoTIFF interpolate). */
+    interpolate = false
   }) {
     const objectUrls = [];
     const hasBounds = Array.isArray(mins) && Array.isArray(maxs) && mins.length > 0 && maxs.length > 0 && mins.every((v) => Number.isFinite(v)) && maxs.every((v) => Number.isFinite(v));
@@ -38894,7 +38946,7 @@ ${ifBlocks}
     let sourceInfo;
     const externalOvers = Array.isArray(overviews) ? overviews : [];
     const looksFloat = hasBounds && mins.some((lo, i) => lo < 0 || Number.isFinite(maxs[i]) && maxs[i] > 255);
-    const nodataOpt = looksFloat ? { nodata: NaN } : {};
+    const nodataOpt = looksFloat || blob ? { nodata: NaN } : {};
     if (blob && (overviewBlobs?.length || externalOvers.length)) {
       const mainUrl = URL.createObjectURL(blob);
       objectUrls.push(mainUrl);
@@ -38908,7 +38960,12 @@ ${ifBlocks}
       ];
       sourceInfo = { url: mainUrl, overviews: ovrUrls, ...boundOpts, ...nodataOpt };
     } else if (blob) {
-      sourceInfo = hasBounds ? { blob, ...boundOpts, ...nodataOpt } : { blob, min: Array(bandCount).fill(0), max: Array(bandCount).fill(255) };
+      sourceInfo = hasBounds ? { blob, ...boundOpts, ...nodataOpt } : {
+        blob,
+        min: Array(bandCount).fill(0),
+        max: Array(bandCount).fill(255),
+        ...nodataOpt
+      };
     } else if (url) {
       sourceInfo = {
         url,
@@ -38924,13 +38981,16 @@ ${ifBlocks}
       normalize: true,
       transition: 0,
       convertToRGB: false,
-      interpolate: false,
+      interpolate: !!interpolate,
       ...projection ? { projection } : {}
     });
     const layer = new WebGLTile_default({
       source,
       style,
-      zIndex
+      zIndex,
+      // Must be unique: consecutive WebGLTile layers with the same className share
+      // one WebGL canvas; hiding the upper layer then leaves its pixels on screen.
+      className: nextWebGlClassName()
     });
     layer.set("rvKind", "geotiff");
     let viewConfig = await source.getView();
@@ -38942,14 +39002,28 @@ ${ifBlocks}
     if (style) layer.setStyle(style);
     return { layer, source, viewConfig, objectUrls };
   }
+  function opacityFromStyleState(state) {
+    if (!state || state.mode !== "paletted") return 1;
+    const pct = Number(state.paletteOpacity);
+    if (!Number.isFinite(pct)) return 1;
+    return Math.max(0, Math.min(1, 1 - pct / 100));
+  }
   function applyStyle(layer, state) {
     if (!layer) return;
-    if (layer.get?.("rvKind") === "static") return;
+    if (layer.get?.("rvKind") === "static") {
+      if (typeof layer.setOpacity === "function") {
+        layer.setOpacity(opacityFromStyleState(state));
+      }
+      return;
+    }
     if (typeof layer.setStyle !== "function") return;
     const built = state && typeof state === "object" && state.color ? state : buildWebGlStyle(state);
     const wasVisible = layer.getVisible();
     layer.setStyle(built);
     if (!wasVisible) layer.setVisible(false);
+    if (typeof layer.setOpacity === "function" && state && !state.color) {
+      layer.setOpacity(opacityFromStyleState(state));
+    }
   }
   function fitMap(map, viewConfig) {
     if (!map) return;

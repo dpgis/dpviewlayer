@@ -2,7 +2,7 @@
   "name": "dpviewlayer",
   "displayName": "%displayName%",
   "description": "%description%",
-  "version": "1.0.0",
+  "version": "1.0.8",
   "publisher": "local",
   "engines": {
     "vscode": "^1.85.0"

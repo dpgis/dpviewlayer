@@ -38689,6 +38689,11 @@ ${ifBlocks}
   }
 
   // media/src/olRaster.js
+  var webGlLayerSeq = 0;
+  function nextWebGlClassName() {
+    webGlLayerSeq += 1;
+    return `ol-layer rv-webgl-${webGlLayerSeq}`;
+  }
   var LOCAL_PIXEL_PROJECTION = (() => {
     const code = "RV:Local";
     let p = get3(code);
@@ -38910,6 +38915,10 @@ ${ifBlocks}
       color: ["palette", ["round", rawBand(bi, 0, 255)], colors]
     };
   }
+  var PYRAMID_MIN_PIXELS = 4e6;
+  function planesAreUint8(planes) {
+    return !!planes?.length && planes.every((p) => p instanceof Uint8Array);
+  }
   function planesFitUint8(planes) {
     if (!planes?.length) return true;
     for (const plane of planes) {
@@ -38955,7 +38964,7 @@ ${ifBlocks}
     }
     return { mins, maxs };
   }
-  function encodePlanesLevel(planes, width, height, geo, crsCode, scaleFactor = 1) {
+  function encodePlanesLevel(planes, width, height, geo, crsCode, scaleFactor = 1, opts = {}) {
     const w = Math.trunc(Number(width));
     const h = Math.trunc(Number(height));
     if (!Number.isInteger(w) || !Number.isInteger(h) || w <= 0 || h <= 0) {
@@ -38967,7 +38976,7 @@ ${ifBlocks}
     const baseSx = geo?.modelPixelScale?.[0] ?? 1;
     const baseSy = geo?.modelPixelScale?.[1] ?? 1;
     const f = Math.max(1, scaleFactor);
-    const asFloat = !planesFitUint8(planes);
+    const asFloat = opts.assumeUint8 === true || planesAreUint8(planes) ? false : !planesFitUint8(planes);
     const meta = {
       ImageWidth: w,
       ImageLength: h,
@@ -39015,18 +39024,90 @@ ${ifBlocks}
       }
     }
     const flat = new Uint8Array(size * bandCount);
+    const nativeUint8 = planesAreUint8(planes);
     for (let i = 0; i < size; i++) {
       for (let b = 0; b < bandCount; b++) {
-        const v = planes[b][i];
-        flat[i * bandCount + b] = Number.isFinite(v) ? Math.max(0, Math.min(255, Math.round(v))) : 0;
+        if (nativeUint8) {
+          flat[i * bandCount + b] = planes[b][i];
+        } else {
+          const v = planes[b][i];
+          flat[i * bandCount + b] = Number.isFinite(v) ? Math.max(0, Math.min(255, Math.round(v))) : 0;
+        }
       }
     }
     return writeArrayBuffer(flat, meta);
   }
-  function planesToGeoTiffBlob(planes, width, height, geo, crsCode = "EPSG:3857") {
-    return new Blob([encodePlanesLevel(planes, width, height, geo, crsCode, 1)], {
+  function planesToGeoTiffBlob(planes, width, height, geo, crsCode = "EPSG:3857", opts = {}) {
+    return new Blob([encodePlanesLevel(planes, width, height, geo, crsCode, 1, opts)], {
       type: "image/tiff"
     });
+  }
+  function downsamplePlanes2x(planes, width, height, mode2 = "average") {
+    const nw = Math.max(1, Math.floor(width / 2));
+    const nh = Math.max(1, Math.floor(height / 2));
+    const uint8 = planesAreUint8(planes);
+    const out = planes.map(() => uint8 ? new Uint8Array(nw * nh) : new Float64Array(nw * nh));
+    for (let y = 0; y < nh; y++) {
+      for (let x = 0; x < nw; x++) {
+        const x0 = x * 2;
+        const y0 = y * 2;
+        const x1 = Math.min(width - 1, x0 + 1);
+        const y1 = Math.min(height - 1, y0 + 1);
+        const oi = y * nw + x;
+        for (let b = 0; b < planes.length; b++) {
+          const p = planes[b];
+          if (mode2 === "nearest") {
+            out[b][oi] = p[y0 * width + x0];
+          } else {
+            const s = p[y0 * width + x0] + p[y0 * width + x1] + p[y1 * width + x0] + p[y1 * width + x1];
+            out[b][oi] = uint8 ? Math.round(s / 4) : s / 4;
+          }
+        }
+      }
+    }
+    return { planes: out, width: nw, height: nh };
+  }
+  function pyramidFactors(width, height, minSize = 256) {
+    const factors = [];
+    let f = 2;
+    let w = width;
+    let h = height;
+    while (Math.max(w, h) > minSize) {
+      factors.push(f);
+      w = Math.max(1, Math.floor(w / 2));
+      h = Math.max(1, Math.floor(h / 2));
+      f *= 2;
+      if (factors.length >= 8) break;
+    }
+    return factors;
+  }
+  function planesToPyramidBlobs(planes, width, height, geo, crsCode = "EPSG:3857", { nearest = false, minSize = 256, assumeUint8 = false } = {}) {
+    const encOpts = { assumeUint8: assumeUint8 || planesAreUint8(planes) };
+    const mode2 = nearest ? "nearest" : "average";
+    const full = encodePlanesLevel(planes, width, height, geo, crsCode, 1, encOpts);
+    const overviewBuffers = [];
+    let curPlanes = planes;
+    let cw = width;
+    let ch = height;
+    let factor = 1;
+    const factors = pyramidFactors(width, height, minSize);
+    for (const targetFactor of factors) {
+      while (factor < targetFactor) {
+        const next3 = downsamplePlanes2x(curPlanes, cw, ch, mode2);
+        curPlanes = next3.planes;
+        cw = next3.width;
+        ch = next3.height;
+        factor *= 2;
+      }
+      overviewBuffers.push(
+        encodePlanesLevel(curPlanes, cw, ch, geo, crsCode, factor, encOpts)
+      );
+    }
+    return {
+      blob: new Blob([full], { type: "image/tiff" }),
+      overviewBlobs: overviewBuffers.map((ab) => new Blob([ab], { type: "image/tiff" })),
+      overviewCount: overviewBuffers.length
+    };
   }
   function normalizeEpsg(crsCode) {
     if (!crsCode || crsCode === "none" || crsCode === "local" || crsCode === "Local") {
@@ -39091,7 +39172,9 @@ ${ifBlocks}
     mins,
     maxs,
     /** Force source/view projection (use LOCAL_PIXEL_PROJECTION for identity rasters). */
-    projection = null
+    projection = null,
+    /** false = nearest neighbor; true = linear (OpenLayers GeoTIFF interpolate). */
+    interpolate = false
   }) {
     const objectUrls = [];
     const hasBounds = Array.isArray(mins) && Array.isArray(maxs) && mins.length > 0 && maxs.length > 0 && mins.every((v) => Number.isFinite(v)) && maxs.every((v) => Number.isFinite(v));
@@ -39134,13 +39217,16 @@ ${ifBlocks}
       normalize: true,
       transition: 0,
       convertToRGB: false,
-      interpolate: false,
+      interpolate: !!interpolate,
       ...projection ? { projection } : {}
     });
     const layer = new WebGLTile_default({
       source,
       style,
-      zIndex
+      zIndex,
+      // Must be unique: consecutive WebGLTile layers with the same className share
+      // one WebGL canvas; hiding the upper layer then leaves its pixels on screen.
+      className: nextWebGlClassName()
     });
     layer.set("rvKind", "geotiff");
     let viewConfig = await source.getView();
@@ -48104,6 +48190,9 @@ ${ifBlocks}
         renderGray: "\u5355\u6CE2\u6BB5\u7070\u5EA6",
         renderRgb: "\u591A\u6CE2\u6BB5\u5F69\u8272",
         renderPaletted: "\u989C\u8272\u8868\u6E32\u67D3",
+        resample: "\u91C7\u6837\u65B9\u5F0F",
+        resampleNearest: "\u6700\u8FD1\u90BB",
+        resampleLinear: "\u7EBF\u6027\u63D2\u503C",
         grayBand: "\u7070\u5EA6\u6CE2\u6BB5",
         colorRamp: "\u989C\u8272\u68AF\u5EA6",
         rampBw: "\u9ED1\u5230\u767D",
@@ -48139,13 +48228,13 @@ ${ifBlocks}
         colorTableOverlap: "\u533A\u95F4\u4E0D\u80FD\u4E0E\u73B0\u6709\u884C\u76F8\u4EA4",
         tipCmapDrag: "\u62D6\u52A8\u8C03\u6574\u989C\u8272\u987A\u5E8F\uFF08ID \u4ECD\u4E3A\u884C\u53F7 0\u2026N\uFF09",
         deleteAll: "\u5168\u90E8\u5220\u9664",
-        reloadCmap: "\u91CD\u8F7D\u8272\u8868",
+        reloadCmap: "\u52A0\u8F7D\u8272\u8868",
         saveCmap: "\u4FDD\u5B58\u8272\u8868",
         savePlte: "\u53E6\u5B58\u4E3A PLTE",
         missingData: "\u7F3A\u5C11\u50CF\u7D20\u6570\u636E",
-        tipReload: "\u91CD\u65B0\u8BFB\u53D6 .vscode/dpviewlayer.json",
-        tipSave: "\u5199\u5165 .vscode/dpviewlayer.json",
-        tipPlte: "\u7C7B\u522B mask\uFF1A\u50CF\u7D20\u503C\u4E0D\u53D8\uFF0CPLTE \u6309\u4E0B\u9650\u503C\u7740\u8272\uFF1B\u8FDE\u7EED\u533A\u95F4\u5219\u91CD\u6620\u5C04\u4E3A\u884C\u53F7",
+        tipReload: "\u4ECE JSON \u6587\u4EF6\u52A0\u8F7D\u8272\u8868",
+        tipSave: "\u5C06\u8272\u8868\u4FDD\u5B58\u4E3A JSON \u6587\u4EF6",
+        tipPlte: "\u6309\u5F53\u524D\u989C\u8272\u8868\u5BFC\u51FA\u7D22\u5F15\u8272 PNG\uFF1B\u591A\u6CE2\u6BB5\u4F7F\u7528\u989C\u8272\u8868\u6240\u9009\u6CE2\u6BB5",
         tipReset: "\u5B9A\u4F4D\u5168\u56FE\uFF08\u9002\u5E94\u7A97\u53E3\uFF09",
         tipZoomNative: "\u6309\u539F\u56FE\u5206\u8FA8\u7387 1:1 \u663E\u793A",
         mapHead: "\u5730\u56FE",
@@ -48170,6 +48259,9 @@ ${ifBlocks}
         layerList: "\u56FE\u5C42",
         tabStyle: "\u6837\u5F0F",
         tabIdentify: "\u8BC6\u522B",
+        tabSettings: "\u8BBE\u7F6E",
+        tipCollapseIdentify: "\u6298\u53E0\u8BC6\u522B",
+        tipExpandIdentify: "\u5C55\u5F00\u8BC6\u522B",
         identifyEmpty: "\u5728\u5730\u56FE\u4E0A\u70B9\u51FB\u4EE5\u8BC6\u522B\u5404\u56FE\u5C42\u50CF\u5143\u503C",
         identifyNoData: "\u65E0\u6570\u636E",
         identifyNotLoaded: "\u672A\u52A0\u8F7D\u50CF\u5143",
@@ -48182,6 +48274,9 @@ ${ifBlocks}
         renderGray: "Singleband gray",
         renderRgb: "Multiband color",
         renderPaletted: "Color table",
+        resample: "Resampling",
+        resampleNearest: "Nearest neighbor",
+        resampleLinear: "Linear",
         grayBand: "Gray band",
         colorRamp: "Color ramp",
         rampBw: "Black to white",
@@ -48217,13 +48312,13 @@ ${ifBlocks}
         colorTableOverlap: "Range must not overlap existing rows",
         tipCmapDrag: "Drag to reorder colors (ID stays row index 0\u2026N)",
         deleteAll: "Delete all",
-        reloadCmap: "Reload colormap",
+        reloadCmap: "Load colormap",
         saveCmap: "Save colormap",
         savePlte: "Save as PLTE",
         missingData: "Missing pixel data",
-        tipReload: "Reload .vscode/dpviewlayer.json",
-        tipSave: "Write .vscode/dpviewlayer.json",
-        tipPlte: "Class masks: pixels unchanged, PLTE keyed by class value; continuous ranges remapped to row index",
+        tipReload: "Load colormap from a JSON file",
+        tipSave: "Save colormap to a JSON file",
+        tipPlte: "Export indexed PNG from the color table; multi-band uses the selected palette band",
         tipReset: "Fit layer to view",
         tipZoomNative: "1:1 native resolution",
         mapHead: "Map",
@@ -48248,6 +48343,9 @@ ${ifBlocks}
         layerList: "Layers",
         tabStyle: "Style",
         tabIdentify: "Identify",
+        tabSettings: "Settings",
+        tipCollapseIdentify: "Collapse identify",
+        tipExpandIdentify: "Expand identify",
         identifyEmpty: "Click the map to identify band values for all layers",
         identifyNoData: "No data",
         identifyNotLoaded: "Pixels not loaded",
@@ -48290,6 +48388,10 @@ ${ifBlocks}
     const sideEl = document.getElementById("side");
     const sideTopEl = document.getElementById("sideTop");
     const splitInfoEl = document.getElementById("splitInfo");
+    const splitIdentifyEl = document.getElementById("splitIdentify");
+    const sideIdentifyEl = document.getElementById("sideIdentify");
+    const btnToggleIdentify = document.getElementById("btnToggleIdentify");
+    const mapSectionEl = document.getElementById("mapSection");
     const splitSideEl = document.getElementById("splitSide");
     const mainEl = document.getElementById("main");
     const statusBarEl = document.getElementById("statusBar");
@@ -48310,6 +48412,7 @@ ${ifBlocks}
     const hoverEl = document.getElementById("hover");
     let hoverLocked = false;
     const zoomBadge = null;
+    const resampleModeEl = document.getElementById("resampleMode");
     const renderTypeEl = document.getElementById("renderType");
     const grayBandEl = document.getElementById("grayBand");
     const grayRampEl = document.getElementById("grayRamp");
@@ -48350,9 +48453,9 @@ ${ifBlocks}
     const btnToggleVisibility = document.getElementById("btnToggleVisibility");
     const btnClearLayers = document.getElementById("btnClearLayers");
     const tabStyleEl = document.getElementById("tabStyle");
-    const tabIdentifyEl = document.getElementById("tabIdentify");
+    const tabSettingsEl = document.getElementById("tabSettings");
     const panelStyleEl = document.getElementById("panelStyle");
-    const panelIdentifyEl = document.getElementById("panelIdentify");
+    const panelSettingsEl = document.getElementById("panelSettings");
     const identifyEmptyEl = document.getElementById("identifyEmpty");
     const identifyTableWrap = document.getElementById("identifyTableWrap");
     const identifyBodyEl = document.getElementById("identifyBody");
@@ -48487,6 +48590,7 @@ ${ifBlocks}
       renderFileList();
       syncMapCrsUi();
       syncHoverLockUi();
+      syncIdentifyCollapseUi();
       if (renderMode === "paletted") renderCmapTable();
     }
     function identityAffine(_h = height || 0) {
@@ -48623,6 +48727,7 @@ ${ifBlocks}
         colorTable: serializeColorTable(colorTable),
         labels: { ...labels },
         selectedValue,
+        resample: resampleModeEl?.value || "nearest",
         grayBand: grayBandEl.value,
         grayRamp: grayRampEl.value,
         grayMin: grayMinEl.value,
@@ -48670,6 +48775,7 @@ ${ifBlocks}
         selectedValue = null;
         if (paletteRampEl) paletteRampEl.value = "random";
         if (paletteOpacityEl) paletteOpacityEl.value = "0";
+        if (resampleModeEl) resampleModeEl.value = "nearest";
         syncPaletteOpacityLabel();
         return;
       }
@@ -48683,6 +48789,7 @@ ${ifBlocks}
       const assign3 = (el, v) => {
         if (el && v != null && v !== "") el.value = String(v);
       };
+      assign3(resampleModeEl, st.resample || "nearest");
       assign3(grayBandEl, st.grayBand);
       assign3(grayRampEl, st.grayRamp);
       assign3(grayMinEl, st.grayMin);
@@ -48704,6 +48811,60 @@ ${ifBlocks}
       assign3(paletteRampEl, st.paletteRamp);
       assign3(paletteOpacityEl, st.paletteOpacity ?? "0");
       syncPaletteOpacityLabel();
+    }
+    function resetStyleUiForEmptyView() {
+      userRenderMode = null;
+      renderMode = "gray";
+      colormap = {};
+      labels = {};
+      colorTable = [];
+      selectedValue = null;
+      bandCount = 1;
+      bandPlanes = [];
+      bandStats = [];
+      payload.probeLabel = "";
+      payload.kind = void 0;
+      payload.dtype = void 0;
+      payload.defaultRender = void 0;
+      payload.colormap = {};
+      payload.colorTable = [];
+      payload.bands = 1;
+      payload.format = void 0;
+      payload.width = void 0;
+      payload.height = void 0;
+      payload.geo = null;
+      payload.rasterUrl = void 0;
+      payload.overviewUrls = [];
+      clearDecodePayload();
+      if (resampleModeEl) resampleModeEl.value = "nearest";
+      if (grayRampEl) grayRampEl.value = "blackwhite";
+      if (grayContrastEl) grayContrastEl.value = "none";
+      if (grayMinEl) grayMinEl.value = "";
+      if (grayMaxEl) grayMaxEl.value = "";
+      if (grayStretchParam) {
+        grayStretchParam.value = "2";
+        delete grayStretchParam.dataset.touched;
+        delete grayStretchParam.dataset.touchedStd;
+      }
+      if (rgbContrastEl) rgbContrastEl.value = "none";
+      if (redMinEl) redMinEl.value = "";
+      if (redMaxEl) redMaxEl.value = "";
+      if (greenMinEl) greenMinEl.value = "";
+      if (greenMaxEl) greenMaxEl.value = "";
+      if (blueMinEl) blueMinEl.value = "";
+      if (blueMaxEl) blueMaxEl.value = "";
+      if (rgbStretchParam) {
+        rgbStretchParam.value = "2";
+        delete rgbStretchParam.dataset.touched;
+        delete rgbStretchParam.dataset.touchedStd;
+      }
+      if (paletteRampEl) paletteRampEl.value = "random";
+      if (paletteOpacityEl) paletteOpacityEl.value = "0";
+      syncPaletteOpacityLabel();
+      fillBandSelects();
+      applyRenderModeUi();
+      renderCmapTable();
+      setSideTab("style");
     }
     function syncLayerOrder() {
       const n = fileList.length;
@@ -48763,6 +48924,7 @@ ${ifBlocks}
         applyOlLayerVisibility(cached.layer, v, cached.styleState);
       }
       assertAllLayerVisibility();
+      map?.render?.();
     }
     function assertAllLayerVisibility() {
       for (const [fid, cached] of fileCache) {
@@ -48870,6 +49032,7 @@ ${ifBlocks}
         applyOlLayerVisibility(cached?.layer, next3, cached?.styleState);
       }
       assertAllLayerVisibility();
+      map?.render?.();
       renderFileList();
     }
     function renderFileList() {
@@ -48995,17 +49158,52 @@ ${ifBlocks}
       selectedFileIds.delete(id);
       layerVisibility.delete(id);
     }
-    function buildLayerSourceArgs(planes, w, h, g, url, overviewUrls) {
+    const encodedPlanesCache = /* @__PURE__ */ new WeakMap();
+    function pyramidUseNearest(mode2, planes) {
+      if (mode2 === "paletted") return true;
+      if ((planes?.length || 0) === 1) return true;
+      return false;
+    }
+    function buildLayerSourceArgs(planes, w, h, g, url, overviewUrls, opts = {}) {
       const overs = Array.isArray(overviewUrls) ? overviewUrls : [];
       const crs = blobCrsForGeo(g);
+      const nearest = !!opts.nearest;
       if (planes?.length) {
+        const pixels = Math.max(0, Number(w) || 0) * Math.max(0, Number(h) || 0);
+        const usePyramid = pixels > PYRAMID_MIN_PIXELS;
+        const cacheKey = `${w}x${h}|${crs}|${nearest ? 1 : 0}|${usePyramid ? 1 : 0}`;
+        let entry = encodedPlanesCache.get(planes);
+        if (!entry || entry.key !== cacheKey) {
+          const assumeUint8 = planesAreUint8(planes);
+          const encOpts = { assumeUint8 };
+          if (usePyramid) {
+            const packed = planesToPyramidBlobs(planes, w, h, g, crs, {
+              nearest,
+              assumeUint8
+            });
+            entry = {
+              key: cacheKey,
+              blob: packed.blob,
+              overviewBlobs: packed.overviewBlobs,
+              overviewCount: packed.overviewCount
+            };
+          } else {
+            entry = {
+              key: cacheKey,
+              blob: planesToGeoTiffBlob(planes, w, h, g, crs, encOpts),
+              overviewBlobs: [],
+              overviewCount: 0
+            };
+          }
+          encodedPlanesCache.set(planes, entry);
+        }
         return {
           kind: "geotiff",
-          blob: planesToGeoTiffBlob(planes, w, h, g, crs),
-          overviewBlobs: [],
+          blob: entry.blob,
+          overviewBlobs: entry.overviewBlobs,
           url: null,
           overviews: overs,
-          overviewCount: overs.length
+          overviewCount: entry.overviewCount + overs.length
         };
       }
       return {
@@ -49018,7 +49216,17 @@ ${ifBlocks}
       };
     }
     async function createLayerFromArgs(srcArgs, opts) {
-      const { style, bandCount: nBands, zIndex, mins, maxs, geo: layerGeo, width: w, height: h } = opts;
+      const {
+        style,
+        bandCount: nBands,
+        zIndex,
+        mins,
+        maxs,
+        geo: layerGeo,
+        width: w,
+        height: h,
+        interpolate = false
+      } = opts;
       let projection = null;
       if (!srcArgs.blob) {
         if (!fileHasOwnCrs(layerGeo)) {
@@ -49035,7 +49243,8 @@ ${ifBlocks}
         zIndex,
         mins,
         maxs,
-        projection
+        projection,
+        interpolate: !!interpolate
       });
       if (created.viewConfig && w && h) {
         const extent = created.viewConfig.extent || extentFromGeo(w, h, layerGeo);
@@ -49047,6 +49256,9 @@ ${ifBlocks}
         };
       }
       return created;
+    }
+    function styleInterpolate(style) {
+      return style?.resample === "linear";
     }
     function layerSourceBounds(nBands, planes, stats, mode2) {
       if (mode2 === "paletted") {
@@ -49328,6 +49540,7 @@ ${ifBlocks}
       const sourceBandCount = Number(src?.bandCount);
       return {
         mode: renderMode,
+        resample: resampleModeEl?.value === "linear" ? "linear" : "nearest",
         grayBand: grayBandEl.value,
         grayMin: grayRange.min,
         grayMax: grayRange.max,
@@ -49458,15 +49671,50 @@ ${ifBlocks}
       syncHoverLockUi();
     }
     function setSideTab(name) {
-      const isStyle = name !== "identify";
-      tabStyleEl?.classList.toggle("is-active", isStyle);
-      tabIdentifyEl?.classList.toggle("is-active", !isStyle);
-      if (tabStyleEl) tabStyleEl.setAttribute("aria-selected", isStyle ? "true" : "false");
-      if (tabIdentifyEl) tabIdentifyEl.setAttribute("aria-selected", isStyle ? "false" : "true");
-      panelStyleEl?.classList.toggle("is-active", isStyle);
-      panelIdentifyEl?.classList.toggle("is-active", !isStyle);
-      if (panelStyleEl) panelStyleEl.hidden = !isStyle;
-      if (panelIdentifyEl) panelIdentifyEl.hidden = isStyle;
+      const tabs = [
+        { name: "style", tab: tabStyleEl, panel: panelStyleEl },
+        { name: "settings", tab: tabSettingsEl, panel: panelSettingsEl }
+      ];
+      const target = name === "settings" ? "settings" : "style";
+      for (const item of tabs) {
+        const on = item.name === target;
+        item.tab?.classList.toggle("is-active", on);
+        item.tab?.setAttribute("aria-selected", on ? "true" : "false");
+        item.panel?.classList.toggle("is-active", on);
+        if (item.panel) item.panel.hidden = !on;
+      }
+    }
+    function isIdentifyCollapsed() {
+      return !!sideIdentifyEl?.classList.contains("is-collapsed");
+    }
+    function syncIdentifyCollapseUi() {
+      const collapsed = isIdentifyCollapsed();
+      const tip = collapsed ? t("tipExpandIdentify") : t("tipCollapseIdentify");
+      if (btnToggleIdentify) {
+        btnToggleIdentify.title = tip;
+        btnToggleIdentify.setAttribute("aria-label", tip);
+        btnToggleIdentify.setAttribute("aria-expanded", collapsed ? "false" : "true");
+      }
+      splitIdentifyEl?.classList.toggle("is-disabled", collapsed);
+      splitIdentifyEl?.setAttribute("aria-disabled", collapsed ? "true" : "false");
+    }
+    function setIdentifyCollapsed(collapsed) {
+      if (!sideIdentifyEl) return;
+      const next3 = !!collapsed;
+      const prev = isIdentifyCollapsed();
+      sideIdentifyEl.classList.toggle("is-collapsed", next3);
+      if (!next3 && prev) {
+        const cur = parseFloat(getComputedStyle(sideEl).getPropertyValue("--side-identify-h"));
+        const head = identifyHeadH();
+        if (!Number.isFinite(cur) || cur <= head + 8) {
+          sideEl.style.setProperty("--side-identify-h", "160px");
+        }
+      }
+      syncIdentifyCollapseUi();
+      syncSideSplits();
+    }
+    function expandIdentifyPanel() {
+      if (isIdentifyCollapsed()) setIdentifyCollapsed(false);
     }
     function mapCoordToLayerPixel(coord, cached) {
       if (!coord || !cached) return null;
@@ -49589,7 +49837,7 @@ ${ifBlocks}
         const caret = r.hit && r.bands?.length ? collapsed ? "\u25B6" : "\u25BC" : "";
         const pixText = r.pixel && Number.isFinite(r.pixel.x) && Number.isFinite(r.pixel.y) ? `${r.pixel.x}, ${r.pixel.y}` : r.hit ? "\u2014" : identifyReasonText(r.reason);
         parts.push(
-          `<tr class="identify-group-row${collapsed ? " is-collapsed" : ""}${r.hit ? "" : " is-miss"}" data-layer-id="${escapeAttr(r.id)}" data-act="toggle"><td>${caret ? `<span class="identify-caret">${caret}</span> ` : ""}${escapeHtml(r.name)}</td><td class="identify-pix">${escapeHtml(pixText)}</td></tr>`
+          `<tr class="identify-group-row${collapsed ? " is-collapsed" : ""}${r.hit ? "" : " is-miss"}" data-layer-id="${escapeAttr(r.id)}" data-act="toggle"><td><span class="identify-feat"><span class="identify-caret" aria-hidden="true">${caret || ""}</span><span class="identify-name" title="${escapeAttr(r.name)}">${escapeHtml(r.name)}</span></span></td><td class="identify-pix">${escapeHtml(pixText)}</td></tr>`
         );
         if (r.hit && r.bands?.length && !collapsed) {
           for (const b of r.bands) {
@@ -49619,7 +49867,7 @@ ${ifBlocks}
       );
       lastIdentifyResults = results;
       renderIdentifyResults(results);
-      setSideTab("identify");
+      expandIdentifyPanel();
       if (!hoverLocked) {
         const pix = mapToPixel(coord);
         if (pix && pix.x >= 0 && pix.y >= 0 && pix.x < width && pix.y < height) {
@@ -49634,10 +49882,16 @@ ${ifBlocks}
       map.__rasterEventsWired = true;
       map.on("pointermove", (evt) => {
         if (hoverLocked) return;
-        if (!ready || evt.dragging) return;
-        const pix = mapToPixel(evt.coordinate);
+        if (evt.dragging) return;
+        const coord = evt.coordinate;
+        if (!coord || !Number.isFinite(coord[0]) || !Number.isFinite(coord[1])) return;
+        if (!ready || !width || !height || !rasterExtent) {
+          showMapGeo(coord[0], coord[1]);
+          return;
+        }
+        const pix = mapToPixel(coord);
         if (!pix || pix.x < 0 || pix.y < 0 || pix.x >= width || pix.y >= height) {
-          showHoverOutside(pix);
+          showHoverOutside(pix || { mapX: coord[0], mapY: coord[1] });
           return;
         }
         showHover(evt, pix.x, pix.y, pix);
@@ -49746,7 +50000,8 @@ ${ifBlocks}
         cached.height,
         cached.geo,
         cached.rasterUrl,
-        cached.overviewUrls
+        cached.overviewUrls,
+        { nearest: pyramidUseNearest(style.mode || "gray", cached.bandPlanes) }
       );
       if (!srcArgs.blob && !srcArgs.url) return;
       const zIndex = cached.layer?.getZIndex?.() ?? 0;
@@ -49766,7 +50021,8 @@ ${ifBlocks}
         bandCount: nBands,
         zIndex,
         mins: bounds?.mins,
-        maxs: bounds?.maxs
+        maxs: bounds?.maxs,
+        interpolate: styleInterpolate(style)
       });
       if (map) map.addLayer(created.layer);
       cached.layer = created.layer;
@@ -49917,7 +50173,8 @@ ${ifBlocks}
         snapH,
         snapGeo,
         snapUrl,
-        overviewUrls
+        overviewUrls,
+        { nearest: pyramidUseNearest(snapMode, snapPlanes) }
       );
       if (snapPlanes.length) nBands = snapPlanes.length;
       if (!srcArgs.blob && !srcArgs.url) throw new Error(t("missingData"));
@@ -49931,7 +50188,9 @@ ${ifBlocks}
       const srcBounds = layerSourceBounds(nBands, snapPlanes, snapStats, snapMode);
       const prevLock = existing?.styleState?.mode === "paletted";
       const nextLock = snapMode === "paletted";
-      const sourceChanged = !existing?.layer || existing.bandPlanes !== snapPlanes || existing.bandCount !== nBands || existing.width !== snapW || existing.height !== snapH || existing.rasterUrl !== snapUrl || prevLock !== nextLock;
+      const prevResample = existing?.styleState?.resample || "nearest";
+      const nextResample = styleState.resample || "nearest";
+      const sourceChanged = !existing?.layer || existing.bandPlanes !== snapPlanes || existing.bandCount !== nBands || existing.width !== snapW || existing.height !== snapH || existing.rasterUrl !== snapUrl || prevLock !== nextLock || prevResample !== nextResample;
       if (existing?.layer && map && !sourceChanged) {
         const nextStyle = styleState;
         const prevJson = JSON.stringify(existing.styleState || null);
@@ -49969,7 +50228,8 @@ ${ifBlocks}
         bandCount: nBands,
         zIndex: prevZ,
         mins: srcBounds?.mins,
-        maxs: srcBounds?.maxs
+        maxs: srcBounds?.maxs,
+        interpolate: styleInterpolate(styleState)
       });
       applyOlLayerVisibility(created.layer, prevVisible, styleState);
       const styled = styleStateWithAlpha(styleState, created.layer, nBands);
@@ -50041,6 +50301,12 @@ ${ifBlocks}
     }
     let lastHoverBandValues = null;
     let lastIdentifyResults = null;
+    function showMapGeo(mx, my) {
+      if (!Number.isFinite(mx) || !Number.isFinite(my)) return;
+      lastHoverBandValues = null;
+      hoverEl.textContent = `${t("statusGeo")} ${formatGeoCoord(mx)}, ${formatGeoCoord(my)}`;
+      hoverEl.classList.add("is-active");
+    }
     function showHover(_e, x, y, pix) {
       const i = y * width + x;
       lastHoverBandValues = [];
@@ -50049,18 +50315,13 @@ ${ifBlocks}
           lastHoverBandValues.push(bandValue(b, i));
         }
       }
-      const mx = pix?.mapX;
-      const my = pix?.mapY;
-      hoverEl.textContent = `${t("statusGeo")} ${formatGeoCoord(mx)}, ${formatGeoCoord(my)}`;
-      hoverEl.classList.add("is-active");
+      showMapGeo(pix?.mapX, pix?.mapY);
     }
     function showHoverOutside(pix) {
       if (!pix || !Number.isFinite(pix.mapX) || !Number.isFinite(pix.mapY)) {
         return;
       }
-      lastHoverBandValues = null;
-      hoverEl.textContent = `${t("statusGeo")} ${formatGeoCoord(pix.mapX)}, ${formatGeoCoord(pix.mapY)}`;
-      hoverEl.classList.add("is-active");
+      showMapGeo(pix.mapX, pix.mapY);
     }
     function hideHover() {
       if (hoverLocked) return;
@@ -50086,9 +50347,12 @@ ${ifBlocks}
         tileLayer = null;
         viewConfig = null;
         rasterExtent = null;
+        width = 0;
+        height = 0;
         renderFileList();
+        resetStyleUiForEmptyView();
         updateMeta();
-        hideHover();
+        lastHoverBandValues = null;
         vscodeApi?.postMessage({ type: "clearAllFiles" });
         return;
       }
@@ -50114,7 +50378,12 @@ ${ifBlocks}
           bandStats = [];
           ready = false;
           tileLayer = null;
+          width = 0;
+          height = 0;
+          rasterExtent = null;
+          viewConfig = null;
           renderFileList();
+          resetStyleUiForEmptyView();
           updateMeta();
         }
       } else {
@@ -50284,6 +50553,43 @@ ${ifBlocks}
         throw new Error(`\u50CF\u7D20\u6570\u636E\u957F\u5EA6\u5F02\u5E38 (u8 ${u8.length}\u2260${expectedLen})`);
       }
       return Float64Array.from(u8);
+    }
+    function encodePlaneBase64(plane) {
+      if (!plane?.length) return null;
+      let useI32 = true;
+      for (let i = 0; i < plane.length; i++) {
+        const v = plane[i];
+        if (!Number.isFinite(v) || !Number.isInteger(v) || v < -2147483648 || v > 2147483647) {
+          useI32 = false;
+          break;
+        }
+      }
+      let bytes;
+      let format;
+      if (useI32) {
+        const i32 = new Int32Array(plane.length);
+        for (let i = 0; i < plane.length; i++) i32[i] = plane[i];
+        bytes = new Uint8Array(i32.buffer, i32.byteOffset, i32.byteLength);
+        format = "i32";
+      } else {
+        const f64 = plane instanceof Float64Array && plane.byteOffset === 0 ? plane : Float64Array.from(plane);
+        bytes = new Uint8Array(f64.buffer, f64.byteOffset, f64.byteLength);
+        format = "f64";
+      }
+      let binary = "";
+      const chunk = 32768;
+      for (let i = 0; i < bytes.length; i += chunk) {
+        binary += String.fromCharCode.apply(
+          null,
+          bytes.subarray(i, Math.min(i + chunk, bytes.length))
+        );
+      }
+      return { base64: btoa(binary), format };
+    }
+    function plteExportBandIndex() {
+      if (renderMode === "paletted") return paletteBandIndex();
+      if (renderMode === "gray") return Number(grayBandEl?.value) || 0;
+      return 0;
     }
     let bandPlanes = [];
     let bandStats = [];
@@ -50473,17 +50779,36 @@ ${ifBlocks}
     }
     function setPlanesFromRgba(rgba, w, h) {
       const n = w * h;
-      const r = new Float64Array(n);
-      const g = new Float64Array(n);
-      const b = new Float64Array(n);
+      const r = new Uint8Array(n);
+      const g = new Uint8Array(n);
+      const b = new Uint8Array(n);
+      let rMin = 255;
+      let rMax = 0;
+      let gMin = 255;
+      let gMax = 0;
+      let bMin = 255;
+      let bMax = 0;
       for (let i = 0, p = 0; i < n; i++, p += 4) {
-        r[i] = rgba[p];
-        g[i] = rgba[p + 1];
-        b[i] = rgba[p + 2];
+        const rv = rgba[p];
+        const gv = rgba[p + 1];
+        const bv = rgba[p + 2];
+        r[i] = rv;
+        g[i] = gv;
+        b[i] = bv;
+        if (rv < rMin) rMin = rv;
+        if (rv > rMax) rMax = rv;
+        if (gv < gMin) gMin = gv;
+        if (gv > gMax) gMax = gv;
+        if (bv < bMin) bMin = bv;
+        if (bv > bMax) bMax = bv;
       }
       bandPlanes = [r, g, b];
       bandCount = 3;
-      bandStats = bandPlanes.map(computeStats);
+      bandStats = [
+        { min: rMin, max: rMax <= rMin ? rMin + 1 : rMax },
+        { min: gMin, max: gMax <= gMin ? gMin + 1 : gMax },
+        { min: bMin, max: bMax <= bMin ? bMin + 1 : bMax }
+      ];
     }
     function setPlanesFromMask(values2) {
       bandPlanes = [values2];
@@ -50761,13 +51086,38 @@ ${ifBlocks}
       render3();
     }
     async function rasterFromDataUrl(src) {
+      const drawToCanvas = (source, w2, h2) => {
+        const c = document.createElement("canvas");
+        c.width = w2;
+        c.height = h2;
+        const ctx = c.getContext("2d", { willReadFrequently: true });
+        ctx.drawImage(source, 0, 0);
+        return { width: c.width, height: c.height, data: ctx.getImageData(0, 0, c.width, c.height).data };
+      };
+      if (typeof createImageBitmap === "function") {
+        try {
+          let blob;
+          if (src.startsWith("data:")) {
+            const res = await fetch(src);
+            blob = await res.blob();
+          } else {
+            const res = await fetch(src);
+            if (!res.ok) throw new Error("fetch failed");
+            blob = await res.blob();
+          }
+          const bitmap = await createImageBitmap(blob);
+          const w2 = bitmap.width;
+          const h2 = bitmap.height;
+          const out = drawToCanvas(bitmap, w2, h2);
+          if (typeof bitmap.close === "function") bitmap.close();
+          return out;
+        } catch {
+        }
+      }
       const img = await loadImage(src);
-      const c = document.createElement("canvas");
-      c.width = img.naturalWidth || img.width;
-      c.height = img.naturalHeight || img.height;
-      const ctx = c.getContext("2d", { willReadFrequently: true });
-      ctx.drawImage(img, 0, 0);
-      return { width: c.width, height: c.height, data: ctx.getImageData(0, 0, c.width, c.height).data };
+      const w = img.naturalWidth || img.width;
+      const h = img.naturalHeight || img.height;
+      return drawToCanvas(img, w, h);
     }
     async function init39() {
       const gen = ++initGeneration;
@@ -50909,6 +51259,17 @@ ${ifBlocks}
         applyStretchToInputs(rgbContrastEl.value || "none", bandPlanes[Number(bandEl.value)], s, blueMinEl, blueMaxEl, rgbStretchParam);
       }
     }
+    resampleModeEl?.addEventListener("change", () => {
+      if (!activeFileId) return;
+      const st = collectStyleState();
+      const cached = fileCache.get(activeFileId);
+      if (cached) cached.styleState = st;
+      snapshotUiState();
+      void rebuildLayerForFile(activeFileId).then(() => {
+        syncLayerOrder();
+        map?.render?.();
+      });
+    });
     renderTypeEl.addEventListener("change", () => {
       userRenderMode = renderTypeEl.value;
       renderMode = userRenderMode;
@@ -51065,34 +51426,113 @@ ${ifBlocks}
     btnSavePlte.addEventListener("click", () => {
       moreMenu.classList.add("hidden");
       syncColorTableLegacy();
+      const exportBand = plteExportBandIndex();
+      const plane = bandPlanes[exportBand];
+      const packed = plane ? encodePlaneBase64(plane) : null;
       vscodeApi?.postMessage({
         type: "saveAsPlte",
         colorTable: serializeColorTable(colorTable),
         colormap,
-        indexBase64: payload.indexBase64,
-        indexFormat: payload.indexFormat || "i32"
+        exportBand,
+        width,
+        height,
+        indexBase64: packed?.base64 || payload.indexBase64,
+        indexFormat: packed?.format || payload.indexFormat || "i32"
       });
     });
     applyRenderModeUi();
     syncPaletteOpacityLabel();
     renderFileList();
     const minSideTopH = 240;
-    const minSideTabsH = 240;
-    const minMapSectionH = 64;
-    function sideTopUsableBounds(minH = minSideTopH, maxFrac = 0.85) {
+    const minSideTabsH = 300;
+    const minSideIdentifyH = 120;
+    const minMapSectionH = 36;
+    const minStatusBarH = 28;
+    const identifyHeadH = () => parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--side-identify-head")) || 36;
+    function identifyOccupiedHeight() {
+      if (isIdentifyCollapsed()) return identifyHeadH();
+      const h = sideIdentifyEl?.getBoundingClientRect().height || parseFloat(getComputedStyle(sideEl).getPropertyValue("--side-identify-h")) || minSideIdentifyH;
+      return Math.max(minSideIdentifyH, h);
+    }
+    function sideLayoutChrome() {
       const viewH = sideEl?.clientHeight || sideEl?.getBoundingClientRect().height || 0;
-      const mapSectionH = document.getElementById("mapSection")?.getBoundingClientRect().height || minMapSectionH;
-      const splitH = splitInfoEl?.getBoundingClientRect().height || 5;
-      const usableInView = Math.max(0, viewH - mapSectionH - splitH);
+      const mapSectionH = mapSectionEl?.getBoundingClientRect().height || minMapSectionH;
+      const statusH = statusBarEl?.getBoundingClientRect().height || minStatusBarH;
+      const splitInfoH = splitInfoEl?.getBoundingClientRect().height || 5;
+      const splitIdH = splitIdentifyEl?.getBoundingClientRect().height || 5;
+      const identifyH = identifyOccupiedHeight();
+      const reserved = mapSectionH + statusH + splitInfoH + splitIdH + identifyH;
+      const naturalUsable = Math.max(0, viewH - reserved);
+      const minTopTabs = minSideTopH + minSideTabsH;
+      const needsScroll = naturalUsable < minTopTabs;
+      const usableForTopTabs = needsScroll ? minTopTabs : naturalUsable;
+      return {
+        viewH,
+        mapSectionH,
+        statusH,
+        splitInfoH,
+        splitIdH,
+        identifyH,
+        usableForTopTabs,
+        reserved,
+        needsScroll,
+        minTopTabs
+      };
+    }
+    function sideTopUsableBounds(minH = minSideTopH, maxFrac = 0.85) {
+      const { usableForTopTabs, needsScroll } = sideLayoutChrome();
+      const usableInView = usableForTopTabs;
       const minClamp = minH;
+      if (needsScroll) {
+        const maxH2 = Math.max(
+          minClamp + 48,
+          Math.min(720, Math.floor((minSideTopH + minSideTabsH) * maxFrac))
+        );
+        return {
+          usableInView,
+          minClamp,
+          maxH: maxH2,
+          canResize: maxH2 > minClamp + 1,
+          needsScroll: true
+        };
+      }
       const roomForTabs = Math.max(0, usableInView - minSideTabsH);
       const maxH = usableInView >= minH + minSideTabsH ? Math.max(minClamp, Math.min(Math.floor(usableInView * maxFrac), roomForTabs)) : minClamp;
       return {
-        sideH: viewH,
-        usable: Math.max(usableInView, minH + minSideTabsH),
         usableInView,
         minClamp,
-        maxH
+        maxH,
+        canResize: maxH > minClamp + 1,
+        needsScroll: false
+      };
+    }
+    function identifyUsableBounds() {
+      const { viewH, mapSectionH, statusH, splitInfoH, splitIdH, needsScroll } = sideLayoutChrome();
+      const topH = sideTopEl?.getBoundingClientRect().height || parseFloat(getComputedStyle(sideEl).getPropertyValue("--side-top-h")) || minSideTopH;
+      if (needsScroll) {
+        const maxH2 = Math.max(
+          minSideIdentifyH + 48,
+          Math.min(480, Math.floor((minSideIdentifyH + minSideTabsH) * 0.7))
+        );
+        return {
+          usable: minSideIdentifyH + minSideTabsH,
+          minClamp: minSideIdentifyH,
+          maxH: maxH2,
+          canResize: maxH2 > minSideIdentifyH + 1,
+          needsScroll: true
+        };
+      }
+      const usable = Math.max(
+        0,
+        viewH - mapSectionH - statusH - splitInfoH - splitIdH - topH
+      );
+      const maxH = Math.max(minSideIdentifyH, usable - minSideTabsH);
+      return {
+        usable,
+        minClamp: minSideIdentifyH,
+        maxH,
+        canResize: maxH > minSideIdentifyH + 1,
+        needsScroll: false
       };
     }
     function sideTopRatio() {
@@ -51100,56 +51540,147 @@ ${ifBlocks}
       if (Number.isFinite(r) && r > 0.05 && r < 0.95) return r;
       return 0.5;
     }
-    function syncSideTopSplit() {
-      if (!sideEl) return;
-      const { usableInView, minClamp, maxH } = sideTopUsableBounds();
-      let next3;
-      if (usableInView >= minSideTopH + minSideTabsH) {
-        next3 = Math.min(maxH, Math.max(minClamp, Math.round(usableInView * sideTopRatio())));
+    function identifyRatio() {
+      const r = Number(sideEl?.dataset.identifyRatio);
+      if (Number.isFinite(r) && r > 0.05 && r < 0.95) return r;
+      return 0.35;
+    }
+    function syncSplitHandlesEnabled() {
+      const topBounds = sideTopUsableBounds();
+      splitInfoEl?.classList.toggle("is-disabled", !topBounds.canResize);
+      splitInfoEl?.setAttribute("aria-disabled", topBounds.canResize ? "false" : "true");
+      if (isIdentifyCollapsed()) {
+        splitIdentifyEl?.classList.add("is-disabled");
+        splitIdentifyEl?.setAttribute("aria-disabled", "true");
       } else {
-        next3 = minSideTopH;
+        const idBounds = identifyUsableBounds();
+        splitIdentifyEl?.classList.toggle("is-disabled", !idBounds.canResize);
+        splitIdentifyEl?.setAttribute("aria-disabled", idBounds.canResize ? "false" : "true");
+      }
+    }
+    function syncSideSplits() {
+      if (!sideEl) return;
+      const { usableInView, minClamp, maxH, needsScroll } = sideTopUsableBounds();
+      let nextTop;
+      if (needsScroll) {
+        if (sideEl.dataset.splitUserSet === "1") {
+          const cur = parseFloat(getComputedStyle(sideEl).getPropertyValue("--side-top-h"));
+          nextTop = Number.isFinite(cur) ? Math.min(maxH, Math.max(minClamp, cur)) : minClamp;
+        } else {
+          nextTop = Math.min(maxH, Math.max(minClamp, Math.round(usableInView * sideTopRatio())));
+        }
+      } else if (usableInView >= minSideTopH + minSideTabsH) {
+        nextTop = Math.min(maxH, Math.max(minClamp, Math.round(usableInView * sideTopRatio())));
+      } else {
+        nextTop = minSideTopH;
         sideEl.dataset.splitRatio = sideEl.dataset.splitRatio || "0.5";
       }
-      sideEl.style.setProperty("--side-top-h", `${Math.round(next3)}px`);
+      sideEl.style.setProperty("--side-top-h", `${Math.round(nextTop)}px`);
+      if (!isIdentifyCollapsed()) {
+        const idBounds = identifyUsableBounds();
+        let nextId;
+        if (idBounds.needsScroll) {
+          if (sideEl.dataset.identifyUserSet === "1") {
+            const cur = parseFloat(getComputedStyle(sideEl).getPropertyValue("--side-identify-h"));
+            nextId = Number.isFinite(cur) ? Math.min(idBounds.maxH, Math.max(idBounds.minClamp, cur)) : idBounds.minClamp;
+          } else {
+            nextId = Math.min(
+              idBounds.maxH,
+              Math.max(idBounds.minClamp, Math.round(idBounds.usable * identifyRatio()))
+            );
+          }
+        } else if (idBounds.usable >= minSideIdentifyH + minSideTabsH) {
+          nextId = Math.min(
+            idBounds.maxH,
+            Math.max(idBounds.minClamp, Math.round(idBounds.usable * identifyRatio()))
+          );
+          if (sideEl.dataset.identifyUserSet === "1") {
+            const cur = parseFloat(getComputedStyle(sideEl).getPropertyValue("--side-identify-h"));
+            if (Number.isFinite(cur)) {
+              nextId = Math.min(idBounds.maxH, Math.max(idBounds.minClamp, cur));
+            }
+          }
+        } else {
+          nextId = minSideIdentifyH;
+          sideEl.dataset.identifyRatio = sideEl.dataset.identifyRatio || "0.35";
+        }
+        sideEl.style.setProperty("--side-identify-h", `${Math.round(nextId)}px`);
+      }
+      syncSplitHandlesEnabled();
+      sideEl.classList.toggle("is-tight", !!sideLayoutChrome().needsScroll);
     }
-    function wireVerticalSplit(handle, cssVar, minH, maxFrac) {
+    function wireVerticalSplit(handle, cssVar, minH, maxFrac, opts = {}) {
       if (!handle || !sideEl) return;
+      const {
+        getStartHeight,
+        onMoveHeight,
+        direction = 1
+        // 1: drag down grows target; -1: drag up grows target
+      } = opts;
       handle.addEventListener("pointerdown", (e) => {
         if (e.button !== 0) return;
+        if (handle.classList.contains("is-disabled")) return;
         e.preventDefault();
         handle.classList.add("is-dragging");
         handle.setPointerCapture?.(e.pointerId);
         const startY = e.clientY;
-        const startH = sideTopEl?.getBoundingClientRect().height || parseFloat(getComputedStyle(sideEl).getPropertyValue(cssVar)) || minH;
+        const startH = (typeof getStartHeight === "function" ? getStartHeight() : null) || parseFloat(getComputedStyle(sideEl).getPropertyValue(cssVar)) || minH;
         const onMove = (ev) => {
-          const { usableInView, maxH, minClamp } = sideTopUsableBounds(minH, maxFrac);
-          if (usableInView < minSideTopH + minSideTabsH) return;
-          const next3 = Math.min(maxH, Math.max(minClamp, startH + (ev.clientY - startY)));
+          if (handle.classList.contains("is-disabled")) return;
+          const next3 = onMoveHeight ? onMoveHeight(startH, ev.clientY - startY) : (() => {
+            const { maxH, minClamp, canResize } = sideTopUsableBounds(minH, maxFrac);
+            if (!canResize) return null;
+            return Math.min(
+              maxH,
+              Math.max(minClamp, startH + direction * (ev.clientY - startY))
+            );
+          })();
+          if (next3 == null || !Number.isFinite(next3)) return;
           sideEl.style.setProperty(cssVar, `${Math.round(next3)}px`);
-          sideEl.dataset.splitRatio = String(next3 / usableInView);
-          sideEl.dataset.splitUserSet = "1";
+          if (cssVar === "--side-top-h") {
+            const { usableInView } = sideTopUsableBounds(minH, maxFrac);
+            if (usableInView > 0) sideEl.dataset.splitRatio = String(next3 / usableInView);
+            sideEl.dataset.splitUserSet = "1";
+          } else if (cssVar === "--side-identify-h") {
+            const { usable } = identifyUsableBounds();
+            if (usable > 0) sideEl.dataset.identifyRatio = String(next3 / usable);
+            sideEl.dataset.identifyUserSet = "1";
+          }
+          syncSplitHandlesEnabled();
         };
         const onUp = (ev) => {
           handle.classList.remove("is-dragging");
           handle.releasePointerCapture?.(ev.pointerId);
           window.removeEventListener("pointermove", onMove);
           window.removeEventListener("pointerup", onUp);
-          syncSideTopSplit();
+          syncSideSplits();
         };
         window.addEventListener("pointermove", onMove);
         window.addEventListener("pointerup", onUp);
       });
     }
     wireVerticalSplit(splitInfoEl, "--side-top-h", minSideTopH, 0.85);
-    syncSideTopSplit();
-    requestAnimationFrame(() => syncSideTopSplit());
+    wireVerticalSplit(splitIdentifyEl, "--side-identify-h", minSideIdentifyH, 0.7, {
+      getStartHeight: () => sideIdentifyEl?.getBoundingClientRect().height,
+      direction: -1,
+      // drag handle up → identify grows
+      onMoveHeight: (startH, dy) => {
+        if (isIdentifyCollapsed()) return null;
+        const { maxH, minClamp, canResize } = identifyUsableBounds();
+        if (!canResize) return null;
+        return Math.min(maxH, Math.max(minClamp, startH - dy));
+      }
+    });
+    syncIdentifyCollapseUi();
+    syncSideSplits();
+    requestAnimationFrame(() => syncSideSplits());
     if (typeof ResizeObserver !== "undefined") {
       let resizeTick = 0;
       const onPanelResize = () => {
         if (resizeTick) return;
         resizeTick = requestAnimationFrame(() => {
           resizeTick = 0;
-          syncSideTopSplit();
+          syncSideSplits();
           map?.updateSize();
         });
       };
@@ -51158,7 +51689,7 @@ ${ifBlocks}
       if (mainEl) ro.observe(mainEl);
     }
     window.addEventListener("resize", () => {
-      syncSideTopSplit();
+      syncSideSplits();
       map?.updateSize();
     });
     function wireHorizontalSplit(handle, cssVar, minW, maxFrac) {
@@ -51186,7 +51717,7 @@ ${ifBlocks}
           window.removeEventListener("pointermove", onMove);
           window.removeEventListener("pointerup", onUp);
           map?.updateSize();
-          syncSideTopSplit();
+          syncSideSplits();
         };
         window.addEventListener("pointermove", onMove);
         window.addEventListener("pointerup", onUp);
@@ -51238,7 +51769,16 @@ ${ifBlocks}
     syncHoverLockUi();
     setSideTab("style");
     tabStyleEl?.addEventListener("click", () => setSideTab("style"));
-    tabIdentifyEl?.addEventListener("click", () => setSideTab("identify"));
+    tabSettingsEl?.addEventListener("click", () => setSideTab("settings"));
+    btnToggleIdentify?.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIdentifyCollapsed(!isIdentifyCollapsed());
+    });
+    sideIdentifyEl?.querySelector(".identify-head-row")?.addEventListener("click", (e) => {
+      if (e.target?.closest?.("button")) return;
+      setIdentifyCollapsed(!isIdentifyCollapsed());
+    });
     mapCrsSelect?.addEventListener("change", () => {
       if (mapCrsSelect.value === "custom") {
         showMapCrsCustomMode(mapCrsCustom?.value || "", { focus: true });
@@ -51342,18 +51882,23 @@ ${ifBlocks}
         started = false;
         payload.probeLabel = "";
         geo = null;
+        width = 0;
+        height = 0;
+        rasterExtent = null;
+        viewConfig = null;
+        tileLayer = null;
         for (const id of [...fileCache.keys()]) removeFileLayer(id);
         fileCache.clear();
         if (map) {
-          map.setTarget(null);
-          map = null;
-          tileLayer = null;
-          viewConfig = null;
-          mapReady = false;
+          mapReady = true;
+          map.updateSize?.();
         }
+        resetStyleUiForEmptyView();
         updateMeta();
         renderFileList();
-        hideHover();
+        lastHoverBandValues = null;
+        lastIdentifyResults = null;
+        renderIdentifyResults([]);
         return;
       }
       if (msg.type === "openFile") {
@@ -51392,13 +51937,13 @@ ${ifBlocks}
         const fromMsg = parseColorTable(msg.colorTable);
         colorTable = fromMsg.length ? fromMsg : colorTableFromLegacyMap(colormap, {});
         syncColorTableLegacy();
-        payload.colormapSource = "workspace";
+        payload.colormapSource = "file";
         payload.colormapPath = msg.path || payload.colormapPath;
         renderCmapTable();
         render3();
       }
       if (msg.type === "colormapSaved") {
-        payload.colormapSource = "workspace";
+        payload.colormapSource = "file";
         payload.colormapPath = msg.path || payload.colormapPath;
       }
     });

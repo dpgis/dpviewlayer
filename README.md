@@ -4,6 +4,8 @@ VS Code / Cursor 里的**图像查看器**，同时适用于 **GIS 栅格预览*
 
 支持 PNG / JPEG / BMP / TIFF / GeoTIFF：普通图片可快速浏览与叠图；带地理参考的数据可按地图坐标查看、拉伸与调色。渲染基于 OpenLayers WebGLTile。
 
+仓库地址：https://gitcode.com/dpgis/dpviewlayer.git
+
 ## 能做什么
 
 - 作为日常图像查看器打开常见栅格格式
@@ -44,7 +46,7 @@ npm run smoke     # 本地叠层冒烟测试（可选）
 - **单波段灰度** / **多波段彩色** / **调色板（唯一值）**
 - 对比度：无增强、MinMax、百分比截断、均值±标准差
 - 调色板：Random colors（每次选择换一批色）、渐变色带、反转、透明度
-- 色表可读写工作区配置，或导出索引色 PNG（PLTE）
+- 色表可另存 / 加载 JSON 文件，或导出索引色 PNG（PLTE；多波段按颜色表所选波段）
 
 ## 地图与地理参考
 
@@ -81,9 +83,9 @@ npm run smoke     # 本地叠层冒烟测试（可选）
 
 有地理参考的 GeoTIFF 会读取文件内 CRS（如 EPSG:32649）与仿射，不会当成空 CRS / 像素坐标。
 
-## 工作区色表
+## 色表文件
 
-路径：`.vscode/dpviewlayer.json`
+通过侧栏「加载色表 / 保存色表」选择任意 JSON 文件（默认建议与栅格同目录的 `*.colormap.json`）。
 
 行 ID 为数组下标，不写入每行。区间为半开 `[min, max)`（即 ≥ min 且 < max）。
 

@@ -10,6 +10,14 @@ import { defaults as defaultInteractions } from "ol/interaction/defaults.js";
 import { writeArrayBuffer } from "geotiff";
 import { CONTINUOUS_RAMPS, interpolateStops } from "./colorRamps.js";
 
+/** Unique className per WebGLTile so OL does not share one canvas across layers.
+ * Shared canvases leave a hidden top layer painted when the bottom layer skips redraw. */
+let webGlLayerSeq = 0;
+function nextWebGlClassName() {
+  webGlLayerSeq += 1;
+  return `ol-layer rv-webgl-${webGlLayerSeq}`;
+}
+
 /**
  * Shared projection for non-georeferenced (Local) rasters.
  * Each GeoTIFF with ProjectedCSTypeGeoKey=32767 would otherwise get a null /
@@ -310,6 +318,14 @@ export function buildWebGlStyle(state) {
   };
 }
 
+/** Use pyramid encoding when pixel count exceeds this (webview blob path). */
+export const PYRAMID_MIN_PIXELS = 4_000_000;
+
+/** True when all band planes are Uint8Array (canvas / PNG / JPEG path). */
+export function planesAreUint8(planes) {
+  return !!planes?.length && planes.every((p) => p instanceof Uint8Array);
+}
+
 /** True when every finite sample is an integer in [0, 255]. */
 export function planesFitUint8(planes) {
   if (!planes?.length) return true;
@@ -363,7 +379,7 @@ export function resolveSourceBounds(bandCount, bandStats, planes, opts = {}) {
 }
 
 /** Build a single-level GeoTIFF ArrayBuffer from band planes (uint8 or float32). */
-function encodePlanesLevel(planes, width, height, geo, crsCode, scaleFactor = 1) {
+function encodePlanesLevel(planes, width, height, geo, crsCode, scaleFactor = 1, opts = {}) {
   const w = Math.trunc(Number(width));
   const h = Math.trunc(Number(height));
   if (!Number.isInteger(w) || !Number.isInteger(h) || w <= 0 || h <= 0) {
@@ -375,7 +391,10 @@ function encodePlanesLevel(planes, width, height, geo, crsCode, scaleFactor = 1)
   const baseSx = geo?.modelPixelScale?.[0] ?? 1;
   const baseSy = geo?.modelPixelScale?.[1] ?? 1;
   const f = Math.max(1, scaleFactor);
-  const asFloat = !planesFitUint8(planes);
+  const asFloat =
+    opts.assumeUint8 === true || planesAreUint8(planes)
+      ? false
+      : !planesFitUint8(planes);
   const meta = {
     ImageWidth: w,
     ImageLength: h,
@@ -427,20 +446,25 @@ function encodePlanesLevel(planes, width, height, geo, crsCode, scaleFactor = 1)
   }
 
   const flat = new Uint8Array(size * bandCount);
+  const nativeUint8 = planesAreUint8(planes);
   for (let i = 0; i < size; i++) {
     for (let b = 0; b < bandCount; b++) {
-      const v = planes[b][i];
-      flat[i * bandCount + b] = Number.isFinite(v)
-        ? Math.max(0, Math.min(255, Math.round(v)))
-        : 0;
+      if (nativeUint8) {
+        flat[i * bandCount + b] = planes[b][i];
+      } else {
+        const v = planes[b][i];
+        flat[i * bandCount + b] = Number.isFinite(v)
+          ? Math.max(0, Math.min(255, Math.round(v)))
+          : 0;
+      }
     }
   }
   return writeArrayBuffer(flat, meta);
 }
 
 /** Pack band planes into a GeoTIFF blob (full resolution only). */
-export function planesToGeoTiffBlob(planes, width, height, geo, crsCode = "EPSG:3857") {
-  return new Blob([encodePlanesLevel(planes, width, height, geo, crsCode, 1)], {
+export function planesToGeoTiffBlob(planes, width, height, geo, crsCode = "EPSG:3857", opts = {}) {
+  return new Blob([encodePlanesLevel(planes, width, height, geo, crsCode, 1, opts)], {
     type: "image/tiff",
   });
 }
@@ -452,7 +476,8 @@ export function planesToGeoTiffBlob(planes, width, height, geo, crsCode = "EPSG:
 export function downsamplePlanes2x(planes, width, height, mode = "average") {
   const nw = Math.max(1, Math.floor(width / 2));
   const nh = Math.max(1, Math.floor(height / 2));
-  const out = planes.map(() => new Float64Array(nw * nh));
+  const uint8 = planesAreUint8(planes);
+  const out = planes.map(() => (uint8 ? new Uint8Array(nw * nh) : new Float64Array(nw * nh)));
   for (let y = 0; y < nh; y++) {
     for (let x = 0; x < nw; x++) {
       const x0 = x * 2;
@@ -470,7 +495,7 @@ export function downsamplePlanes2x(planes, width, height, mode = "average") {
             p[y0 * width + x1] +
             p[y1 * width + x0] +
             p[y1 * width + x1];
-          out[b][oi] = s / 4;
+          out[b][oi] = uint8 ? Math.round(s / 4) : s / 4;
         }
       }
     }
@@ -504,10 +529,11 @@ export function planesToPyramidBlobs(
   height,
   geo,
   crsCode = "EPSG:3857",
-  { nearest = false, minSize = 256 } = {},
+  { nearest = false, minSize = 256, assumeUint8 = false } = {},
 ) {
+  const encOpts = { assumeUint8: assumeUint8 || planesAreUint8(planes) };
   const mode = nearest ? "nearest" : "average";
-  const full = encodePlanesLevel(planes, width, height, geo, crsCode, 1);
+  const full = encodePlanesLevel(planes, width, height, geo, crsCode, 1, encOpts);
   const overviewBuffers = [];
   let curPlanes = planes;
   let cw = width;
@@ -522,7 +548,9 @@ export function planesToPyramidBlobs(
       ch = next.height;
       factor *= 2;
     }
-    overviewBuffers.push(encodePlanesLevel(curPlanes, cw, ch, geo, crsCode, factor));
+    overviewBuffers.push(
+      encodePlanesLevel(curPlanes, cw, ch, geo, crsCode, factor, encOpts),
+    );
   }
   return {
     blob: new Blob([full], { type: "image/tiff" }),
@@ -632,6 +660,8 @@ export async function createRasterLayer({
   maxs,
   /** Force source/view projection (use LOCAL_PIXEL_PROJECTION for identity rasters). */
   projection = null,
+  /** false = nearest neighbor; true = linear (OpenLayers GeoTIFF interpolate). */
+  interpolate = false,
 }) {
   /** @type {string[]} */
   const objectUrls = [];
@@ -692,7 +722,7 @@ export async function createRasterLayer({
     normalize: true,
     transition: 0,
     convertToRGB: false,
-    interpolate: false,
+    interpolate: !!interpolate,
     ...(projection ? { projection } : {}),
   });
 
@@ -700,6 +730,9 @@ export async function createRasterLayer({
     source,
     style,
     zIndex,
+    // Must be unique: consecutive WebGLTile layers with the same className share
+    // one WebGL canvas; hiding the upper layer then leaves its pixels on screen.
+    className: nextWebGlClassName(),
   });
   layer.set("rvKind", "geotiff");
 

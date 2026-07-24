@@ -13,9 +13,9 @@ import {
 import { encodeIndexedPng, rgbToHex, type Rgb } from "./pngCodec";
 import { buildWebviewHtml, type WebviewPayload } from "./webviewHtml";
 import {
-  loadWorkspaceColormap,
-  resolveViewLayerConfigPath,
-  saveWorkspaceColormap,
+  defaultColormapSaveUri,
+  loadColormapFromPath,
+  saveColormapToPath,
 } from "./workspaceConfig";
 import { t, uiLang } from "./l10n";
 import {
@@ -254,8 +254,11 @@ function decodeIndexBase64(
   return Float64Array.from(i32);
 }
 
-/** Read first band of a GeoTIFF when in-memory indices were skipped (float / large). */
-async function loadGeoTiffBandPixels(filePath: string): Promise<{
+/** Read one band of a GeoTIFF when in-memory indices were skipped (float / large / RGB). */
+async function loadGeoTiffBandPixels(
+  filePath: string,
+  bandIndex = 0,
+): Promise<{
   width: number;
   height: number;
   values: Float64Array;
@@ -265,8 +268,10 @@ async function loadGeoTiffBandPixels(filePath: string): Promise<{
   const image = await tiff.getImage();
   const width = image.getWidth();
   const height = image.getHeight();
+  const sampleCount = image.getSamplesPerPixel?.() ?? 1;
+  const bi = Math.max(0, Math.min(Math.trunc(Number(bandIndex) || 0), Math.max(0, sampleCount - 1)));
   const data = await image.readRasters({
-    samples: [0],
+    samples: [bi],
     interleave: false,
   });
   const plane = (Array.isArray(data) ? data[0] : data) as ArrayLike<number>;
@@ -277,7 +282,7 @@ async function loadGeoTiffBandPixels(filePath: string): Promise<{
 }
 
 function relativeConfigLabel(configPath: string | undefined): string {
-  if (!configPath) return ".vscode/dpviewlayer.json";
+  if (!configPath) return "";
   return vscode.workspace.asRelativePath(vscode.Uri.file(configPath));
 }
 
@@ -363,8 +368,12 @@ async function buildFileEntry(uri: vscode.Uri, probe: ImageProbeOk): Promise<Fil
   const large = isRasterTooLarge(probe.width, probe.height);
   const largeTiff = probe.format === "tiff" && large;
   const floatDtype = dtype === "float32" || dtype === "float64";
+  const largeMaskRaster =
+    large && !isImage && (probe.format === "png" || probe.format === "bmp");
   const skipFullDecode =
-    largeTiff || (probe.format === "tiff" && floatDtype && !isImage);
+    largeTiff ||
+    largeMaskRaster ||
+    (probe.format === "tiff" && floatDtype && !isImage);
 
   if (!isImage && probe.format !== "jpeg" && !skipFullDecode) {
     try {
@@ -389,20 +398,10 @@ async function buildFileEntry(uri: vscode.Uri, probe: ImageProbeOk): Promise<Fil
     });
   }
 
-  let colormap: Record<number, Rgb> = {};
-  let colorTable: Array<{ min: number; max: number; color: string }> = [];
-  let colormapSource: WebviewPayload["colormapSource"] = "default";
-  let colormapPath = resolveViewLayerConfigPath(uri);
-  try {
-    const loaded = loadWorkspaceColormap(uri);
-    colormap = loaded.colormap;
-    colorTable = loaded.colorTable;
-    colormapSource = loaded.source;
-    if (loaded.path) colormapPath = loaded.path;
-  } catch (e) {
-    void vscode.window.showWarningMessage(`色表读取失败: ${String(e)}`);
-  }
-  if (!Object.keys(colormap).length && !colorTable.length) colormapSource = "default";
+  const colormap: Record<number, Rgb> = {};
+  const colorTable: Array<{ min: number; max: number; color: string }> = [];
+  const colormapSource: WebviewPayload["colormapSource"] = "default";
+  const colormapPath = "";
 
   const bands = Math.max(1, probe.bands === 4 ? 3 : probe.bands);
   const defaultRender = pickDefaultRender(bands, values, bandStats);
@@ -433,7 +432,7 @@ async function buildFileEntry(uri: vscode.Uri, probe: ImageProbeOk): Promise<Fil
     colormap,
     colorTable,
     colormapSource,
-    colormapPath: relativeConfigLabel(colormapPath),
+    colormapPath,
     overviewPaths,
     bandStats,
   };
@@ -483,7 +482,7 @@ function entryToPayload(panel: vscode.WebviewPanel, entry: FileEntry): WebviewPa
     colormap: mapToHexRecord(entry.colormap),
     colorTable: entry.colorTable || [],
     colormapSource: entry.colormapSource,
-    colormapPath: entry.colormapPath,
+    colormapPath: relativeConfigLabel(entry.colormapPath) || entry.colormapPath,
     filePath: entry.uri.fsPath,
     bandStats: entry.bandStats,
   };
@@ -564,7 +563,7 @@ function pushFile(
     colormap: payload.colormap,
     colorTable: payload.colorTable || [],
     colormapSource: entry.colormapSource,
-    colormapPath: entry.colormapPath,
+    colormapPath: relativeConfigLabel(entry.colormapPath) || entry.colormapPath,
     filePath: entry.uri.fsPath,
     indexBase64: entry.indexBase64,
     indexFormat: entry.indexFormat || "i32",
@@ -728,55 +727,76 @@ function wireMessages(s: Session) {
         const entry = activeEntry(s);
         if (!entry) return;
         const table = parseMsgColorTable(msg.colorTable);
-        const target = saveWorkspaceColormap(entry.uri, table);
+        if (!table.length) {
+          void vscode.window.showWarningMessage("颜色表为空，无法保存");
+          return;
+        }
+        const dest = await vscode.window.showSaveDialog({
+          defaultUri: defaultColormapSaveUri(entry.uri, entry.colormapPath || undefined),
+          filters: { JSON: ["json"] },
+          saveLabel: "保存色表",
+        });
+        if (!dest) return;
+        const target = saveColormapToPath(dest.fsPath, table);
         entry.colorTable = table;
         entry.colormap = colormapFromColorTable(table);
-        entry.colormapPath = relativeConfigLabel(target);
-        entry.colormapSource = "workspace";
-        void vscode.window.showInformationMessage(`已保存色表: ${entry.colormapPath}`);
+        entry.colormapPath = target;
+        entry.colormapSource = "file";
+        const label = relativeConfigLabel(target) || target;
+        void vscode.window.showInformationMessage(`已保存色表: ${label}`);
         s.panel.webview.postMessage({
           type: "colormapSaved",
-          path: entry.colormapPath,
+          path: label,
           fileId: entry.id,
         });
       } else if (msg.type === "reloadColormap") {
         const entry = activeEntry(s);
         if (!entry) return;
-        const loaded = loadWorkspaceColormap(entry.uri);
-        if (loaded.source === "default") {
-          void vscode.window.showWarningMessage(
-            "未找到 .vscode/dpviewlayer.json，仍使用默认哈希色",
-          );
+        const picked = await vscode.window.showOpenDialog({
+          canSelectMany: false,
+          openLabel: "加载色表",
+          filters: { JSON: ["json"] },
+          defaultUri: defaultColormapSaveUri(entry.uri, entry.colormapPath || undefined),
+        });
+        if (!picked?.length) return;
+        let loaded;
+        try {
+          loaded = loadColormapFromPath(picked[0].fsPath);
+        } catch (e) {
+          void vscode.window.showWarningMessage(`色表读取失败: ${String(e)}`);
+          return;
+        }
+        if (!loaded.colorTable.length) {
+          void vscode.window.showWarningMessage("所选文件中没有有效的 colorTable");
           return;
         }
         entry.colormap = loaded.colormap;
         entry.colorTable = loaded.colorTable;
-        entry.colormapPath = relativeConfigLabel(loaded.path);
-        entry.colormapSource = "workspace";
+        entry.colormapPath = loaded.path;
+        entry.colormapSource = "file";
+        const label = relativeConfigLabel(loaded.path) || loaded.path;
         s.panel.webview.postMessage({
           type: "colormapLoaded",
           colormap: mapToHexRecord(loaded.colormap),
           colorTable: loaded.colorTable,
-          path: entry.colormapPath,
+          path: label,
           fileId: entry.id,
         });
       } else if (msg.type === "saveAsPlte") {
         const entry = activeEntry(s);
         if (!entry) return;
-        if (entry.kind === "image") {
-          void vscode.window.showWarningMessage("多波段彩色图不支持另存为 PLTE（请用单波段 mask）");
-          return;
-        }
         const table = parseMsgColorTable(msg.colorTable);
         if (!table.length) {
           void vscode.window.showWarningMessage("颜色表为空，无法导出 PLTE");
           return;
         }
-        let width = entry.width;
-        let height = entry.height;
+        let width = Number(msg.width) || entry.width;
+        let height = Number(msg.height) || entry.height;
         let pix = entry.values;
+        const exportBand = Math.max(0, Math.trunc(Number(msg.exportBand) || 0));
         const fmt = String(msg.indexFormat || entry.indexFormat || "i32");
-        if (!pix && msg.indexBase64 && width && height) {
+        // Prefer the webview's current (palette/gray) band plane — works for RGB too.
+        if (msg.indexBase64 && width && height) {
           try {
             pix = decodeIndexBase64(String(msg.indexBase64), fmt, width * height);
           } catch (e) {
@@ -787,7 +807,7 @@ function wireMessages(s: Session) {
         if (!pix && entry.format === "tiff") {
           try {
             void vscode.window.setStatusBarMessage("正在读取 GeoTIFF 像素以导出 PLTE…", 5000);
-            const loaded = await loadGeoTiffBandPixels(entry.uri.fsPath);
+            const loaded = await loadGeoTiffBandPixels(entry.uri.fsPath, exportBand);
             pix = loaded.values;
             width = loaded.width;
             height = loaded.height;
@@ -798,8 +818,9 @@ function wireMessages(s: Session) {
             return;
           }
         }
-        if (!pix && entry.format === "png") {
+        if (!pix && (entry.format === "png" || entry.format === "bmp")) {
           try {
+            // Single-band decode; for RGB PNG the webview should already have sent a plane.
             const decoded = decodePngMask(entry.uri.fsPath);
             pix = decoded.values;
             width = decoded.width;
@@ -810,7 +831,9 @@ function wireMessages(s: Session) {
           }
         }
         if (!pix || !width || !height) {
-          void vscode.window.showWarningMessage("当前图像无法导出为索引色 PNG（缺少像素数据）");
+          void vscode.window.showWarningMessage(
+            "当前图像无法导出为索引色 PNG（缺少像素数据；请先用「颜色表渲染」分类）",
+          );
           return;
         }
         const built = buildPlteExport(table, pix, width, height);

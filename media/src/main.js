@@ -5,6 +5,9 @@ import {
   applyStyle,
   opacityFromStyleState,
   planesToGeoTiffBlob,
+  planesToPyramidBlobs,
+  PYRAMID_MIN_PIXELS,
+  planesAreUint8,
   normalizeEpsg,
   fitMap,
   zoomPercent,
@@ -52,6 +55,9 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
       renderGray: "单波段灰度",
       renderRgb: "多波段彩色",
       renderPaletted: "颜色表渲染",
+      resample: "采样方式",
+      resampleNearest: "最近邻",
+      resampleLinear: "线性插值",
       grayBand: "灰度波段",
       colorRamp: "颜色梯度",
       rampBw: "黑到白",
@@ -87,13 +93,13 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
       colorTableOverlap: "区间不能与现有行相交",
       tipCmapDrag: "拖动调整颜色顺序（ID 仍为行号 0…N）",
       deleteAll: "全部删除",
-      reloadCmap: "重载色表",
+      reloadCmap: "加载色表",
       saveCmap: "保存色表",
       savePlte: "另存为 PLTE",
       missingData: "缺少像素数据",
-      tipReload: "重新读取 .vscode/dpviewlayer.json",
-      tipSave: "写入 .vscode/dpviewlayer.json",
-      tipPlte: "类别 mask：像素值不变，PLTE 按下限值着色；连续区间则重映射为行号",
+      tipReload: "从 JSON 文件加载色表",
+      tipSave: "将色表保存为 JSON 文件",
+      tipPlte: "按当前颜色表导出索引色 PNG；多波段使用颜色表所选波段",
       tipReset: "定位全图（适应窗口）",
       tipZoomNative: "按原图分辨率 1:1 显示",
       mapHead: "地图",
@@ -118,6 +124,9 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
       layerList: "图层",
       tabStyle: "样式",
       tabIdentify: "识别",
+      tabSettings: "设置",
+      tipCollapseIdentify: "折叠识别",
+      tipExpandIdentify: "展开识别",
       identifyEmpty: "在地图上点击以识别各图层像元值",
       identifyNoData: "无数据",
       identifyNotLoaded: "未加载像元",
@@ -130,6 +139,9 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
       renderGray: "Singleband gray",
       renderRgb: "Multiband color",
       renderPaletted: "Color table",
+      resample: "Resampling",
+      resampleNearest: "Nearest neighbor",
+      resampleLinear: "Linear",
       grayBand: "Gray band",
       colorRamp: "Color ramp",
       rampBw: "Black to white",
@@ -165,13 +177,13 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
       colorTableOverlap: "Range must not overlap existing rows",
       tipCmapDrag: "Drag to reorder colors (ID stays row index 0…N)",
       deleteAll: "Delete all",
-      reloadCmap: "Reload colormap",
+      reloadCmap: "Load colormap",
       saveCmap: "Save colormap",
       savePlte: "Save as PLTE",
       missingData: "Missing pixel data",
-      tipReload: "Reload .vscode/dpviewlayer.json",
-      tipSave: "Write .vscode/dpviewlayer.json",
-      tipPlte: "Class masks: pixels unchanged, PLTE keyed by class value; continuous ranges remapped to row index",
+      tipReload: "Load colormap from a JSON file",
+      tipSave: "Save colormap to a JSON file",
+      tipPlte: "Export indexed PNG from the color table; multi-band uses the selected palette band",
       tipReset: "Fit layer to view",
       tipZoomNative: "1:1 native resolution",
       mapHead: "Map",
@@ -196,6 +208,9 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
       layerList: "Layers",
       tabStyle: "Style",
       tabIdentify: "Identify",
+      tabSettings: "Settings",
+      tipCollapseIdentify: "Collapse identify",
+      tipExpandIdentify: "Expand identify",
       identifyEmpty: "Click the map to identify band values for all layers",
       identifyNoData: "No data",
       identifyNotLoaded: "Pixels not loaded",
@@ -249,6 +264,10 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
   const sideEl = document.getElementById("side");
   const sideTopEl = document.getElementById("sideTop");
   const splitInfoEl = document.getElementById("splitInfo");
+  const splitIdentifyEl = document.getElementById("splitIdentify");
+  const sideIdentifyEl = document.getElementById("sideIdentify");
+  const btnToggleIdentify = document.getElementById("btnToggleIdentify");
+  const mapSectionEl = document.getElementById("mapSection");
   const splitSideEl = document.getElementById("splitSide");
   const mainEl = document.getElementById("main");
   const statusBarEl = document.getElementById("statusBar");
@@ -271,6 +290,7 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
   const hoverEl = document.getElementById("hover");
   let hoverLocked = false;
   const zoomBadge = null;
+  const resampleModeEl = document.getElementById("resampleMode");
   const renderTypeEl = document.getElementById("renderType");
   const grayBandEl = document.getElementById("grayBand");
   const grayRampEl = document.getElementById("grayRamp");
@@ -312,9 +332,9 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
   const btnToggleVisibility = document.getElementById("btnToggleVisibility");
   const btnClearLayers = document.getElementById("btnClearLayers");
   const tabStyleEl = document.getElementById("tabStyle");
-  const tabIdentifyEl = document.getElementById("tabIdentify");
+  const tabSettingsEl = document.getElementById("tabSettings");
   const panelStyleEl = document.getElementById("panelStyle");
-  const panelIdentifyEl = document.getElementById("panelIdentify");
+  const panelSettingsEl = document.getElementById("panelSettings");
   const identifyEmptyEl = document.getElementById("identifyEmpty");
   const identifyTableWrap = document.getElementById("identifyTableWrap");
   const identifyBodyEl = document.getElementById("identifyBody");
@@ -468,6 +488,7 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
     renderFileList();
     syncMapCrsUi();
     syncHoverLockUi();
+    syncIdentifyCollapseUi();
     if (renderMode === "paletted") renderCmapTable();
   }
 
@@ -645,6 +666,7 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
       colorTable: serializeColorTable(colorTable),
       labels: { ...labels },
       selectedValue,
+      resample: resampleModeEl?.value || "nearest",
       grayBand: grayBandEl.value,
       grayRamp: grayRampEl.value,
       grayMin: grayMinEl.value,
@@ -695,6 +717,7 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
       selectedValue = null;
       if (paletteRampEl) paletteRampEl.value = "random";
       if (paletteOpacityEl) paletteOpacityEl.value = "0";
+      if (resampleModeEl) resampleModeEl.value = "nearest";
       syncPaletteOpacityLabel();
       return;
     }
@@ -710,6 +733,7 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
     const assign = (el, v) => {
       if (el && v != null && v !== "") el.value = String(v);
     };
+    assign(resampleModeEl, st.resample || "nearest");
     assign(grayBandEl, st.grayBand);
     assign(grayRampEl, st.grayRamp);
     assign(grayMinEl, st.grayMin);
@@ -731,6 +755,63 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
     assign(paletteRampEl, st.paletteRamp);
     assign(paletteOpacityEl, st.paletteOpacity ?? "0");
     syncPaletteOpacityLabel();
+  }
+
+  /** Reset style/settings UI after all layers are removed. */
+  function resetStyleUiForEmptyView() {
+    userRenderMode = null;
+    renderMode = "gray";
+    colormap = {};
+    labels = {};
+    colorTable = [];
+    selectedValue = null;
+    bandCount = 1;
+    bandPlanes = [];
+    bandStats = [];
+    payload.probeLabel = "";
+    payload.kind = undefined;
+    payload.dtype = undefined;
+    payload.defaultRender = undefined;
+    payload.colormap = {};
+    payload.colorTable = [];
+    payload.bands = 1;
+    payload.format = undefined;
+    payload.width = undefined;
+    payload.height = undefined;
+    payload.geo = null;
+    payload.rasterUrl = undefined;
+    payload.overviewUrls = [];
+    clearDecodePayload();
+
+    if (resampleModeEl) resampleModeEl.value = "nearest";
+    if (grayRampEl) grayRampEl.value = "blackwhite";
+    if (grayContrastEl) grayContrastEl.value = "none";
+    if (grayMinEl) grayMinEl.value = "";
+    if (grayMaxEl) grayMaxEl.value = "";
+    if (grayStretchParam) {
+      grayStretchParam.value = "2";
+      delete grayStretchParam.dataset.touched;
+      delete grayStretchParam.dataset.touchedStd;
+    }
+    if (rgbContrastEl) rgbContrastEl.value = "none";
+    if (redMinEl) redMinEl.value = "";
+    if (redMaxEl) redMaxEl.value = "";
+    if (greenMinEl) greenMinEl.value = "";
+    if (greenMaxEl) greenMaxEl.value = "";
+    if (blueMinEl) blueMinEl.value = "";
+    if (blueMaxEl) blueMaxEl.value = "";
+    if (rgbStretchParam) {
+      rgbStretchParam.value = "2";
+      delete rgbStretchParam.dataset.touched;
+      delete rgbStretchParam.dataset.touchedStd;
+    }
+    if (paletteRampEl) paletteRampEl.value = "random";
+    if (paletteOpacityEl) paletteOpacityEl.value = "0";
+    syncPaletteOpacityLabel();
+    fillBandSelects();
+    applyRenderModeUi();
+    renderCmapTable();
+    setSideTab("style");
   }
 
   function syncLayerOrder() {
@@ -799,6 +880,7 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
     }
     // Re-assert siblings — WebGL style rebuilds can revive hidden layers.
     assertAllLayerVisibility();
+    map?.render?.();
   }
 
   function assertAllLayerVisibility() {
@@ -933,6 +1015,7 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
       applyOlLayerVisibility(cached?.layer, next, cached?.styleState);
     }
     assertAllLayerVisibility();
+    map?.render?.();
     renderFileList();
   }
 
@@ -1066,18 +1149,56 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
     layerVisibility.delete(id);
   }
 
+  /** Reuse GeoTIFF encode output while band planes are unchanged (rebuild / resample). */
+  const encodedPlanesCache = new WeakMap();
+
+  function pyramidUseNearest(mode, planes) {
+    if (mode === "paletted") return true;
+    if ((planes?.length || 0) === 1) return true;
+    return false;
+  }
+
   /** All displays go through GeoTIFF + WebGLTile (planes blob or native TIFF URL). */
-  function buildLayerSourceArgs(planes, w, h, g, url, overviewUrls) {
+  function buildLayerSourceArgs(planes, w, h, g, url, overviewUrls, opts = {}) {
     const overs = Array.isArray(overviewUrls) ? overviewUrls : [];
     const crs = blobCrsForGeo(g);
+    const nearest = !!opts.nearest;
     if (planes?.length) {
+      const pixels = Math.max(0, Number(w) || 0) * Math.max(0, Number(h) || 0);
+      const usePyramid = pixels > PYRAMID_MIN_PIXELS;
+      const cacheKey = `${w}x${h}|${crs}|${nearest ? 1 : 0}|${usePyramid ? 1 : 0}`;
+      let entry = encodedPlanesCache.get(planes);
+      if (!entry || entry.key !== cacheKey) {
+        const assumeUint8 = planesAreUint8(planes);
+        const encOpts = { assumeUint8 };
+        if (usePyramid) {
+          const packed = planesToPyramidBlobs(planes, w, h, g, crs, {
+            nearest,
+            assumeUint8,
+          });
+          entry = {
+            key: cacheKey,
+            blob: packed.blob,
+            overviewBlobs: packed.overviewBlobs,
+            overviewCount: packed.overviewCount,
+          };
+        } else {
+          entry = {
+            key: cacheKey,
+            blob: planesToGeoTiffBlob(planes, w, h, g, crs, encOpts),
+            overviewBlobs: [],
+            overviewCount: 0,
+          };
+        }
+        encodedPlanesCache.set(planes, entry);
+      }
       return {
         kind: "geotiff",
-        blob: planesToGeoTiffBlob(planes, w, h, g, crs),
-        overviewBlobs: [],
+        blob: entry.blob,
+        overviewBlobs: entry.overviewBlobs,
         url: null,
         overviews: overs,
-        overviewCount: overs.length,
+        overviewCount: entry.overviewCount + overs.length,
       };
     }
     return {
@@ -1091,7 +1212,17 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
   }
 
   async function createLayerFromArgs(srcArgs, opts) {
-    const { style, bandCount: nBands, zIndex, mins, maxs, geo: layerGeo, width: w, height: h } = opts;
+    const {
+      style,
+      bandCount: nBands,
+      zIndex,
+      mins,
+      maxs,
+      geo: layerGeo,
+      width: w,
+      height: h,
+      interpolate = false,
+    } = opts;
     // Blob GeoTIFFs carry CRS in GeoKeys. Native URLs with embedded CRS: leave null
     // so OL reads the file CRS and reprojects to the map. Assigned (no-CRS) URL
     // layers must force the current map CRS.
@@ -1115,6 +1246,7 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
       mins,
       maxs,
       projection,
+      interpolate: !!interpolate,
     });
     if (created.viewConfig && w && h) {
       const extent =
@@ -1127,6 +1259,10 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
       };
     }
     return created;
+  }
+
+  function styleInterpolate(style) {
+    return style?.resample === "linear";
   }
 
   function layerSourceBounds(nBands, planes, stats, mode) {
@@ -1457,6 +1593,7 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
     const sourceBandCount = Number(src?.bandCount);
     return {
       mode: renderMode,
+      resample: resampleModeEl?.value === "linear" ? "linear" : "nearest",
       grayBand: grayBandEl.value,
       grayMin: grayRange.min,
       grayMax: grayRange.max,
@@ -1609,15 +1746,55 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
   }
 
   function setSideTab(name) {
-    const isStyle = name !== "identify";
-    tabStyleEl?.classList.toggle("is-active", isStyle);
-    tabIdentifyEl?.classList.toggle("is-active", !isStyle);
-    if (tabStyleEl) tabStyleEl.setAttribute("aria-selected", isStyle ? "true" : "false");
-    if (tabIdentifyEl) tabIdentifyEl.setAttribute("aria-selected", isStyle ? "false" : "true");
-    panelStyleEl?.classList.toggle("is-active", isStyle);
-    panelIdentifyEl?.classList.toggle("is-active", !isStyle);
-    if (panelStyleEl) panelStyleEl.hidden = !isStyle;
-    if (panelIdentifyEl) panelIdentifyEl.hidden = isStyle;
+    const tabs = [
+      { name: "style", tab: tabStyleEl, panel: panelStyleEl },
+      { name: "settings", tab: tabSettingsEl, panel: panelSettingsEl },
+    ];
+    const target = name === "settings" ? "settings" : "style";
+    for (const item of tabs) {
+      const on = item.name === target;
+      item.tab?.classList.toggle("is-active", on);
+      item.tab?.setAttribute("aria-selected", on ? "true" : "false");
+      item.panel?.classList.toggle("is-active", on);
+      if (item.panel) item.panel.hidden = !on;
+    }
+  }
+
+  function isIdentifyCollapsed() {
+    return !!sideIdentifyEl?.classList.contains("is-collapsed");
+  }
+
+  function syncIdentifyCollapseUi() {
+    const collapsed = isIdentifyCollapsed();
+    const tip = collapsed ? t("tipExpandIdentify") : t("tipCollapseIdentify");
+    if (btnToggleIdentify) {
+      btnToggleIdentify.title = tip;
+      btnToggleIdentify.setAttribute("aria-label", tip);
+      btnToggleIdentify.setAttribute("aria-expanded", collapsed ? "false" : "true");
+    }
+    splitIdentifyEl?.classList.toggle("is-disabled", collapsed);
+    splitIdentifyEl?.setAttribute("aria-disabled", collapsed ? "true" : "false");
+  }
+
+  function setIdentifyCollapsed(collapsed) {
+    if (!sideIdentifyEl) return;
+    const next = !!collapsed;
+    const prev = isIdentifyCollapsed();
+    sideIdentifyEl.classList.toggle("is-collapsed", next);
+    if (!next && prev) {
+      // Restoring expand: ensure a usable height.
+      const cur = parseFloat(getComputedStyle(sideEl).getPropertyValue("--side-identify-h"));
+      const head = identifyHeadH();
+      if (!Number.isFinite(cur) || cur <= head + 8) {
+        sideEl.style.setProperty("--side-identify-h", "160px");
+      }
+    }
+    syncIdentifyCollapseUi();
+    syncSideSplits();
+  }
+
+  function expandIdentifyPanel() {
+    if (isIdentifyCollapsed()) setIdentifyCollapsed(false);
   }
 
   function mapCoordToLayerPixel(coord, cached) {
@@ -1765,7 +1942,7 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
             : identifyReasonText(r.reason);
       parts.push(
         `<tr class="identify-group-row${collapsed ? " is-collapsed" : ""}${r.hit ? "" : " is-miss"}" data-layer-id="${escapeAttr(r.id)}" data-act="toggle">` +
-          `<td>${caret ? `<span class="identify-caret">${caret}</span> ` : ""}${escapeHtml(r.name)}</td>` +
+          `<td><span class="identify-feat"><span class="identify-caret" aria-hidden="true">${caret || ""}</span><span class="identify-name" title="${escapeAttr(r.name)}">${escapeHtml(r.name)}</span></span></td>` +
           `<td class="identify-pix">${escapeHtml(pixText)}</td>` +
         `</tr>`,
       );
@@ -1801,7 +1978,7 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
     );
     lastIdentifyResults = results;
     renderIdentifyResults(results);
-    setSideTab("identify");
+    expandIdentifyPanel();
 
     // Update status coords for active layer when unlocked
     if (!hoverLocked) {
@@ -1819,10 +1996,17 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
     map.__rasterEventsWired = true;
     map.on("pointermove", (evt) => {
       if (hoverLocked) return;
-      if (!ready || evt.dragging) return;
-      const pix = mapToPixel(evt.coordinate);
+      if (evt.dragging) return;
+      const coord = evt.coordinate;
+      if (!coord || !Number.isFinite(coord[0]) || !Number.isFinite(coord[1])) return;
+      // No active raster (cleared layers / not ready): still show map-CRS coords.
+      if (!ready || !width || !height || !rasterExtent) {
+        showMapGeo(coord[0], coord[1]);
+        return;
+      }
+      const pix = mapToPixel(coord);
       if (!pix || pix.x < 0 || pix.y < 0 || pix.x >= width || pix.y >= height) {
-        showHoverOutside(pix);
+        showHoverOutside(pix || { mapX: coord[0], mapY: coord[1] });
         return;
       }
       showHover(evt, pix.x, pix.y, pix);
@@ -1949,6 +2133,7 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
       cached.geo,
       cached.rasterUrl,
       cached.overviewUrls,
+      { nearest: pyramidUseNearest(style.mode || "gray", cached.bandPlanes) },
     );
     if (!srcArgs.blob && !srcArgs.url) return;
 
@@ -1970,6 +2155,7 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
       zIndex,
       mins: bounds?.mins,
       maxs: bounds?.maxs,
+      interpolate: styleInterpolate(style),
     });
     if (map) map.addLayer(created.layer);
     cached.layer = created.layer;
@@ -2130,6 +2316,7 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
       snapGeo,
       snapUrl,
       overviewUrls,
+      { nearest: pyramidUseNearest(snapMode, snapPlanes) },
     );
     if (snapPlanes.length) nBands = snapPlanes.length;
     if (!srcArgs.blob && !srcArgs.url) throw new Error(t("missingData"));
@@ -2144,6 +2331,8 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
     const srcBounds = layerSourceBounds(nBands, snapPlanes, snapStats, snapMode);
     const prevLock = existing?.styleState?.mode === "paletted";
     const nextLock = snapMode === "paletted";
+    const prevResample = existing?.styleState?.resample || "nearest";
+    const nextResample = styleState.resample || "nearest";
     const sourceChanged =
       !existing?.layer ||
       existing.bandPlanes !== snapPlanes ||
@@ -2151,7 +2340,8 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
       existing.width !== snapW ||
       existing.height !== snapH ||
       existing.rasterUrl !== snapUrl ||
-      prevLock !== nextLock;
+      prevLock !== nextLock ||
+      prevResample !== nextResample;
 
     if (existing?.layer && map && !sourceChanged) {
       const nextStyle = styleState;
@@ -2193,6 +2383,7 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
       zIndex: prevZ,
       mins: srcBounds?.mins,
       maxs: srcBounds?.maxs,
+      interpolate: styleInterpolate(styleState),
     });
     applyOlLayerVisibility(created.layer, prevVisible, styleState);
 
@@ -2276,6 +2467,13 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
   /** Last identify sample across all layers. */
   let lastIdentifyResults = null;
 
+  function showMapGeo(mx, my) {
+    if (!Number.isFinite(mx) || !Number.isFinite(my)) return;
+    lastHoverBandValues = null;
+    hoverEl.textContent = `${t("statusGeo")} ${formatGeoCoord(mx)}, ${formatGeoCoord(my)}`;
+    hoverEl.classList.add("is-active");
+  }
+
   function showHover(_e, x, y, pix) {
     const i = y * width + x;
     lastHoverBandValues = [];
@@ -2286,10 +2484,7 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
     }
     // Always show map-CRS coordinates (same as outside the raster).
     // pixelToGeo() is file CRS and disagrees with the map when reprojecting.
-    const mx = pix?.mapX;
-    const my = pix?.mapY;
-    hoverEl.textContent = `${t("statusGeo")} ${formatGeoCoord(mx)}, ${formatGeoCoord(my)}`;
-    hoverEl.classList.add("is-active");
+    showMapGeo(pix?.mapX, pix?.mapY);
   }
 
   /** Outside raster extent: geographic coords only. */
@@ -2298,12 +2493,10 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
       // Keep last displayed coords (do not clear on invalid sample).
       return;
     }
-    lastHoverBandValues = null;
-    hoverEl.textContent = `${t("statusGeo")} ${formatGeoCoord(pix.mapX)}, ${formatGeoCoord(pix.mapY)}`;
-    hoverEl.classList.add("is-active");
+    showMapGeo(pix.mapX, pix.mapY);
   }
 
-  /** Reset coords (clear layers / empty view). Not used on mouse leave. */
+  /** Reset coords (empty view). Not used on mouse leave or after clear — pointermove refills. */
   function hideHover() {
     if (hoverLocked) return;
     hoverEl.textContent = "—";
@@ -2329,9 +2522,13 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
       tileLayer = null;
       viewConfig = null;
       rasterExtent = null;
+      width = 0;
+      height = 0;
       renderFileList();
+      resetStyleUiForEmptyView();
       updateMeta();
-      hideHover();
+      // Keep last geo readout; pointermove continues via map with no layers.
+      lastHoverBandValues = null;
       vscodeApi?.postMessage({ type: "clearAllFiles" });
       return;
     }
@@ -2358,7 +2555,12 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
         bandStats = [];
         ready = false;
         tileLayer = null;
+        width = 0;
+        height = 0;
+        rasterExtent = null;
+        viewConfig = null;
         renderFileList();
+        resetStyleUiForEmptyView();
         updateMeta();
       }
     } else {
@@ -2554,6 +2756,55 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
       throw new Error(`像素数据长度异常 (u8 ${u8.length}≠${expectedLen})`);
     }
     return Float64Array.from(u8);
+  }
+
+  /** Encode a band plane for host-side PLTE export (i32 when safe, else f64). */
+  function encodePlaneBase64(plane) {
+    if (!plane?.length) return null;
+    let useI32 = true;
+    for (let i = 0; i < plane.length; i++) {
+      const v = plane[i];
+      if (
+        !Number.isFinite(v) ||
+        !Number.isInteger(v) ||
+        v < -2147483648 ||
+        v > 2147483647
+      ) {
+        useI32 = false;
+        break;
+      }
+    }
+    let bytes;
+    let format;
+    if (useI32) {
+      const i32 = new Int32Array(plane.length);
+      for (let i = 0; i < plane.length; i++) i32[i] = plane[i];
+      bytes = new Uint8Array(i32.buffer, i32.byteOffset, i32.byteLength);
+      format = "i32";
+    } else {
+      const f64 =
+        plane instanceof Float64Array && plane.byteOffset === 0
+          ? plane
+          : Float64Array.from(plane);
+      bytes = new Uint8Array(f64.buffer, f64.byteOffset, f64.byteLength);
+      format = "f64";
+    }
+    let binary = "";
+    const chunk = 0x8000;
+    for (let i = 0; i < bytes.length; i += chunk) {
+      binary += String.fromCharCode.apply(
+        null,
+        bytes.subarray(i, Math.min(i + chunk, bytes.length)),
+      );
+    }
+    return { base64: btoa(binary), format };
+  }
+
+  /** Band used for color-table / PLTE export. */
+  function plteExportBandIndex() {
+    if (renderMode === "paletted") return paletteBandIndex();
+    if (renderMode === "gray") return Number(grayBandEl?.value) || 0;
+    return 0;
   }
 
   let bandPlanes = [];
@@ -2768,17 +3019,36 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
 
   function setPlanesFromRgba(rgba, w, h) {
     const n = w * h;
-    const r = new Float64Array(n);
-    const g = new Float64Array(n);
-    const b = new Float64Array(n);
+    const r = new Uint8Array(n);
+    const g = new Uint8Array(n);
+    const b = new Uint8Array(n);
+    let rMin = 255;
+    let rMax = 0;
+    let gMin = 255;
+    let gMax = 0;
+    let bMin = 255;
+    let bMax = 0;
     for (let i = 0, p = 0; i < n; i++, p += 4) {
-      r[i] = rgba[p];
-      g[i] = rgba[p + 1];
-      b[i] = rgba[p + 2];
+      const rv = rgba[p];
+      const gv = rgba[p + 1];
+      const bv = rgba[p + 2];
+      r[i] = rv;
+      g[i] = gv;
+      b[i] = bv;
+      if (rv < rMin) rMin = rv;
+      if (rv > rMax) rMax = rv;
+      if (gv < gMin) gMin = gv;
+      if (gv > gMax) gMax = gv;
+      if (bv < bMin) bMin = bv;
+      if (bv > bMax) bMax = bv;
     }
     bandPlanes = [r, g, b];
     bandCount = 3;
-    bandStats = bandPlanes.map(computeStats);
+    bandStats = [
+      { min: rMin, max: rMax <= rMin ? rMin + 1 : rMax },
+      { min: gMin, max: gMax <= gMin ? gMin + 1 : gMax },
+      { min: bMin, max: bMax <= bMin ? bMin + 1 : bMax },
+    ];
   }
 
   function setPlanesFromMask(values) {
@@ -3106,13 +3376,41 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
   }
 
   async function rasterFromDataUrl(src) {
+    const drawToCanvas = (source, w, h) => {
+      const c = document.createElement("canvas");
+      c.width = w;
+      c.height = h;
+      const ctx = c.getContext("2d", { willReadFrequently: true });
+      ctx.drawImage(source, 0, 0);
+      return { width: c.width, height: c.height, data: ctx.getImageData(0, 0, c.width, c.height).data };
+    };
+
+    if (typeof createImageBitmap === "function") {
+      try {
+        let blob;
+        if (src.startsWith("data:")) {
+          const res = await fetch(src);
+          blob = await res.blob();
+        } else {
+          const res = await fetch(src);
+          if (!res.ok) throw new Error("fetch failed");
+          blob = await res.blob();
+        }
+        const bitmap = await createImageBitmap(blob);
+        const w = bitmap.width;
+        const h = bitmap.height;
+        const out = drawToCanvas(bitmap, w, h);
+        if (typeof bitmap.close === "function") bitmap.close();
+        return out;
+      } catch {
+        /* fall back to Image() */
+      }
+    }
+
     const img = await loadImage(src);
-    const c = document.createElement("canvas");
-    c.width = img.naturalWidth || img.width;
-    c.height = img.naturalHeight || img.height;
-    const ctx = c.getContext("2d", { willReadFrequently: true });
-    ctx.drawImage(img, 0, 0);
-    return { width: c.width, height: c.height, data: ctx.getImageData(0, 0, c.width, c.height).data };
+    const w = img.naturalWidth || img.width;
+    const h = img.naturalHeight || img.height;
+    return drawToCanvas(img, w, h);
   }
 
   async function init() {
@@ -3277,6 +3575,19 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
       applyStretchToInputs(rgbContrastEl.value || "none", bandPlanes[Number(bandEl.value)], s, blueMinEl, blueMaxEl, rgbStretchParam);
     }
   }
+
+  resampleModeEl?.addEventListener("change", () => {
+    if (!activeFileId) return;
+    const st = collectStyleState();
+    const cached = fileCache.get(activeFileId);
+    if (cached) cached.styleState = st;
+    snapshotUiState();
+    // interpolate is a GeoTIFF source option — must rebuild the layer.
+    void rebuildLayerForFile(activeFileId).then(() => {
+      syncLayerOrder();
+      map?.render?.();
+    });
+  });
 
   renderTypeEl.addEventListener("change", () => {
     userRenderMode = renderTypeEl.value;
@@ -3446,12 +3757,18 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
   btnSavePlte.addEventListener("click", () => {
     moreMenu.classList.add("hidden");
     syncColorTableLegacy(); // PLTE slot = array index
+    const exportBand = plteExportBandIndex();
+    const plane = bandPlanes[exportBand];
+    const packed = plane ? encodePlaneBase64(plane) : null;
     vscodeApi?.postMessage({
       type: "saveAsPlte",
       colorTable: serializeColorTable(colorTable),
       colormap,
-      indexBase64: payload.indexBase64,
-      indexFormat: payload.indexFormat || "i32",
+      exportBand,
+      width,
+      height,
+      indexBase64: packed?.base64 || payload.indexBase64,
+      indexFormat: packed?.format || payload.indexFormat || "i32",
     });
   });
 
@@ -3460,28 +3777,119 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
   renderFileList();
 
   const minSideTopH = 240; /* match --side-top-min: layers + info */
-  const minSideTabsH = 240; /* match --side-tabs-min */
-  const minMapSectionH = 64; /* 地图 + 坐标 */
+  const minSideTabsH = 300; /* match --side-tabs-min: style without inner scroll */
+  const minSideIdentifyH = 120; /* match --side-identify-min */
+  const minMapSectionH = 36; /* 地图 CRS 行 */
+  const minStatusBarH = 28; /* 地理坐标行 */
+  const identifyHeadH = () =>
+    parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--side-identify-head")) ||
+    36;
 
-  function sideTopUsableBounds(minH = minSideTopH, maxFrac = 0.85) {
+  function identifyOccupiedHeight() {
+    if (isIdentifyCollapsed()) return identifyHeadH();
+    const h =
+      sideIdentifyEl?.getBoundingClientRect().height ||
+      parseFloat(getComputedStyle(sideEl).getPropertyValue("--side-identify-h")) ||
+      minSideIdentifyH;
+    return Math.max(minSideIdentifyH, h);
+  }
+
+  function sideLayoutChrome() {
+    // clientHeight shrinks when a vertical scrollbar appears — use the grid cell
+    // (offsetParent / bounding rect of side) for layout math so mins stay stable.
     const viewH = sideEl?.clientHeight || sideEl?.getBoundingClientRect().height || 0;
     const mapSectionH =
-      document.getElementById("mapSection")?.getBoundingClientRect().height || minMapSectionH;
-    const splitH = splitInfoEl?.getBoundingClientRect().height || 5;
-    // Upper split is 图层 vs 样式; 地图+坐标 stays fixed at the bottom.
-    const usableInView = Math.max(0, viewH - mapSectionH - splitH);
+      mapSectionEl?.getBoundingClientRect().height || minMapSectionH;
+    const statusH =
+      statusBarEl?.getBoundingClientRect().height || minStatusBarH;
+    const splitInfoH = splitInfoEl?.getBoundingClientRect().height || 5;
+    const splitIdH = splitIdentifyEl?.getBoundingClientRect().height || 5;
+    const identifyH = identifyOccupiedHeight();
+    const reserved = mapSectionH + statusH + splitInfoH + splitIdH + identifyH;
+    const naturalUsable = Math.max(0, viewH - reserved);
+    const minTopTabs = minSideTopH + minSideTabsH;
+    // Viewport shorter than floors → .side scrolls; treat usable as the floor
+    // so splitters stay enabled and sections are not crushed below mins.
+    const needsScroll = naturalUsable < minTopTabs;
+    const usableForTopTabs = needsScroll ? minTopTabs : naturalUsable;
+    return {
+      viewH,
+      mapSectionH,
+      statusH,
+      splitInfoH,
+      splitIdH,
+      identifyH,
+      usableForTopTabs,
+      reserved,
+      needsScroll,
+      minTopTabs,
+    };
+  }
+
+  function sideTopUsableBounds(minH = minSideTopH, maxFrac = 0.85) {
+    const { usableForTopTabs, needsScroll } = sideLayoutChrome();
+    const usableInView = usableForTopTabs;
     const minClamp = minH;
+    if (needsScroll) {
+      // Grow 图层 above its floor (adds scroll); 样式 keeps --side-tabs-min.
+      const maxH = Math.max(
+        minClamp + 48,
+        Math.min(720, Math.floor((minSideTopH + minSideTabsH) * maxFrac)),
+      );
+      return {
+        usableInView,
+        minClamp,
+        maxH,
+        canResize: maxH > minClamp + 1,
+        needsScroll: true,
+      };
+    }
     const roomForTabs = Math.max(0, usableInView - minSideTabsH);
     const maxH =
       usableInView >= minH + minSideTabsH
         ? Math.max(minClamp, Math.min(Math.floor(usableInView * maxFrac), roomForTabs))
         : minClamp;
     return {
-      sideH: viewH,
-      usable: Math.max(usableInView, minH + minSideTabsH),
       usableInView,
       minClamp,
       maxH,
+      canResize: maxH > minClamp + 1,
+      needsScroll: false,
+    };
+  }
+
+  function identifyUsableBounds() {
+    const { viewH, mapSectionH, statusH, splitInfoH, splitIdH, needsScroll } =
+      sideLayoutChrome();
+    const topH =
+      sideTopEl?.getBoundingClientRect().height ||
+      parseFloat(getComputedStyle(sideEl).getPropertyValue("--side-top-h")) ||
+      minSideTopH;
+    if (needsScroll) {
+      const maxH = Math.max(
+        minSideIdentifyH + 48,
+        Math.min(480, Math.floor((minSideIdentifyH + minSideTabsH) * 0.7)),
+      );
+      return {
+        usable: minSideIdentifyH + minSideTabsH,
+        minClamp: minSideIdentifyH,
+        maxH,
+        canResize: maxH > minSideIdentifyH + 1,
+        needsScroll: true,
+      };
+    }
+    const usable = Math.max(
+      0,
+      viewH - mapSectionH - statusH - splitInfoH - splitIdH - topH,
+    );
+    // Leave at least min tabs; rest can go to identify.
+    const maxH = Math.max(minSideIdentifyH, usable - minSideTabsH);
+    return {
+      usable,
+      minClamp: minSideIdentifyH,
+      maxH,
+      canResize: maxH > minSideIdentifyH + 1,
+      needsScroll: false,
     };
   }
 
@@ -3491,49 +3899,138 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
     return 0.5;
   }
 
-  /**
-   * Keep 图层 / 样式 split proportional when there is room.
-   * 地图+坐标 stays below both. Short windows scroll .side.
-   */
-  function syncSideTopSplit() {
-    if (!sideEl) return;
-    const { usableInView, minClamp, maxH } = sideTopUsableBounds();
-    let next;
-    if (usableInView >= minSideTopH + minSideTabsH) {
-      next = Math.min(maxH, Math.max(minClamp, Math.round(usableInView * sideTopRatio())));
-    } else {
-      next = minSideTopH;
-      sideEl.dataset.splitRatio = sideEl.dataset.splitRatio || "0.5";
-    }
-    sideEl.style.setProperty("--side-top-h", `${Math.round(next)}px`);
+  function identifyRatio() {
+    const r = Number(sideEl?.dataset.identifyRatio);
+    if (Number.isFinite(r) && r > 0.05 && r < 0.95) return r;
+    return 0.35;
   }
 
-  function wireVerticalSplit(handle, cssVar, minH, maxFrac) {
+  function syncSplitHandlesEnabled() {
+    const topBounds = sideTopUsableBounds();
+    splitInfoEl?.classList.toggle("is-disabled", !topBounds.canResize);
+    splitInfoEl?.setAttribute("aria-disabled", topBounds.canResize ? "false" : "true");
+    if (isIdentifyCollapsed()) {
+      splitIdentifyEl?.classList.add("is-disabled");
+      splitIdentifyEl?.setAttribute("aria-disabled", "true");
+    } else {
+      const idBounds = identifyUsableBounds();
+      splitIdentifyEl?.classList.toggle("is-disabled", !idBounds.canResize);
+      splitIdentifyEl?.setAttribute("aria-disabled", idBounds.canResize ? "false" : "true");
+    }
+  }
+
+  /**
+   * Keep 图层 / 样式 and 样式 / 识别 splits proportional when there is room.
+   * 地图+坐标 stays below. Short windows: .side scrolls; floors are preserved.
+   */
+  function syncSideSplits() {
+    if (!sideEl) return;
+    const { usableInView, minClamp, maxH, needsScroll } = sideTopUsableBounds();
+    let nextTop;
+    if (needsScroll) {
+      // Prefer user height / ratio within scroll-mode bounds; else floors.
+      if (sideEl.dataset.splitUserSet === "1") {
+        const cur = parseFloat(getComputedStyle(sideEl).getPropertyValue("--side-top-h"));
+        nextTop = Number.isFinite(cur)
+          ? Math.min(maxH, Math.max(minClamp, cur))
+          : minClamp;
+      } else {
+        nextTop = Math.min(maxH, Math.max(minClamp, Math.round(usableInView * sideTopRatio())));
+      }
+    } else if (usableInView >= minSideTopH + minSideTabsH) {
+      nextTop = Math.min(maxH, Math.max(minClamp, Math.round(usableInView * sideTopRatio())));
+    } else {
+      nextTop = minSideTopH;
+      sideEl.dataset.splitRatio = sideEl.dataset.splitRatio || "0.5";
+    }
+    sideEl.style.setProperty("--side-top-h", `${Math.round(nextTop)}px`);
+
+    if (!isIdentifyCollapsed()) {
+      const idBounds = identifyUsableBounds();
+      let nextId;
+      if (idBounds.needsScroll) {
+        if (sideEl.dataset.identifyUserSet === "1") {
+          const cur = parseFloat(getComputedStyle(sideEl).getPropertyValue("--side-identify-h"));
+          nextId = Number.isFinite(cur)
+            ? Math.min(idBounds.maxH, Math.max(idBounds.minClamp, cur))
+            : idBounds.minClamp;
+        } else {
+          nextId = Math.min(
+            idBounds.maxH,
+            Math.max(idBounds.minClamp, Math.round(idBounds.usable * identifyRatio())),
+          );
+        }
+      } else if (idBounds.usable >= minSideIdentifyH + minSideTabsH) {
+        nextId = Math.min(
+          idBounds.maxH,
+          Math.max(idBounds.minClamp, Math.round(idBounds.usable * identifyRatio())),
+        );
+        // Prefer user-set absolute height when present and still in range.
+        if (sideEl.dataset.identifyUserSet === "1") {
+          const cur = parseFloat(getComputedStyle(sideEl).getPropertyValue("--side-identify-h"));
+          if (Number.isFinite(cur)) {
+            nextId = Math.min(idBounds.maxH, Math.max(idBounds.minClamp, cur));
+          }
+        }
+      } else {
+        nextId = minSideIdentifyH;
+        sideEl.dataset.identifyRatio = sideEl.dataset.identifyRatio || "0.35";
+      }
+      sideEl.style.setProperty("--side-identify-h", `${Math.round(nextId)}px`);
+    }
+    syncSplitHandlesEnabled();
+    sideEl.classList.toggle("is-tight", !!sideLayoutChrome().needsScroll);
+  }
+
+  function wireVerticalSplit(handle, cssVar, minH, maxFrac, opts = {}) {
     if (!handle || !sideEl) return;
+    const {
+      getStartHeight,
+      onMoveHeight,
+      direction = 1, // 1: drag down grows target; -1: drag up grows target
+    } = opts;
     handle.addEventListener("pointerdown", (e) => {
       if (e.button !== 0) return;
+      if (handle.classList.contains("is-disabled")) return;
       e.preventDefault();
       handle.classList.add("is-dragging");
       handle.setPointerCapture?.(e.pointerId);
       const startY = e.clientY;
       const startH =
-        sideTopEl?.getBoundingClientRect().height ||
+        (typeof getStartHeight === "function" ? getStartHeight() : null) ||
         parseFloat(getComputedStyle(sideEl).getPropertyValue(cssVar)) ||
         minH;
       const onMove = (ev) => {
-        const { usableInView, maxH, minClamp } = sideTopUsableBounds(minH, maxFrac);
-        if (usableInView < minSideTopH + minSideTabsH) return;
-        const next = Math.min(maxH, Math.max(minClamp, startH + (ev.clientY - startY)));
+        if (handle.classList.contains("is-disabled")) return;
+        const next = onMoveHeight
+          ? onMoveHeight(startH, ev.clientY - startY)
+          : (() => {
+              const { maxH, minClamp, canResize } = sideTopUsableBounds(minH, maxFrac);
+              if (!canResize) return null;
+              return Math.min(
+                maxH,
+                Math.max(minClamp, startH + direction * (ev.clientY - startY)),
+              );
+            })();
+        if (next == null || !Number.isFinite(next)) return;
         sideEl.style.setProperty(cssVar, `${Math.round(next)}px`);
-        sideEl.dataset.splitRatio = String(next / usableInView);
-        sideEl.dataset.splitUserSet = "1";
+        if (cssVar === "--side-top-h") {
+          const { usableInView } = sideTopUsableBounds(minH, maxFrac);
+          if (usableInView > 0) sideEl.dataset.splitRatio = String(next / usableInView);
+          sideEl.dataset.splitUserSet = "1";
+        } else if (cssVar === "--side-identify-h") {
+          const { usable } = identifyUsableBounds();
+          if (usable > 0) sideEl.dataset.identifyRatio = String(next / usable);
+          sideEl.dataset.identifyUserSet = "1";
+        }
+        syncSplitHandlesEnabled();
       };
       const onUp = (ev) => {
         handle.classList.remove("is-dragging");
         handle.releasePointerCapture?.(ev.pointerId);
         window.removeEventListener("pointermove", onMove);
         window.removeEventListener("pointerup", onUp);
-        syncSideTopSplit();
+        syncSideSplits();
       };
       window.addEventListener("pointermove", onMove);
       window.addEventListener("pointerup", onUp);
@@ -3541,8 +4038,19 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
   }
 
   wireVerticalSplit(splitInfoEl, "--side-top-h", minSideTopH, 0.85);
-  syncSideTopSplit();
-  requestAnimationFrame(() => syncSideTopSplit());
+  wireVerticalSplit(splitIdentifyEl, "--side-identify-h", minSideIdentifyH, 0.7, {
+    getStartHeight: () => sideIdentifyEl?.getBoundingClientRect().height,
+    direction: -1, // drag handle up → identify grows
+    onMoveHeight: (startH, dy) => {
+      if (isIdentifyCollapsed()) return null;
+      const { maxH, minClamp, canResize } = identifyUsableBounds();
+      if (!canResize) return null;
+      return Math.min(maxH, Math.max(minClamp, startH - dy));
+    },
+  });
+  syncIdentifyCollapseUi();
+  syncSideSplits();
+  requestAnimationFrame(() => syncSideSplits());
 
   // VS Code editor-group resize often won't fire window.resize; observe the panel.
   if (typeof ResizeObserver !== "undefined") {
@@ -3551,7 +4059,7 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
       if (resizeTick) return;
       resizeTick = requestAnimationFrame(() => {
         resizeTick = 0;
-        syncSideTopSplit();
+        syncSideSplits();
         map?.updateSize();
       });
     };
@@ -3560,7 +4068,7 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
     if (mainEl) ro.observe(mainEl);
   }
   window.addEventListener("resize", () => {
-    syncSideTopSplit();
+    syncSideSplits();
     map?.updateSize();
   });
 
@@ -3589,7 +4097,7 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
         window.removeEventListener("pointermove", onMove);
         window.removeEventListener("pointerup", onUp);
         map?.updateSize();
-        syncSideTopSplit();
+        syncSideSplits();
       };
       window.addEventListener("pointermove", onMove);
       window.addEventListener("pointerup", onUp);
@@ -3645,7 +4153,17 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
   syncHoverLockUi();
   setSideTab("style");
   tabStyleEl?.addEventListener("click", () => setSideTab("style"));
-  tabIdentifyEl?.addEventListener("click", () => setSideTab("identify"));
+  tabSettingsEl?.addEventListener("click", () => setSideTab("settings"));
+  btnToggleIdentify?.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIdentifyCollapsed(!isIdentifyCollapsed());
+  });
+  // Clicking the identify title row also toggles collapse (except interactive children).
+  sideIdentifyEl?.querySelector(".identify-head-row")?.addEventListener("click", (e) => {
+    if (e.target?.closest?.("button")) return;
+    setIdentifyCollapsed(!isIdentifyCollapsed());
+  });
 
 
   mapCrsSelect?.addEventListener("change", () => {
@@ -3755,18 +4273,24 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
       started = false;
       payload.probeLabel = "";
       geo = null;
+      width = 0;
+      height = 0;
+      rasterExtent = null;
+      viewConfig = null;
+      tileLayer = null;
       for (const id of [...fileCache.keys()]) removeFileLayer(id);
       fileCache.clear();
+      // Keep empty map + view so pointermove can still show map-CRS coordinates.
       if (map) {
-        map.setTarget(null);
-        map = null;
-        tileLayer = null;
-        viewConfig = null;
-        mapReady = false;
+        mapReady = true;
+        map.updateSize?.();
       }
+      resetStyleUiForEmptyView();
       updateMeta();
       renderFileList();
-      hideHover();
+      lastHoverBandValues = null;
+      lastIdentifyResults = null;
+      renderIdentifyResults([]);
       return;
     }
     if (msg.type === "openFile") {
@@ -3805,13 +4329,13 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
       const fromMsg = parseColorTable(msg.colorTable);
       colorTable = fromMsg.length ? fromMsg : colorTableFromLegacyMap(colormap, {});
       syncColorTableLegacy();
-      payload.colormapSource = "workspace";
+      payload.colormapSource = "file";
       payload.colormapPath = msg.path || payload.colormapPath;
       renderCmapTable();
       render();
     }
     if (msg.type === "colormapSaved") {
-      payload.colormapSource = "workspace";
+      payload.colormapSource = "file";
       payload.colormapPath = msg.path || payload.colormapPath;
     }
   });
