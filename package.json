@@ -2,8 +2,24 @@
   "name": "dpviewlayer",
   "displayName": "%displayName%",
   "description": "%description%",
-  "version": "1.0.8",
-  "publisher": "local",
+  "version": "1.0.9",
+  "publisher": "yxfangcs",
+  "license": "MIT",
+  "keywords": [
+    "viewlayer",
+    "dpviewlayer",
+    "GIS",
+    "raster",
+    "layer",
+    "GeoTIFF",
+    "TIF",
+    "image viewer",
+    "openlayer",
+    "QGIS",
+    "影像",
+    "栅格",
+    "图层"
+  ],
   "engines": {
     "vscode": "^1.85.0"
   },

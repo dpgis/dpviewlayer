@@ -1,6 +1,6 @@
 {
   "displayName": "图层预览",
-  "description": "图像查看器，也适用于 GIS 栅格预览。支持 PNG/JPEG/BMP/TIFF/GeoTIFF、样式拉伸、多图层与像元识别。右键「新视图打开 / 添加为图层」。",
+  "description": "图层预览 (dpviewlayer) - 图像查看器，也适用于 GIS 栅格预览。支持 PNG/JPEG/BMP/TIFF/GeoTIFF、样式拉伸、多图层与像元识别。右键「新视图打开 / 添加为图层」。",
   "command.openInNewView.title": "图层预览: 在新视图中打开",
   "command.addAsLayer.title": "图层预览: 添加为图层",
   "command.newView.title": "图层预览: 新建空视图"

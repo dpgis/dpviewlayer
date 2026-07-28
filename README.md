@@ -4,7 +4,8 @@ VS Code / Cursor 里的**图像查看器**，同时适用于 **GIS 栅格预览*
 
 支持 PNG / JPEG / BMP / TIFF / GeoTIFF：普通图片可快速浏览与叠图；带地理参考的数据可按地图坐标查看、拉伸与调色。渲染基于 OpenLayers WebGLTile。
 
-仓库地址：https://gitcode.com/dpgis/dpviewlayer.git
+GITCODE：[https://gitcode.com/dpgis/dpviewlayer.git](https://gitcode.com/dpgis/dpviewlayer.git)
+GITHUB: [git@github.com:dpgis/dpviewlayer.git](https://github.com/dpgis/dpviewlayer)
 
 ## 能做什么
 
