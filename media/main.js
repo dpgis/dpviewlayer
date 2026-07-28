@@ -49462,6 +49462,9 @@ ${ifBlocks}
       }
       if (geoCrsLabelEl) {
         geoCrsLabelEl.textContent = currentCrs() || "\u2014";
+        if (geo?.source === "identity") {
+          geoCrsLabelEl.textContent += " [\u4E34\u65F6]";
+        }
       }
     }
     function escapeHtml(s) {

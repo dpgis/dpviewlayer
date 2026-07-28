@@ -1489,6 +1489,9 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
     }
     if (geoCrsLabelEl) {
       geoCrsLabelEl.textContent = currentCrs() || "—";
+      if (geo?.source === "identity") {
+        geoCrsLabelEl.textContent += " [临时]";
+      }
     }
   }
 
