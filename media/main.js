@@ -48465,10 +48465,14 @@ ${ifBlocks}
     const layerVisibility = /* @__PURE__ */ new Map();
     const rasterLoadQueue = [];
     let rasterLoadBusy = false;
+    let initRunning = false;
     const pendingMaskData = /* @__PURE__ */ new Map();
     async function drainRasterLoadQueue() {
       if (rasterLoadBusy) return;
       rasterLoadBusy = true;
+      while (initRunning) {
+        await new Promise((r) => setTimeout(r, 5));
+      }
       try {
         while (rasterLoadQueue.length) {
           const item = rasterLoadQueue.shift();
@@ -48594,7 +48598,7 @@ ${ifBlocks}
       if (renderMode === "paletted") renderCmapTable();
     }
     function identityAffine(_h = height || 0) {
-      return [0, 1, 0, 0, 0, 1];
+      return [0, 1, 0, _h, 0, -1];
     }
     function geoFromTransform(gt, crs, source = "user") {
       const sx = Math.abs(gt[1]) || 1;
@@ -49171,7 +49175,8 @@ ${ifBlocks}
       if (planes?.length) {
         const pixels = Math.max(0, Number(w) || 0) * Math.max(0, Number(h) || 0);
         const usePyramid = pixels > PYRAMID_MIN_PIXELS;
-        const cacheKey = `${w}x${h}|${crs}|${nearest ? 1 : 0}|${usePyramid ? 1 : 0}`;
+        const gtKey = g?.geoTransform?.map((v) => Number.isFinite(v) ? Number(v).toFixed(6) : "NaN").join(",") || "";
+        const cacheKey = `${w}x${h}|${crs}|${nearest ? 1 : 0}|${usePyramid ? 1 : 0}|${gtKey}`;
         let entry = encodedPlanesCache.get(planes);
         if (!entry || entry.key !== cacheKey) {
           const assumeUint8 = planesAreUint8(planes);
@@ -51124,6 +51129,7 @@ ${ifBlocks}
     }
     async function init39() {
       const gen = ++initGeneration;
+      initRunning = true;
       try {
         width = payload.width || width;
         height = payload.height || height;
@@ -51224,6 +51230,8 @@ ${ifBlocks}
         mapReady = false;
         metaEl.textContent = String(err2?.message || err2);
         console.error(err2);
+      } finally {
+        initRunning = false;
       }
     }
     function render3() {

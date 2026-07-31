@@ -53,7 +53,7 @@ npm run smoke     # 本地叠层冒烟测试（可选）
 
 - 地图显示 CRS（含自定义 EPSG）；切换时有 CRS 图层重投影，无 CRS 图层直接改标显示
 - 打开有 CRS 的图层时地图保持当前 CRS，并自动定位到重投影后的范围
-- 仿射：GDAL GeoTransform，默认 `0,1,0,0,0,1`
+- 仿射：GDAL GeoTransform，默认 `0,1,0,{h},0,-1`（左下角原点，第一象限）
 - 自动读取 world file / GeoTIFF 内嵌地理参考
 - **有 CRS**：图层保持文件 CRS，打开与切换地图 CRS 时都重投影到当前地图 CRS（不会把地图改成图层 CRS）
 - **无 CRS**：赋当前地图 CRS；切换地图 CRS 时不重投影，直接按新坐标系显示（仿射数值不变）

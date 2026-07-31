@@ -13,7 +13,7 @@ export type WebviewPayload = {
   overviewUrls?: string[];
   /** World-file / GeoTIFF / identity affine */
   geo?: {
-    /** GDAL GeoTransform [gt0..gt5]; default identity 0,1,0,0,0,1 */
+    /** GDAL GeoTransform [gt0..gt5]; default identity 0,1,0,{h},0,-1 */
     geoTransform?: [number, number, number, number, number, number];
     crs?: string;
     modelPixelScale: [number, number, number];
@@ -112,7 +112,7 @@ export function buildWebviewHtml(
                 spellcheck="false"
                 autocomplete="off"
                 title="GDAL GeoTransform：6 个数，逗号分隔"
-                placeholder="0, 1, 0, 0, 0, 1"
+                placeholder="0, 1, 0, 512, 0, -1"
               />
             </div>
             <div class="geo-row">

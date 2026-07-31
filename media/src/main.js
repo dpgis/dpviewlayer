@@ -349,12 +349,19 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
   /** Serialize rasterReady/maskData inits so multi-file loads don't cancel each other. */
   const rasterLoadQueue = [];
   let rasterLoadBusy = false;
+  let initRunning = false;
   /** maskData may arrive while another file is active — apply when that file loads. */
   const pendingMaskData = new Map();
 
   async function drainRasterLoadQueue() {
     if (rasterLoadBusy) return;
+    // Acquire the lock BEFORE any await so multiple drain calls don't race.
     rasterLoadBusy = true;
+    // Wait for any concurrently running init() (from HTML payload) to finish
+    // so applyFilePayload never clobbers globals that init() depends on.
+    while (initRunning) {
+      await new Promise((r) => setTimeout(r, 5));
+    }
     try {
       while (rasterLoadQueue.length) {
         const item = rasterLoadQueue.shift();
@@ -493,7 +500,8 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
   }
 
   function identityAffine(_h = height || 0) {
-    return [0, 1, 0, 0, 0, 1];
+    // Bottom-left origin, north-up: image in first quadrant [0,w]×[0,h].
+    return [0, 1, 0, _h, 0, -1];
   }
 
   /** Build geo ref from GDAL GeoTransform (same rules as extension `fromGeoTransform`). */
@@ -1166,7 +1174,9 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
     if (planes?.length) {
       const pixels = Math.max(0, Number(w) || 0) * Math.max(0, Number(h) || 0);
       const usePyramid = pixels > PYRAMID_MIN_PIXELS;
-      const cacheKey = `${w}x${h}|${crs}|${nearest ? 1 : 0}|${usePyramid ? 1 : 0}`;
+      // Include geo transform in cache key so affine edits invalidate the blob cache.
+      const gtKey = g?.geoTransform?.map((v) => Number.isFinite(v) ? Number(v).toFixed(6) : "NaN").join(",") || "";
+      const cacheKey = `${w}x${h}|${crs}|${nearest ? 1 : 0}|${usePyramid ? 1 : 0}|${gtKey}`;
       let entry = encodedPlanesCache.get(planes);
       if (!entry || entry.key !== cacheKey) {
         const assumeUint8 = planesAreUint8(planes);
@@ -3418,6 +3428,7 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
 
   async function init() {
     const gen = ++initGeneration;
+    initRunning = true;
     try {
       width = payload.width || width;
       height = payload.height || height;
@@ -3536,6 +3547,8 @@ import { fromUrl as geoTiffFromUrl } from "geotiff";
       mapReady = false;
       metaEl.textContent = String(err?.message || err);
       console.error(err);
+    } finally {
+      initRunning = false;
     }
   }
 

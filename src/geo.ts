@@ -29,15 +29,15 @@ const WORLD_EXTS: Record<string, string[]> = {
   ".bmp": [".bpw", ".bmpw", ".wld"],
 };
 
-/** Default when no world file / GeoTIFF tags: 1px = 1 map unit, origin top-left. */
-export const IDENTITY_GEOTRANSFORM: GeoTransform = [0, 1, 0, 0, 0, 1];
+/** Default when no world file / GeoTIFF tags: bottom-left origin, north-up. */
+export const IDENTITY_GEOTRANSFORM: GeoTransform = [0, 1, 0, 0, 0, -1];
 
 /**
- * Identity affine for coordinates (GDAL: 0,1,0,0,0,1).
+ * Identity affine: bottom-left origin, image in first quadrant [0,w]×[0,h].
  */
 export function identityGeoRef(_width = 0, _height = 0): GeoRef {
-  // Non-georeferenced: Local — never tag pixel coords as EPSG:3857/4326.
-  return fromGeoTransform([...IDENTITY_GEOTRANSFORM], "Local", "identity");
+  const gt: GeoTransform = [0, 1, 0, _height, 0, -1];
+  return fromGeoTransform(gt, "Local", "identity");
 }
 
 export function fromGeoTransform(
